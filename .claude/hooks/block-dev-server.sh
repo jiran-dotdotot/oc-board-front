@@ -17,10 +17,13 @@ if echo "$COMMAND" | grep -qE '(npm|pnpm|yarn|bun)( +run)? +dev([^[:alnum:]]|$)'
   is_dev=1
 fi
 
-# 2) direct `vite` invocation. Non-alnum/start before + non-alnum/end after excludes "vitest"/"invite";
-#    a leading "/" is allowed so node_modules/.bin/vite is caught. Then exclude non-dev subcommands.
-if echo "$COMMAND" | grep -qE '(^|[^[:alnum:]])vite([^[:alnum:]]|$)'; then
-  if echo "$COMMAND" | grep -qE 'vite +(build|preview|optimize|-v|--version|-h|--help)'; then
+# 2) direct `vite` invocation AS A COMMAND — only at a command position (line start, after a shell
+#    separator ; & |, after a runner npx/yarn/pnpm/bun, or as a path .../vite) AND followed by
+#    whitespace or end-of-string. This ignores filenames like `vite.config.ts` / `vite-env.d.ts` and
+#    stray "vite" mentions inside quoted strings / commit messages (which previously false-blocked).
+#    Trade-off: an env-prefixed bare invocation (`X=1 vite`) isn't caught — use a runner (`npx vite`).
+if echo "$COMMAND" | grep -qE '(^|[;&|]|(npx|yarn|pnpm|bun)[[:space:]]+|/)[[:space:]]*vite([[:space:]]|$)'; then
+  if echo "$COMMAND" | grep -qE 'vite[[:space:]]+(build|preview|optimize|-v|--version|-h|--help)'; then
     :  # non-dev vite subcommand -> allow
   else
     is_dev=1
