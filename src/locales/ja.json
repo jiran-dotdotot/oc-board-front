@@ -1,0 +1,18 @@
+{
+  "app-name": "OC 掲示板",
+  "nav-home": "ホーム",
+  "nav-board": "掲示板",
+  "board-list-title": "投稿一覧",
+  "board-empty": "投稿がありません。",
+  "board-write": "投稿する",
+  "common-search": "検索",
+  "common-save": "保存",
+  "common-cancel": "キャンセル",
+  "common-edit": "編集",
+  "common-delete": "削除",
+  "common-confirm": "確認",
+  "common-loading": "読み込み中…",
+  "language-ko": "한국어",
+  "language-en": "English",
+  "language-ja": "日本語"
+}

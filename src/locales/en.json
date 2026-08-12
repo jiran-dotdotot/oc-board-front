@@ -1,0 +1,18 @@
+{
+  "app-name": "OC Board",
+  "nav-home": "Home",
+  "nav-board": "Board",
+  "board-list-title": "Posts",
+  "board-empty": "No posts yet.",
+  "board-write": "Write",
+  "common-search": "Search",
+  "common-save": "Save",
+  "common-cancel": "Cancel",
+  "common-edit": "Edit",
+  "common-delete": "Delete",
+  "common-confirm": "Confirm",
+  "common-loading": "Loading…",
+  "language-ko": "한국어",
+  "language-en": "English",
+  "language-ja": "日本語"
+}

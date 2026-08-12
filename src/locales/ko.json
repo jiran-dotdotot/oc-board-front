@@ -1,0 +1,18 @@
+{
+  "app-name": "OC 게시판",
+  "nav-home": "홈",
+  "nav-board": "게시판",
+  "board-list-title": "게시글 목록",
+  "board-empty": "게시글이 없습니다.",
+  "board-write": "글쓰기",
+  "common-search": "검색",
+  "common-save": "저장",
+  "common-cancel": "취소",
+  "common-edit": "수정",
+  "common-delete": "삭제",
+  "common-confirm": "확인",
+  "common-loading": "불러오는 중…",
+  "language-ko": "한국어",
+  "language-en": "English",
+  "language-ja": "日本語"
+}

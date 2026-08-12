@@ -1,0 +1,19 @@
+{
+  "//": "IDE/LSP 전용 — 테스트 파일 타입 지원(@ 별칭, jest-dom 매처). tsc -b(빌드)에는 참조되지 않으므로 게이트에 영향 없음. 매처 타입은 setup.ts의 '@testing-library/jest-dom/vitest' import로 vitest expect에 주입됨.",
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "types": ["vitest/globals", "node"],
+    "paths": {
+      "@/*": ["../src/*"]
+    }
+  },
+  "include": ["."]
+}
