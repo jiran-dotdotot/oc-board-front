@@ -46,3 +46,8 @@ dist-ssr
 coverage
 playwright-report
 test-results
+
+# Local env files (keep .env.example tracked)
+.env
+.env.*
+!.env.example
