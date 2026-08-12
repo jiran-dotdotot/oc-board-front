@@ -41,3 +41,8 @@ dist-ssr
 #   .husky/pre-commit  .husky/pre-push
 #   CLAUDE.md  components.json  .prettierrc  eslint.config.js  vitest.config.ts  playwright.config.ts
 #   .npmrc  .nvmrc  .mcp.json (public shadcn server)
+
+# Test / coverage output (generated)
+coverage
+playwright-report
+test-results
