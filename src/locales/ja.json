@@ -14,5 +14,10 @@
   "common-loading": "読み込み中…",
   "language-ko": "한국어",
   "language-en": "English",
-  "language-ja": "日本語"
+  "language-ja": "日本語",
+  "write-title-label": "タイトル",
+  "write-content-label": "本文",
+  "write-submit": "登録",
+  "write-required": "必須項目です。",
+  "write-success": "登録しました。（デモ — バックエンド未保存）"
 }

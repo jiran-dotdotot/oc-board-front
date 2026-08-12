@@ -14,5 +14,10 @@
   "common-loading": "Loading…",
   "language-ko": "한국어",
   "language-en": "English",
-  "language-ja": "日本語"
+  "language-ja": "日本語",
+  "write-title-label": "Title",
+  "write-content-label": "Content",
+  "write-submit": "Submit",
+  "write-required": "This field is required.",
+  "write-success": "Submitted. (demo — not persisted to a backend yet)"
 }

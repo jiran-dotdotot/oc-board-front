@@ -19,6 +19,7 @@ export default tseslint.config(
       'public/**',
       'tests/**',
       'src/components/ui/**',
+      'src/routeTree.gen.ts',
       '.claude/**',
     ],
   },

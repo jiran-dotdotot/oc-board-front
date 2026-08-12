@@ -43,12 +43,12 @@
 ## Architecture rules
 
 ### File structure
-- `src/routes/` — (라우터 미도입) 라우터 도입 시 사용. 예: TanStack Router file-based routes.
+- `src/routes/` — **TanStack Router 파일 기반 라우트**. `__root.tsx`(레이아웃) + `index.tsx`/`write.tsx`. `src/routeTree.gen.ts`는 플러그인이 자동 생성(커밋 포함, **직접 수정 금지**).
 - `src/components/ui/` — shadcn/ui components. Check here first; add with `npx shadcn@latest add <c>`.
 - `src/components/common/` — shared custom components. Check before creating a new one (avoid dupes).
 - `src/components/<domain>/` — per-domain components, each with `components/ hooks/ types/ constants/`.
 - `src/hooks/` `src/services/` `src/utils/` `src/types/` `src/constants/` `src/atoms/` — 도메인 규모에 맞게 생성.
-- `src/lib/apiClient.ts` — HTTP instance with interceptors (auth/error). HTTP 레이어 도입 시 추가.
+- `src/lib/apiClient.ts` — axios instance with interceptors (auth/error). 서버 상태는 `@tanstack/react-query`(`src/lib/queryClient.ts`)로 관리.
 
 ## Constants / utils / types rules
 - Constants live in a domain `constants` file (no inline literals in components).
@@ -57,7 +57,8 @@
 
 ## i18n rules
 - Locale files: `src/locales/{ko,en,ja}.json` (flat keys). Source language: **ko**(원본), targets: **en, ja**.
-  (i18next는 아직 미설치 — 다국어 구현 시 설치. `.claude/hooks/i18n-check.sh`가 키 동기화를 강제합니다.)
+  i18next + react-i18next 도입 완료(브라우저 언어 자동감지). `src/lib/i18n.ts` 초기화, `src/types/i18next.d.ts`로 `t()` 키 타입세이프.
+  `.claude/hooks/i18n-check.sh`가 키 동기화를 강제합니다.
 - Add a key to the source language first, then to every other locale (a hook checks this).
 - Key naming: kebab-case. Reuse common keys; prefix domain keys.
 
@@ -85,12 +86,12 @@ Every code change must pass all of these before it's "done":
 ## API type policy
 - Generate response types from the actual API source (don't guess). If unknown, read the source or ask.
 - Save generated types in `src/types/`; reuse existing ones.
-- (HTTP/API 레이어 도입 후 적용.)
+- HTTP는 `src/lib/apiClient.ts`(axios), 서버 상태는 `@tanstack/react-query`.
 
 ## Golden Reference
-- 아직 기준 예시 도메인이 없습니다(신규 프로젝트). 첫 도메인 구현 후 그 경로를 여기에 지정하세요:
-  per-domain `components/ hooks/ types/ constants/`, one service file per domain in `src/services/`.
-  (참고: shadcn/ui 컴포넌트 예시는 `src/components/ui/`.)
+- 예시 도메인: `src/components/board/`(`types.ts` · `constants.ts` · `BoardList.tsx` · `PostForm.tsx`) + 라우트 `src/routes/index.tsx`·`write.tsx`.
+  폼은 react-hook-form + zod(`zodResolver`), 목록은 현재 샘플 상수 → 추후 `@tanstack/react-query` + `apiClient`로 연결.
+  도메인이 커지면 per-domain `components/ hooks/ types/ constants/`로 분리.
 
 ## Refactoring principles
 - IMPORTANT: in behavior-preserving refactors, preserving behavior is the top priority.
@@ -116,4 +117,5 @@ propose unifying them first (unify is the default unless the user says "only fix
 - TypeScript + React 19, Vite 8, Tailwind CSS v4, shadcn/ui (Radix primitives · `radix-nova` style, lucide icons).
 - Lint/format: ESLint (flat config) + Prettier (+ import sort). Unit: Vitest + Testing Library (happy-dom).
   E2E: Playwright. Git hooks: Husky. Package manager: npm (`legacy-peer-deps=true`, React 19).
-- 상태관리 / 라우터 / HTTP 클라이언트: 미도입 — 필요 시 추가(예: Jotai / TanStack Router / axios).
+- 라우터: TanStack Router(파일 기반). 서버 상태: TanStack Query + axios(`apiClient`). 폼: react-hook-form + zod.
+- 클라이언트 전역 상태: 미도입 — 필요 시 추가(예: Jotai).

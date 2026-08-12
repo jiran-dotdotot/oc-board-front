@@ -14,5 +14,10 @@
   "common-loading": "불러오는 중…",
   "language-ko": "한국어",
   "language-en": "English",
-  "language-ja": "日本語"
+  "language-ja": "日本語",
+  "write-title-label": "제목",
+  "write-content-label": "내용",
+  "write-submit": "등록",
+  "write-required": "필수 입력 항목입니다.",
+  "write-success": "등록되었습니다. (데모 — 아직 백엔드에 저장되지 않음)"
 }
