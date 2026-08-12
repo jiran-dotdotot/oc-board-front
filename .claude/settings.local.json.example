@@ -1,0 +1,9 @@
+{
+  "_comment": "Per-developer, git-IGNORED. Rename to settings.local.json. Keep it MINIMAL — do not paste an accreted allow-list. enabledMcpjsonServers must list each project MCP server (from .mcp.json) you want Claude Code to load. M9: if a server here won't connect (a known Claude Code issue with this field in some versions), move enabledMcpjsonServers into the shared .claude/settings.json, or run 'claude mcp add --scope project <name> -- <cmd>'. Delete this _comment key before use (JSON has no comments).",
+  "permissions": {
+    "allow": ["WebSearch"],
+    "deny": [],
+    "ask": []
+  },
+  "enabledMcpjsonServers": ["shadcn"]
+}

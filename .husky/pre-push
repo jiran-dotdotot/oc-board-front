@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# Skip when only docs (.md/.mdx) changed.
+# NOTE: the final fallback diffs against the empty tree so that a first commit or a branch with no
+# upstream lists ALL files (fail-CLOSED) instead of an empty set (which would silently skip tests).
+CHANGED_FILES=$(git diff --name-only HEAD @{upstream} 2>/dev/null \
+  || git diff --name-only HEAD~1 2>/dev/null \
+  || git diff --name-only "$(git hash-object -t tree /dev/null)" HEAD)
+NON_DOC_FILES=$(echo "$CHANGED_FILES" | grep -v '\.md$' | grep -v '\.mdx$' || true)
+
+if [ -z "$NON_DOC_FILES" ]; then
+  echo "docs-only change — skipping tests"
+  exit 0
+fi
+
+echo "Running Vitest..."
+npm run test -- --run
+if [ $? -ne 0 ]; then
+  echo "Tests failed — push blocked"
+  exit 1
+fi
+
+echo "tests passed"

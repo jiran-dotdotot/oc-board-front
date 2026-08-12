@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# Skip when only docs (.md/.mdx) changed
+CHANGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR)
+NON_DOC_FILES=$(echo "$CHANGED_FILES" | grep -v '\.md$' | grep -v '\.mdx$' || true)
+
+if [ -z "$NON_DOC_FILES" ]; then
+  echo "docs-only change — skipping lint/typecheck"
+  exit 0
+fi
+
+echo "Running ESLint..."
+npm run lint
+if [ $? -ne 0 ]; then
+  echo "ESLint failed — commit blocked"
+  exit 1
+fi
+
+echo "Running TypeScript typecheck..."
+# M3: use `tsc -b --noEmit` (build mode) so referenced projects (e.g. vite.config.ts under
+# tsconfig.node.json) are also type-checked — matches CLAUDE.md's `npx tsc -b --noEmit`.
+npx tsc -b --noEmit
+if [ $? -ne 0 ]; then
+  echo "Type errors — commit blocked"
+  exit 1
+fi
+
+echo "lint + typecheck passed"
