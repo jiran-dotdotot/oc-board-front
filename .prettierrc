@@ -3,7 +3,8 @@
   "printWidth": 100,
   "semi": false,
   "tabWidth": 2,
-  "plugins": ["@trivago/prettier-plugin-sort-imports"],
+  "plugins": ["@trivago/prettier-plugin-sort-imports", "prettier-plugin-tailwindcss"],
+  "tailwindStylesheet": "./src/index.css",
   "importOrder": [
     "^react$",
     "^jotai$",

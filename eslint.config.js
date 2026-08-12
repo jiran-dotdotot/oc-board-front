@@ -10,7 +10,18 @@ import tseslint from 'typescript-eslint'
 //  eslint-plugin-react-refresh globals`), then copy this file to the project root.
 export default tseslint.config(
   // Not linted: build output, generated shadcn UI, tests, Claude config, static public assets.
-  { ignores: ['dist', 'public/**', 'tests/**', 'src/components/ui/**', '.claude/**'] },
+  {
+    ignores: [
+      'dist',
+      'coverage',
+      'playwright-report',
+      'test-results',
+      'public/**',
+      'tests/**',
+      'src/components/ui/**',
+      '.claude/**',
+    ],
+  },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
