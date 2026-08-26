@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
+import { GeneralTab } from '@/components/settings/GeneralTab'
+import { MainScreenTab } from '@/components/settings/MainScreenTab'
 import {
   OrgPickerModal,
   type PickerMode,
   type PickerResult,
-} from '@/components/admin/OrgPickerModal'
+} from '@/components/settings/OrgPickerModal'
 import {
   BTYPE_KEY,
   type BType,
@@ -18,12 +20,26 @@ import {
   INITIAL_ITEMS,
   type Item,
   type NodeKind,
-  type Role,
   type Scope,
   TOTAL_MAX_OPTS,
-} from '@/components/admin/adminData'
+} from '@/components/settings/treeData'
+import { useMe } from '@/hooks/useMe'
+import { isAnyAdmin } from '@/types/user'
 
 const ME_NAME = '김민준'
+
+type EnvTab = 'general' | 'main' | 'content'
+
+// 설정 레일. 일반=전원, 메인화면=오피스 관리자, 게시판 관리=관리자 권한 보유자.
+const TABS: {
+  id: EnvTab
+  label: 'env-tab-general' | 'env-tab-main' | 'env-tab-content'
+  desc: 'env-tab-general-desc' | 'env-tab-main-desc' | 'env-tab-content-desc'
+}[] = [
+  { id: 'general', label: 'env-tab-general', desc: 'env-tab-general-desc' },
+  { id: 'main', label: 'env-tab-main', desc: 'env-tab-main-desc' },
+  { id: 'content', label: 'env-tab-content', desc: 'env-tab-content-desc' },
+]
 
 const TYPE_KEY: Record<
   NodeKind,
@@ -46,10 +62,17 @@ interface TreeNode {
   folder: string | null
 }
 
-export function AdminScreen() {
+export function SettingsScreen() {
   const { t } = useTranslation()
 
-  const [role, setRole] = useState<Role>('super')
+  const { data: me } = useMe()
+  const isOfficeAdmin = !!me?.is_admin // 슈퍼(오피스) 관리자 — 카테고리/폴더 추가 · 메인화면 탭
+  const canManage = isAnyAdmin(me)
+  const tabs = TABS.filter(
+    (x) => x.id === 'general' || (x.id === 'main' ? isOfficeAdmin : canManage),
+  )
+  const [tab, setTab] = useState<EnvTab>('general')
+
   const [cats, setCats] = useState<Cat[]>(INITIAL_CATS)
   const [folders, setFolders] = useState<Folder[]>(INITIAL_FOLDERS)
   const [items, setItems] = useState<Item[]>(INITIAL_ITEMS)
@@ -349,347 +372,416 @@ export function AdminScreen() {
     <div className="flex w-full flex-col gap-5">
       {/* 헤더 */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span className="text-lg font-extrabold tracking-[-0.01em]">{t('admin-title')}</span>
-        <span className="text-[12.5px] text-gray-400">{t('admin-subtitle')}</span>
-        {/* 역할 칩 */}
-        <div className="ml-auto flex gap-1 rounded-full bg-gray-100 p-[3px]">
-          <RoleChip on={role === 'super'} onClick={() => setRole('super')}>
-            {t('admin-role-super')}
-          </RoleChip>
-          <RoleChip on={role === 'board'} onClick={() => setRole('board')}>
-            {t('admin-role-board')}
-          </RoleChip>
-        </div>
-        {/* 추가 드롭다운 */}
-        <span data-dd="addmenu" className="relative">
-          <button
-            type="button"
-            onClick={() => setAddMenuOpen((v) => !v)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-[5px] bg-primary px-3.5 text-[13.5px] font-semibold text-white hover:bg-ov-blue-700"
-          >
-            <PlusIcon /> {t('admin-add')} <CaretDown />
-          </button>
-          {addMenuOpen && (
-            <div className="absolute top-[calc(100%+4px)] right-0 z-30 w-[180px] rounded-lg border border-gray-200 bg-card p-1 shadow-[var(--shadow-dropdown)]">
-              {role === 'super' ? (
-                <>
-                  <MenuItem onClick={() => openAdd('cat')}>{t('admin-add-cat')}</MenuItem>
-                  <MenuItem onClick={() => openAdd('folder')}>{t('admin-add-folder')}</MenuItem>
-                </>
-              ) : (
-                <span className="flex h-[34px] items-center px-2.5 text-xs text-gray-300">
-                  {t('admin-add-super-only')}
-                </span>
-              )}
-              <MenuItem onClick={() => openAdd('board')}>{t('admin-add-board')}</MenuItem>
-              <MenuItem onClick={() => openAdd('drive')}>{t('admin-add-drive')}</MenuItem>
-            </div>
-          )}
-        </span>
-      </div>
-
-      {/* 트리 + 상세 */}
-      <div className="grid grid-cols-1 items-start gap-4 min-[820px]:grid-cols-[300px_minmax(0,1fr)]">
-        {/* 좌: 트리 */}
-        <div className="flex flex-col gap-px rounded-lg border border-gray-200 bg-card p-2">
-          {tree.map((n) => {
-            const on = sel.kind === n.kind && sel.id === n.id
-            return (
-              <button
-                key={`${n.kind}-${n.id}`}
-                type="button"
-                draggable
-                onClick={() => setSel({ kind: n.kind, id: n.id })}
-                onDragStart={() => setDragItem(n)}
-                onDragOver={(e) => {
-                  if (!dndSame(dragItem, n)) return
-                  e.preventDefault()
-                  const rect = e.currentTarget.getBoundingClientRect()
-                  const pos = e.clientY - rect.top < rect.height / 2 ? 'before' : 'after'
-                  if (!dragOver || dragOver.id !== n.id || dragOver.pos !== pos)
-                    setDragOver({ id: n.id, pos })
-                }}
-                onDrop={(e) => {
-                  e.preventDefault()
-                  onDrop(n)
-                }}
-                onDragEnd={() => {
-                  setDragItem(null)
-                  setDragOver(null)
-                }}
-                className={[
-                  'flex h-9 cursor-grab items-center gap-2 rounded-lg pr-2.5 text-[13px] active:cursor-grabbing',
-                  on ? 'bg-accent' : 'hover:bg-gray-50',
-                ].join(' ')}
-                style={{
-                  paddingLeft: n.pad,
-                  opacity: dragItem?.id === n.id ? 0.45 : 1,
-                  boxShadow:
-                    dragOver?.id === n.id && dndSame(dragItem, n)
-                      ? dragOver.pos === 'before'
-                        ? 'inset 0 2px 0 var(--color-primary)'
-                        : 'inset 0 -2px 0 var(--color-primary)'
-                      : undefined,
-                }}
-              >
-                <NodeIcon kind={n.kind} active={on} />
-                <span
-                  className={[
-                    'min-w-0 flex-1 truncate text-left',
-                    on
-                      ? 'font-semibold text-primary'
-                      : n.kind === 'cat'
-                        ? 'font-semibold text-gray-800'
-                        : n.paused
-                          ? 'text-gray-400'
-                          : 'text-gray-800',
-                  ].join(' ')}
-                >
-                  {n.name}
-                </span>
-                {n.scoped && <ScopedIcon />}
-                {n.paused && (
-                  <span className="inline-flex h-[18px] flex-none items-center rounded bg-l-gray px-1.5 text-[10px] font-bold text-gray-500">
-                    {t('admin-paused')}
+        <span className="text-lg font-extrabold tracking-[-0.01em]">{t('env-title')}</span>
+        <span className="text-[12.5px] text-gray-400">{t('env-subtitle')}</span>
+        {/* 추가 드롭다운 — 게시판 관리 탭에서만 */}
+        {tab === 'content' && (
+          <span data-dd="addmenu" className="relative ml-auto">
+            <button
+              type="button"
+              onClick={() => setAddMenuOpen((v) => !v)}
+              className="inline-flex h-9 items-center gap-1.5 rounded-[5px] bg-primary px-3.5 text-[13.5px] font-semibold text-white hover:bg-ov-blue-700"
+            >
+              <PlusIcon /> {t('admin-add')} <CaretDown />
+            </button>
+            {addMenuOpen && (
+              <div className="absolute top-[calc(100%+4px)] right-0 z-30 w-[180px] rounded-lg border border-gray-200 bg-card p-1 shadow-[var(--shadow-dropdown)]">
+                {isOfficeAdmin ? (
+                  <>
+                    <MenuItem onClick={() => openAdd('cat')}>{t('admin-add-cat')}</MenuItem>
+                    <MenuItem onClick={() => openAdd('folder')}>{t('admin-add-folder')}</MenuItem>
+                  </>
+                ) : (
+                  <span className="flex h-[34px] items-center px-2.5 text-xs text-gray-300">
+                    {t('admin-add-super-only')}
                   </span>
                 )}
-              </button>
-            )
-          })}
-          <span className="mt-2 border-t border-gray-100 px-2.5 pt-2 text-[11.5px] leading-relaxed text-gray-400">
-            {t('admin-tree-note')}
+                <MenuItem onClick={() => openAdd('board')}>{t('admin-add-board')}</MenuItem>
+                <MenuItem onClick={() => openAdd('drive')}>{t('admin-add-drive')}</MenuItem>
+              </div>
+            )}
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-4 min-[820px]:flex-row min-[820px]:items-start min-[820px]:gap-6">
+        {/* 설정 레일 — 데스크탑 좌측 세로, 모바일 상단 스택 */}
+        <div className="flex flex-none flex-col gap-[3px] border-b border-gray-200 pb-3 min-[820px]:w-[238px] min-[820px]:border-r min-[820px]:border-b-0 min-[820px]:pr-3.5 min-[820px]:pb-1">
+          {tabs.map((rl) => (
+            <button
+              key={rl.id}
+              type="button"
+              onClick={() => setTab(rl.id)}
+              className={[
+                'flex gap-2.5 rounded-[10px] p-2.5 text-left',
+                tab === rl.id ? 'bg-accent' : 'hover:bg-gray-50',
+              ].join(' ')}
+            >
+              <span
+                className={[
+                  'mt-px flex-none',
+                  tab === rl.id ? 'text-primary' : 'text-gray-400',
+                ].join(' ')}
+              >
+                <TabIcon id={rl.id} />
+              </span>
+              <span className="flex min-w-0 flex-col gap-px">
+                <span
+                  className={[
+                    'text-[13.5px] font-bold',
+                    tab === rl.id ? 'text-primary' : 'text-gray-800',
+                  ].join(' ')}
+                >
+                  {t(rl.label)}
+                </span>
+                <span
+                  className={[
+                    'text-[11px]',
+                    tab === rl.id ? 'text-gray-500' : 'text-gray-400',
+                  ].join(' ')}
+                >
+                  {t(rl.desc)}
+                </span>
+              </span>
+              {tab === rl.id && (
+                <span className="ml-auto flex-none self-center text-primary min-[820px]:hidden">
+                  <CheckIcon />
+                </span>
+              )}
+            </button>
+          ))}
+          <span className="mt-2.5 px-2.5 text-[11px] leading-relaxed text-gray-400 min-[820px]:mt-3.5">
+            {t('env-rail-note')}
           </span>
         </div>
 
-        {/* 우: 상세 패널 */}
-        <div className="flex flex-col gap-[18px] rounded-lg border border-gray-200 bg-card px-[22px] py-5">
-          {/* 이름 + 삭제 */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <span className="inline-flex h-[22px] flex-none items-center rounded bg-l-blue px-2 text-[11px] font-bold text-primary">
-              {t(TYPE_KEY[soKind])}
-            </span>
-            <input
-              value={so.name}
-              onChange={(e) => patchSel({ name: Array.from(e.target.value).slice(0, 60).join('') })}
-              className="h-[38px] w-[250px] max-w-full rounded-[5px] border border-gray-300 px-3 text-sm font-semibold focus:border-primary focus:outline-none"
-            />
-            {isFixed ? (
-              <span className="text-xs text-gray-400">{t('admin-fixed-note')}</span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setToast(t('admin-toast-del-demo', { name: so.name }))}
-                className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 px-3 text-[12.5px] font-semibold text-destructive hover:bg-l-red"
-              >
-                <TrashIcon /> {t('common-delete')}
-              </button>
-            )}
-          </div>
-
-          {/* 공개 범위 */}
-          <Section title={t('admin-scope')}>
-            {isFixed ? (
-              <span className="text-[12.5px] text-gray-500">{t('admin-fixed-scope-note')}</span>
-            ) : (
-              <>
-                <div className="flex flex-wrap items-center gap-[18px]">
-                  <RadioRow
-                    label={t('admin-scope-all')}
-                    on={so.scope === 'all'}
-                    onClick={() => patchSel({ scope: 'all' })}
-                  />
-                  <RadioRow
-                    label={t('admin-scope-org')}
-                    on={so.scope === 'org'}
-                    onClick={() => patchSel({ scope: 'org' })}
-                  />
-                  {so.scope === 'org' && (
-                    <button
-                      type="button"
-                      onClick={() => setPicker({ mode: 'scope', target: 'sel' })}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 px-3 text-[12.5px] font-semibold text-gray-700 hover:bg-gray-100"
-                    >
-                      <PersonIcon /> {so.scopeLabel || t('admin-scope-default')}
-                    </button>
-                  )}
-                </div>
-                <span className="text-[11.5px] text-gray-400">{t('admin-scope-hint')}</span>
-              </>
-            )}
-          </Section>
-
-          {/* 관리자 */}
-          <Section title={t('admin-managers')}>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex h-[34px] items-center gap-[7px] rounded-full bg-gray-50 pr-3 pl-1.5">
-                <span className="inline-flex size-6 items-center justify-center rounded-full bg-l-blue text-[11px] font-bold text-on-pastel">
-                  {ME_NAME[0]}
-                </span>
-                <span className="text-[12.5px] text-gray-700">
-                  {ME_NAME} ({t('admin-me')})
-                </span>
-              </span>
-              {(
-                soItem?.admins ??
-                (soKind === 'cat' || soKind === 'folder' ? (so as Cat).admins : undefined) ??
-                []
-              ).map((name) => (
-                <span
-                  key={name}
-                  className="inline-flex h-[34px] items-center gap-[7px] rounded-full bg-gray-50 pr-2 pl-1.5"
-                >
-                  <span className="inline-flex size-6 items-center justify-center rounded-full bg-l-green text-[11px] font-bold text-on-pastel">
-                    {name[0]}
+        <div className="flex min-w-0 flex-1 flex-col">
+          {tab === 'general' && <GeneralTab onToast={setToast} />}
+          {tab === 'main' && <MainScreenTab onToast={setToast} />}
+          {tab === 'content' && (
+            <div className="flex flex-col gap-5">
+              {/* 트리 + 상세 */}
+              <div className="grid grid-cols-1 items-start gap-4 min-[820px]:grid-cols-[300px_minmax(0,1fr)]">
+                {/* 좌: 트리 */}
+                <div className="flex flex-col gap-px rounded-lg border border-gray-200 bg-card p-2">
+                  {tree.map((n) => {
+                    const on = sel.kind === n.kind && sel.id === n.id
+                    return (
+                      <button
+                        key={`${n.kind}-${n.id}`}
+                        type="button"
+                        draggable
+                        onClick={() => setSel({ kind: n.kind, id: n.id })}
+                        onDragStart={() => setDragItem(n)}
+                        onDragOver={(e) => {
+                          if (!dndSame(dragItem, n)) return
+                          e.preventDefault()
+                          const rect = e.currentTarget.getBoundingClientRect()
+                          const pos = e.clientY - rect.top < rect.height / 2 ? 'before' : 'after'
+                          if (!dragOver || dragOver.id !== n.id || dragOver.pos !== pos)
+                            setDragOver({ id: n.id, pos })
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault()
+                          onDrop(n)
+                        }}
+                        onDragEnd={() => {
+                          setDragItem(null)
+                          setDragOver(null)
+                        }}
+                        className={[
+                          'flex h-9 cursor-grab items-center gap-2 rounded-lg pr-2.5 text-[13px] active:cursor-grabbing',
+                          on ? 'bg-accent' : 'hover:bg-gray-50',
+                        ].join(' ')}
+                        style={{
+                          paddingLeft: n.pad,
+                          opacity: dragItem?.id === n.id ? 0.45 : 1,
+                          boxShadow:
+                            dragOver?.id === n.id && dndSame(dragItem, n)
+                              ? dragOver.pos === 'before'
+                                ? 'inset 0 2px 0 var(--color-primary)'
+                                : 'inset 0 -2px 0 var(--color-primary)'
+                              : undefined,
+                        }}
+                      >
+                        <NodeIcon kind={n.kind} active={on} />
+                        <span
+                          className={[
+                            'min-w-0 flex-1 truncate text-left',
+                            on
+                              ? 'font-semibold text-primary'
+                              : n.kind === 'cat'
+                                ? 'font-semibold text-gray-800'
+                                : n.paused
+                                  ? 'text-gray-400'
+                                  : 'text-gray-800',
+                          ].join(' ')}
+                        >
+                          {n.name}
+                        </span>
+                        {n.scoped && <ScopedIcon />}
+                        {n.paused && (
+                          <span className="inline-flex h-[18px] flex-none items-center rounded bg-l-gray px-1.5 text-[10px] font-bold text-gray-500">
+                            {t('admin-paused')}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                  <span className="mt-2 border-t border-gray-100 px-2.5 pt-2 text-[11.5px] leading-relaxed text-gray-400">
+                    {t('admin-tree-note')}
                   </span>
-                  <span className="text-[12.5px] text-gray-700">{name}</span>
-                  <button
-                    type="button"
-                    aria-label={t('common-delete')}
-                    onClick={() =>
-                      patchSel({
-                        admins: ((so as Item).admins ?? (so as Cat).admins ?? []).filter(
-                          (n) => n !== name,
-                        ),
-                      })
-                    }
-                    className="inline-flex size-[18px] items-center justify-center rounded-full text-gray-400 hover:text-destructive"
-                  >
-                    <XMini />
-                  </button>
-                </span>
-              ))}
-              <button
-                type="button"
-                onClick={() => setPicker({ mode: 'admin', target: 'sel' })}
-                className="inline-flex h-[34px] items-center gap-1.5 rounded-full border border-dashed border-gray-300 px-[13px] text-[12.5px] font-semibold text-gray-500 hover:bg-gray-50"
-              >
-                <PlusMini /> {t('admin-add-manager')}
-              </button>
-            </div>
-            <span className="text-[11.5px] text-gray-400">{t('admin-managers-hint')}</span>
-          </Section>
+                </div>
 
-          {/* 게시판 설정 */}
-          {soKind === 'board' && soItem && (
-            <Section title={t('admin-board-settings')}>
-              <div className="flex flex-wrap items-center gap-[18px]">
-                <span className="w-[70px] flex-none text-[12.5px] text-gray-500">
-                  {t('admin-type')}
-                </span>
-                {(['BOARD', 'PREVIEW', 'ALBUM'] as BType[]).map((bt) => (
-                  <RadioRow
-                    key={bt}
-                    label={t(BTYPE_KEY[bt])}
-                    on={soItem.btype === bt}
-                    onClick={() => patchSel({ btype: bt })}
-                  />
-                ))}
-              </div>
-              <div className="flex items-center gap-[18px]">
-                <span className="w-[70px] flex-none text-[12.5px] text-gray-500">
-                  {t('admin-alarm-new')}
-                </span>
-                <Toggle on={!!soItem.alarm} onClick={() => patchSel({ alarm: !soItem.alarm })} />
-              </div>
-              <div className="flex items-center gap-[18px]">
-                <span className="w-[70px] flex-none text-[12.5px] text-gray-500">
-                  {t('admin-active')}
-                </span>
-                <Toggle on={soItem.active} onClick={() => patchSel({ active: !soItem.active })} />
-                <span className="text-xs text-gray-400">{t('admin-active-hint')}</span>
-              </div>
-            </Section>
-          )}
-
-          {/* 자료실 설정 */}
-          {soKind === 'drive' && soItem && (
-            <Section title={t('admin-drive-settings')}>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="w-[110px] flex-none text-[12.5px] text-gray-500">
-                  {t('admin-file-max')}
-                </span>
-                {FILE_MAX_OPTS.map((v) => (
-                  <CapChip
-                    key={v}
-                    label={v}
-                    on={soItem.fileMax === v}
-                    onClick={() => patchSel({ fileMax: v })}
-                  />
-                ))}
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="w-[110px] flex-none text-[12.5px] text-gray-500">
-                  {t('admin-total-max')}
-                </span>
-                {TOTAL_MAX_OPTS.map((v) => (
-                  <CapChip
-                    key={v}
-                    label={v}
-                    on={soItem.totalMax === v}
-                    onClick={() => patchSel({ totalMax: v })}
-                  />
-                ))}
-              </div>
-              <div className="flex flex-wrap items-start gap-3">
-                <span className="w-[110px] flex-none pt-1.5 text-[12.5px] text-gray-500">
-                  {t('admin-ext-block')}
-                </span>
-                <div className="flex min-w-[200px] flex-1 flex-wrap items-center gap-1.5">
-                  {(soItem.exts ?? []).map((x, i) => (
-                    <span
-                      key={x}
-                      className="inline-flex h-[26px] items-center gap-1 rounded-full bg-l-gray pr-1 pl-2.5 text-xs font-semibold text-gray-700"
-                    >
-                      .{x}
+                {/* 우: 상세 패널 */}
+                <div className="flex flex-col gap-[18px] rounded-lg border border-gray-200 bg-card px-[22px] py-5">
+                  {/* 이름 + 삭제 */}
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span className="inline-flex h-[22px] flex-none items-center rounded bg-l-blue px-2 text-[11px] font-bold text-primary">
+                      {t(TYPE_KEY[soKind])}
+                    </span>
+                    <input
+                      value={so.name}
+                      onChange={(e) =>
+                        patchSel({ name: Array.from(e.target.value).slice(0, 60).join('') })
+                      }
+                      className="h-[38px] w-[250px] max-w-full rounded-[5px] border border-gray-300 px-3 text-sm font-semibold focus:border-primary focus:outline-none"
+                    />
+                    {isFixed ? (
+                      <span className="text-xs text-gray-400">{t('admin-fixed-note')}</span>
+                    ) : (
                       <button
                         type="button"
-                        aria-label={t('common-delete')}
-                        onClick={() =>
-                          patchSel({ exts: (soItem.exts ?? []).filter((_, j) => j !== i) })
-                        }
-                        className="inline-flex size-[18px] items-center justify-center rounded-full text-gray-400 hover:text-destructive"
+                        onClick={() => setToast(t('admin-toast-del-demo', { name: so.name }))}
+                        className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 px-3 text-[12.5px] font-semibold text-destructive hover:bg-l-red"
                       >
-                        <XMini />
+                        <TrashIcon /> {t('common-delete')}
                       </button>
-                    </span>
-                  ))}
-                  <input
-                    value={extInput}
-                    onChange={(e) =>
-                      setExtInput(e.target.value.replace(/[^a-z0-9]/gi, '').toLowerCase())
-                    }
-                    onKeyDown={(e) => e.key === 'Enter' && addExt()}
-                    placeholder="exe"
-                    className="h-7 w-[70px] rounded-[5px] border border-gray-300 px-2.5 text-xs focus:border-primary focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={addExt}
-                    className="inline-flex h-7 items-center rounded-[5px] bg-gray-100 px-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-200"
-                  >
-                    {t('admin-add')}
-                  </button>
+                    )}
+                  </div>
+
+                  {/* 공개 범위 */}
+                  <Section title={t('admin-scope')}>
+                    {isFixed ? (
+                      <span className="text-[12.5px] text-gray-500">
+                        {t('admin-fixed-scope-note')}
+                      </span>
+                    ) : (
+                      <>
+                        <div className="flex flex-wrap items-center gap-[18px]">
+                          <RadioRow
+                            label={t('admin-scope-all')}
+                            on={so.scope === 'all'}
+                            onClick={() => patchSel({ scope: 'all' })}
+                          />
+                          <RadioRow
+                            label={t('admin-scope-org')}
+                            on={so.scope === 'org'}
+                            onClick={() => patchSel({ scope: 'org' })}
+                          />
+                          {so.scope === 'org' && (
+                            <button
+                              type="button"
+                              onClick={() => setPicker({ mode: 'scope', target: 'sel' })}
+                              className="inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 px-3 text-[12.5px] font-semibold text-gray-700 hover:bg-gray-100"
+                            >
+                              <PersonIcon /> {so.scopeLabel || t('admin-scope-default')}
+                            </button>
+                          )}
+                        </div>
+                        <span className="text-[11.5px] text-gray-400">{t('admin-scope-hint')}</span>
+                      </>
+                    )}
+                  </Section>
+
+                  {/* 관리자 */}
+                  <Section title={t('admin-managers')}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex h-[34px] items-center gap-[7px] rounded-full bg-gray-50 pr-3 pl-1.5">
+                        <span className="inline-flex size-6 items-center justify-center rounded-full bg-l-blue text-[11px] font-bold text-on-pastel">
+                          {ME_NAME[0]}
+                        </span>
+                        <span className="text-[12.5px] text-gray-700">
+                          {ME_NAME} ({t('admin-me')})
+                        </span>
+                      </span>
+                      {(
+                        soItem?.admins ??
+                        (soKind === 'cat' || soKind === 'folder'
+                          ? (so as Cat).admins
+                          : undefined) ??
+                        []
+                      ).map((name) => (
+                        <span
+                          key={name}
+                          className="inline-flex h-[34px] items-center gap-[7px] rounded-full bg-gray-50 pr-2 pl-1.5"
+                        >
+                          <span className="inline-flex size-6 items-center justify-center rounded-full bg-l-green text-[11px] font-bold text-on-pastel">
+                            {name[0]}
+                          </span>
+                          <span className="text-[12.5px] text-gray-700">{name}</span>
+                          <button
+                            type="button"
+                            aria-label={t('common-delete')}
+                            onClick={() =>
+                              patchSel({
+                                admins: ((so as Item).admins ?? (so as Cat).admins ?? []).filter(
+                                  (n) => n !== name,
+                                ),
+                              })
+                            }
+                            className="inline-flex size-[18px] items-center justify-center rounded-full text-gray-400 hover:text-destructive"
+                          >
+                            <XMini />
+                          </button>
+                        </span>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setPicker({ mode: 'admin', target: 'sel' })}
+                        className="inline-flex h-[34px] items-center gap-1.5 rounded-full border border-dashed border-gray-300 px-[13px] text-[12.5px] font-semibold text-gray-500 hover:bg-gray-50"
+                      >
+                        <PlusMini /> {t('admin-add-manager')}
+                      </button>
+                    </div>
+                    <span className="text-[11.5px] text-gray-400">{t('admin-managers-hint')}</span>
+                  </Section>
+
+                  {/* 게시판 설정 */}
+                  {soKind === 'board' && soItem && (
+                    <Section title={t('admin-board-settings')}>
+                      <div className="flex flex-wrap items-center gap-[18px]">
+                        <span className="w-[70px] flex-none text-[12.5px] text-gray-500">
+                          {t('admin-type')}
+                        </span>
+                        {(['BOARD', 'PREVIEW', 'ALBUM'] as BType[]).map((bt) => (
+                          <RadioRow
+                            key={bt}
+                            label={t(BTYPE_KEY[bt])}
+                            on={soItem.btype === bt}
+                            onClick={() => patchSel({ btype: bt })}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-[18px]">
+                        <span className="w-[70px] flex-none text-[12.5px] text-gray-500">
+                          {t('admin-alarm-new')}
+                        </span>
+                        <Toggle
+                          on={!!soItem.alarm}
+                          onClick={() => patchSel({ alarm: !soItem.alarm })}
+                        />
+                      </div>
+                      <div className="flex items-center gap-[18px]">
+                        <span className="w-[70px] flex-none text-[12.5px] text-gray-500">
+                          {t('admin-active')}
+                        </span>
+                        <Toggle
+                          on={soItem.active}
+                          onClick={() => patchSel({ active: !soItem.active })}
+                        />
+                        <span className="text-xs text-gray-400">{t('admin-active-hint')}</span>
+                      </div>
+                    </Section>
+                  )}
+
+                  {/* 자료실 설정 */}
+                  {soKind === 'drive' && soItem && (
+                    <Section title={t('admin-drive-settings')}>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="w-[110px] flex-none text-[12.5px] text-gray-500">
+                          {t('admin-file-max')}
+                        </span>
+                        {FILE_MAX_OPTS.map((v) => (
+                          <CapChip
+                            key={v}
+                            label={v}
+                            on={soItem.fileMax === v}
+                            onClick={() => patchSel({ fileMax: v })}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="w-[110px] flex-none text-[12.5px] text-gray-500">
+                          {t('admin-total-max')}
+                        </span>
+                        {TOTAL_MAX_OPTS.map((v) => (
+                          <CapChip
+                            key={v}
+                            label={v}
+                            on={soItem.totalMax === v}
+                            onClick={() => patchSel({ totalMax: v })}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap items-start gap-3">
+                        <span className="w-[110px] flex-none pt-1.5 text-[12.5px] text-gray-500">
+                          {t('admin-ext-block')}
+                        </span>
+                        <div className="flex min-w-[200px] flex-1 flex-wrap items-center gap-1.5">
+                          {(soItem.exts ?? []).map((x, i) => (
+                            <span
+                              key={x}
+                              className="inline-flex h-[26px] items-center gap-1 rounded-full bg-l-gray pr-1 pl-2.5 text-xs font-semibold text-gray-700"
+                            >
+                              .{x}
+                              <button
+                                type="button"
+                                aria-label={t('common-delete')}
+                                onClick={() =>
+                                  patchSel({ exts: (soItem.exts ?? []).filter((_, j) => j !== i) })
+                                }
+                                className="inline-flex size-[18px] items-center justify-center rounded-full text-gray-400 hover:text-destructive"
+                              >
+                                <XMini />
+                              </button>
+                            </span>
+                          ))}
+                          <input
+                            value={extInput}
+                            onChange={(e) =>
+                              setExtInput(e.target.value.replace(/[^a-z0-9]/gi, '').toLowerCase())
+                            }
+                            onKeyDown={(e) => e.key === 'Enter' && addExt()}
+                            placeholder="exe"
+                            className="h-7 w-[70px] rounded-[5px] border border-gray-300 px-2.5 text-xs focus:border-primary focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={addExt}
+                            className="inline-flex h-7 items-center rounded-[5px] bg-gray-100 px-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-200"
+                          >
+                            {t('admin-add')}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="w-[110px] flex-none text-[12.5px] text-gray-500">
+                          {t('admin-drive-alarm')}
+                        </span>
+                        <Toggle
+                          on={!!soItem.alarm}
+                          onClick={() => patchSel({ alarm: !soItem.alarm })}
+                        />
+                      </div>
+                    </Section>
+                  )}
+
+                  {/* 저장 */}
+                  <div className="flex justify-end border-t border-gray-100 pt-3.5">
+                    <button
+                      type="button"
+                      onClick={() => setToast(t('admin-toast-saved'))}
+                      className="inline-flex h-[38px] items-center rounded-[5px] bg-primary px-[18px] text-[13.5px] font-semibold text-white hover:bg-ov-blue-700"
+                    >
+                      {t('common-save')}
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="w-[110px] flex-none text-[12.5px] text-gray-500">
-                  {t('admin-drive-alarm')}
-                </span>
-                <Toggle on={!!soItem.alarm} onClick={() => patchSel({ alarm: !soItem.alarm })} />
-              </div>
-            </Section>
+              <span className="text-xs text-gray-400">{t('admin-hint')}</span>
+            </div>
           )}
-
-          {/* 저장 */}
-          <div className="flex justify-end border-t border-gray-100 pt-3.5">
-            <button
-              type="button"
-              onClick={() => setToast(t('admin-toast-saved'))}
-              className="inline-flex h-[38px] items-center rounded-[5px] bg-primary px-[18px] text-[13.5px] font-semibold text-white hover:bg-ov-blue-700"
-            >
-              {t('common-save')}
-            </button>
-          </div>
         </div>
       </div>
 
@@ -1011,26 +1103,35 @@ function Field({
   )
 }
 
-function RoleChip({
-  on,
-  onClick,
-  children,
-}: {
-  on: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
+// 설정 레일 아이콘 — 일반=종, 메인화면=창, 게시판 관리=폴더
+function TabIcon({ id }: { id: EnvTab }) {
+  const common = {
+    className: 'size-4',
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.8,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': true,
+  }
+  if (id === 'general')
+    return (
+      <svg {...common} strokeLinecap="round">
+        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8" />
+        <path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" />
+      </svg>
+    )
+  if (id === 'main')
+    return (
+      <svg {...common}>
+        <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+        <path d="M3.5 9.5h17" />
+      </svg>
+    )
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        'inline-flex h-7 items-center rounded-full px-3.5 text-[13px] font-semibold whitespace-nowrap',
-        on ? 'bg-primary text-white' : 'text-gray-600',
-      ].join(' ')}
-    >
-      {children}
-    </button>
+    <svg {...common}>
+      <path d="M3.5 7a1.5 1.5 0 0 1 1.5-1.5h4.5l2 2.5H19A1.5 1.5 0 0 1 20.5 9.5v9A1.5 1.5 0 0 1 19 20H5a1.5 1.5 0 0 1-1.5-1.5z" />
+    </svg>
   )
 }
 

@@ -126,6 +126,11 @@
   --ov-blue-700: #2145d9;
   --ov-blue-800: #122db3;
   --ov-blue-900: #07198c;
+
+  /* 스크롤바 (디자인 '스크롤바 디자인.dc' 1b/1a 토큰) */
+  --scrollbar-size: 8px;
+  --scrollbar-thumb: #cbd0d8;
+  --scrollbar-thumb-hover: #9ca3af;
 }
 
 /* 다크 테마 — 화면별 .dc(예: 화면 07 자료실) per-screen dark 토큰 반영.
@@ -186,6 +191,10 @@
   --color-gray-700: #dfdfe5;
   --color-gray-800: #efeff2;
   --color-gray-900: #f7f7fa;
+
+  /* 스크롤바 다크 (디자인 --dk-thumb / --dk-thumb-h) */
+  --scrollbar-thumb: #575a5e;
+  --scrollbar-thumb-hover: #6b7280;
 }
 
 @layer base {
@@ -200,6 +209,46 @@
   html {
     @apply font-sans;
   }
+}
+
+/* ── 스크롤바 ──────────────────────────────────────────────
+   디자인 '스크롤바 디자인.dc' 기준.
+   전역 기본 = 1a(표준 8px 라운드) — 스크롤이 생기면 항상 보인다.
+   사이드바처럼 조용해야 하는 영역엔 .scrollbar-hover(1b 호버 노출형)를 붙인다. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+*::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--scrollbar-size);
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* 1b 호버 노출형 — 평소엔 thumb 투명, 영역에 마우스를 올리면 드러난다 */
+.scrollbar-hover {
+  scrollbar-color: transparent transparent;
+}
+.scrollbar-hover:hover {
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+.scrollbar-hover::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+.scrollbar-hover:hover::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
 }
 
 /* 로그인 버튼 지연 스피너 — 250ms 넘어갈 때만 텍스트↔스피너 전환 (빠른 응답 깜빡임 방지) */

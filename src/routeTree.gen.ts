@@ -10,11 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as DriveRouteImport } from './routes/drive'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MyRouteImport } from './routes/my'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as WriteRouteImport } from './routes/write'
 import { Route as BoardBoardIdRouteImport } from './routes/board.$boardId'
 import { Route as PostPostIdRouteImport } from './routes/post.$postId'
@@ -22,11 +22,6 @@ import { Route as PostPostIdRouteImport } from './routes/post.$postId'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DriveRoute = DriveRouteImport.update({
@@ -49,6 +44,11 @@ const SearchRoute = SearchRouteImport.update({
   path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WriteRoute = WriteRouteImport.update({
   id: '/write',
   path: '/write',
@@ -67,22 +67,22 @@ const PostPostIdRoute = PostPostIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/drive': typeof DriveRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
   '/search': typeof SearchRoute
+  '/settings': typeof SettingsRoute
   '/write': typeof WriteRoute
   '/board/$boardId': typeof BoardBoardIdRoute
   '/post/$postId': typeof PostPostIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/drive': typeof DriveRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
   '/search': typeof SearchRoute
+  '/settings': typeof SettingsRoute
   '/write': typeof WriteRoute
   '/board/$boardId': typeof BoardBoardIdRoute
   '/post/$postId': typeof PostPostIdRoute
@@ -90,11 +90,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/drive': typeof DriveRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
   '/search': typeof SearchRoute
+  '/settings': typeof SettingsRoute
   '/write': typeof WriteRoute
   '/board/$boardId': typeof BoardBoardIdRoute
   '/post/$postId': typeof PostPostIdRoute
@@ -103,33 +103,33 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/admin'
     | '/drive'
     | '/login'
     | '/my'
     | '/search'
+    | '/settings'
     | '/write'
     | '/board/$boardId'
     | '/post/$postId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin'
     | '/drive'
     | '/login'
     | '/my'
     | '/search'
+    | '/settings'
     | '/write'
     | '/board/$boardId'
     | '/post/$postId'
   id:
     | '__root__'
     | '/'
-    | '/admin'
     | '/drive'
     | '/login'
     | '/my'
     | '/search'
+    | '/settings'
     | '/write'
     | '/board/$boardId'
     | '/post/$postId'
@@ -137,11 +137,11 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
   DriveRoute: typeof DriveRoute
   LoginRoute: typeof LoginRoute
   MyRoute: typeof MyRoute
   SearchRoute: typeof SearchRoute
+  SettingsRoute: typeof SettingsRoute
   WriteRoute: typeof WriteRoute
   BoardBoardIdRoute: typeof BoardBoardIdRoute
   PostPostIdRoute: typeof PostPostIdRoute
@@ -154,13 +154,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/drive': {
@@ -191,6 +184,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/write': {
       id: '/write'
       path: '/write'
@@ -217,11 +217,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
   DriveRoute: DriveRoute,
   LoginRoute: LoginRoute,
   MyRoute: MyRoute,
   SearchRoute: SearchRoute,
+  SettingsRoute: SettingsRoute,
   WriteRoute: WriteRoute,
   BoardBoardIdRoute: BoardBoardIdRoute,
   PostPostIdRoute: PostPostIdRoute,

@@ -22,6 +22,11 @@ export interface CategoryBoard {
   is_bookmark?: unknown
   is_admin?: unknown
   is_category_admin?: unknown
+  // 게시판별 '내' 알림 설정 = COALESCE(user_board_settings.*, true).
+  // ⚠ /category 응답에만 있고 /category/admin 분기에는 없다 → useMemberCategories로 읽을 것.
+  is_board_member_post_alarm?: unknown
+  is_board_member_notice_alarm?: unknown
+  is_board_member_comment_alarm?: unknown
 }
 
 export interface Category {

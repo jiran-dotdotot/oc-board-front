@@ -8,8 +8,7 @@ import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { useCategories } from '@/hooks/useCategories'
 import { useMe } from '@/hooks/useMe'
 import { type CategoryBoard, isDriveBoard } from '@/types/category'
-import { isAnyAdmin } from '@/types/user'
-import { favoriteBoards, flattenCategories } from '@/utils/category'
+import { buildNavTree, favoriteBoards } from '@/utils/category'
 
 function itemClass(active: boolean) {
   return [
@@ -20,21 +19,20 @@ function itemClass(active: boolean) {
 
 const SECTION_LABEL = 'px-3.5 pt-4 pb-1.5 text-[11px] font-semibold tracking-[0.06em] text-gray-400'
 
-function SidebarNav({
-  pathname,
-  isAdmin,
-  onNavigate,
-}: {
-  pathname: string
-  isAdmin: boolean
-  onNavigate?: () => void
-}) {
+// 공개 게시판 섹션은 카테고리 id가 없어 접힘 상태용 고정 키를 쓴다.
+const PUBLIC_KEY = '__public'
+
+function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
   const { t } = useTranslation()
   // 사이드바 게시판 트리 = GET /category (공개 게시판 + 내 카테고리). 두 번 렌더돼도 쿼리는 공유됨.
   const { data: tree } = useCategories()
   const favorites = favoriteBoards(tree)
   const publicBoards = tree?.public_boards ?? []
-  const sections = flattenCategories(tree?.categories)
+  const sections = buildNavTree(tree?.categories)
+  // 접힌 폴더만 기억한다(기본 펼침) — 디자인의 navFolderOpen[id] !== false 와 동일.
+  const [closed, setClosed] = useState<Record<string, boolean>>({})
+  const toggle = (id: string) => setClosed((c) => ({ ...c, [id]: !c[id] }))
+
   return (
     <>
       <Link
@@ -45,64 +43,160 @@ function SidebarNav({
         <PencilIcon />
         {t('board-write')}
       </Link>
-      <Link to="/" onClick={onNavigate} className={itemClass(pathname === '/')}>
+
+      <Link to="/" onClick={onNavigate} className={`flex-none ${itemClass(pathname === '/')}`}>
         <HomeIcon />
         {t('nav-home')}
       </Link>
-      <button type="button" className={itemClass(false)}>
-        <ClockIcon />
-        {t('nav-recent')}
-        <span className="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-l-blue px-1.5 text-[10.5px] font-bold text-primary">
-          3
-        </span>
-      </button>
 
-      {favorites.length > 0 && (
-        <>
-          <div className={SECTION_LABEL}>{t('nav-favorites')}</div>
-          {favorites.map((b) => (
-            <BoardNavItem key={b.id} board={b} pathname={pathname} onNavigate={onNavigate} star />
+      {/* 여기만 스크롤 — 위(글쓰기·홈)와 아래(내 활동·환경 설정)는 고정.
+          ⚠ 스크롤 박스와 flex 컬럼을 분리해야 한다: 스크롤 박스가 곧 flex 컨테이너면
+          자식들이 flex-shrink로 눌려 버려서 넘치지 않고, 그래서 스크롤바가 생기지 않는다. */}
+      <div className="scrollbar-hover min-h-0 flex-1 overflow-y-auto">
+        <div className="flex flex-col gap-0.5">
+          {favorites.length > 0 && (
+            <>
+              <div className={SECTION_LABEL}>{t('nav-favorites')}</div>
+              {favorites.map((b) => (
+                <BoardNavItem
+                  key={b.id}
+                  board={b}
+                  pathname={pathname}
+                  onNavigate={onNavigate}
+                  star
+                />
+              ))}
+            </>
+          )}
+
+          {publicBoards.length > 0 && (
+            <>
+              <SectionToggle
+                label={`${t('nav-category')} · ${t('nav-public')}`}
+                open={!closed[PUBLIC_KEY]}
+                onClick={() => toggle(PUBLIC_KEY)}
+              />
+              <Collapse open={!closed[PUBLIC_KEY]} rail>
+                {publicBoards.map((b) => (
+                  <BoardNavItem key={b.id} board={b} pathname={pathname} onNavigate={onNavigate} />
+                ))}
+              </Collapse>
+            </>
+          )}
+
+          {sections.map((s) => (
+            <Fragment key={s.id}>
+              <SectionToggle
+                label={`${t('nav-category')} · ${s.name}`}
+                open={!closed[s.id]}
+                onClick={() => toggle(s.id)}
+              />
+              <Collapse open={!closed[s.id]} rail>
+                {s.folders.map((f) => (
+                  <Fragment key={f.id}>
+                    <button
+                      type="button"
+                      onClick={() => toggle(f.id)}
+                      aria-expanded={!closed[f.id]}
+                      className="flex h-9 items-center gap-2 rounded-lg px-3 text-[13px] font-semibold text-gray-700 hover:bg-gray-50"
+                    >
+                      <CaretIcon open={!closed[f.id]} />
+                      <FolderIcon />
+                      <span className="min-w-0 flex-1 truncate text-left">{f.name}</span>
+                    </button>
+                    <Collapse open={!closed[f.id]} rail>
+                      {f.boards.map((b) => (
+                        <BoardNavItem
+                          key={b.id}
+                          board={b}
+                          pathname={pathname}
+                          onNavigate={onNavigate}
+                          indent
+                        />
+                      ))}
+                    </Collapse>
+                  </Fragment>
+                ))}
+                {s.boards.map((b) => (
+                  <BoardNavItem key={b.id} board={b} pathname={pathname} onNavigate={onNavigate} />
+                ))}
+              </Collapse>
+            </Fragment>
           ))}
-        </>
-      )}
+        </div>
+      </div>
 
-      {publicBoards.length > 0 && (
-        <>
-          <div className={SECTION_LABEL}>
-            {t('nav-category')} · {t('nav-public')}
-          </div>
-          {publicBoards.map((b) => (
-            <BoardNavItem key={b.id} board={b} pathname={pathname} onNavigate={onNavigate} />
-          ))}
-        </>
-      )}
-
-      {sections.map((s) => (
-        <Fragment key={s.id}>
-          <div className={SECTION_LABEL}>
-            {t('nav-category')} · {s.name}
-          </div>
-          {s.boards.map((b) => (
-            <BoardNavItem key={b.id} board={b} pathname={pathname} onNavigate={onNavigate} />
-          ))}
-        </Fragment>
-      ))}
-
-      <div className="flex-1" />
-      <Link to="/my" onClick={onNavigate} className={itemClass(pathname === '/my')}>
-        <UserIcon />
-        {t('nav-my')}
-      </Link>
-      {isAdmin && (
-        <>
-          <div className="mx-1.5 my-2.5 h-px bg-gray-100" />
-          <Link to="/admin" onClick={onNavigate} className={itemClass(pathname === '/admin')}>
-            <GearIcon />
-            {t('nav-admin')}
-          </Link>
-        </>
-      )}
+      {/* 하단 고정 */}
+      <div className="flex flex-none flex-col gap-0.5 pt-1">
+        <Link to="/my" onClick={onNavigate} className={itemClass(pathname === '/my')}>
+          <UserIcon />
+          {t('nav-my')}
+        </Link>
+        {/* 환경 설정은 전원 노출 — 권한은 화면 안에서 탭 단위로 걸린다 */}
+        <div className="mx-1.5 my-2.5 h-px bg-gray-100" />
+        <Link to="/settings" onClick={onNavigate} className={itemClass(pathname === '/settings')}>
+          <GearIcon />
+          {t('nav-settings')}
+        </Link>
+      </div>
     </>
+  )
+}
+
+// 카테고리 섹션 헤더 — 라벨 자체가 접기 토글.
+function SectionToggle({
+  label,
+  open,
+  onClick,
+}: {
+  label: string
+  open: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-expanded={open}
+      className="mt-1.5 flex h-9 w-full items-center gap-1.5 rounded-lg px-3 text-[13px] font-semibold text-gray-700 hover:bg-gray-50"
+    >
+      <CaretIcon open={open} />
+      <span className="min-w-0 truncate text-left">{label}</span>
+    </button>
+  )
+}
+
+// 높이를 재지 않는 접기 애니메이션 — grid-template-rows 0fr↔1fr 전환(네이티브 CSS).
+// ⚠ 클리핑 박스(overflow-hidden)와 flex 컬럼은 반드시 분리한다. 한 요소로 합치면
+// 자식들이 flex-shrink로 눌렸다 펴져서, 위에서 밀려나오는 대신 크기가 배분되는 느낌이 난다.
+// rail: 카테고리 묶음을 왼쪽 세로선으로 표시 — 한 단계 들여쓰기(~34px)보다 훨씬 싸게
+// '이 아래는 같은 카테고리' 를 전달한다. 폴더 안 게시판은 rail을 한 번 더 중첩(2뎁스 구분).
+function Collapse({
+  open,
+  rail,
+  children,
+}: {
+  open: boolean
+  rail?: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <div
+      className={[
+        'grid transition-[grid-template-rows] duration-200 ease-out',
+        open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+      ].join(' ')}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={['flex flex-col gap-0.5', rail ? 'ml-2 border-l border-gray-200' : ''].join(
+            ' ',
+          )}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -112,13 +206,18 @@ function BoardNavItem({
   pathname,
   onNavigate,
   star,
+  indent,
 }: {
   board: CategoryBoard
   pathname: string
   onNavigate?: () => void
   star?: boolean
+  indent?: boolean // 폴더(하위 카테고리) 안의 게시판
 }) {
   const drive = isDriveBoard(board)
+  // 폴더 안 게시판: 예전엔 pl-[34px]로 깊게 밀었지만, 이제 폴더 rail(세로선)이 소속을
+  // 표시하므로 얕게만 띄운다 — 제목 폭을 되돌려 받는다. (arbitrary 값으로 itemClass의 px-3.5 확실히 override)
+  const pad = indent ? ' pl-[8px]' : ''
   const inner = (
     <>
       {star ? (
@@ -136,7 +235,7 @@ function BoardNavItem({
       to="/drive"
       search={{ b: board.id }}
       onClick={onNavigate}
-      className={itemClass(pathname === '/drive')}
+      className={itemClass(pathname === '/drive') + pad}
     >
       {inner}
     </Link>
@@ -145,10 +244,46 @@ function BoardNavItem({
       to="/board/$boardId"
       params={{ boardId: board.id }}
       onClick={onNavigate}
-      className={itemClass(pathname === `/board/${board.id}`)}
+      className={itemClass(pathname === `/board/${board.id}`) + pad}
     >
       {inner}
     </Link>
+  )
+}
+
+function CaretIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={[
+        'size-3 flex-none text-gray-400 transition-transform duration-200',
+        open ? 'rotate-90' : '',
+      ].join(' ')}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M9 5l7 7-7 7" />
+    </svg>
+  )
+}
+
+function FolderIcon() {
+  return (
+    <svg
+      className="size-[15px] flex-none text-warning"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3.5 7a1.5 1.5 0 0 1 1.5-1.5h4.5l2 2.5H19A1.5 1.5 0 0 1 20.5 9.5v9A1.5 1.5 0 0 1 19 20H5a1.5 1.5 0 0 1-1.5-1.5z" />
+    </svg>
   )
 }
 
@@ -166,12 +301,11 @@ export function AppShell() {
   const { pathname } = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
-  // 로그인 후 셸 진입 시 /me 호출 → 사용자 정보 + 역할(관리자 메뉴 노출)
+  // 로그인 후 셸 진입 시 /me 호출 → 사용자 정보(프로필 표시)
   const { data: me } = useMe()
   const meName = me?.name ?? ''
   const meEmail = me?.email ?? ''
   const meInitial = meName.charAt(0)
-  const isAdmin = isAnyAdmin(me)
 
   return (
     <div className="flex min-h-svh flex-col bg-background">
@@ -268,11 +402,14 @@ export function AppShell() {
       </header>
 
       {/* ── 본문(사이드바 + 콘텐츠) ── */}
-      <div className="flex flex-1">
-        <aside className="hidden w-[232px] flex-none flex-col gap-0.5 border-r border-gray-200 px-2.5 py-3.5 min-[631px]:flex">
-          <SidebarNav pathname={pathname} isAdmin={isAdmin} />
+      {/* 데스크탑은 톱바(58px + border 1px) 아래를 뷰포트 높이로 고정 — 사이드바/본문이 각자 스크롤한다.
+          ⚠ flex-none 필수: 부모가 flex-col이라 flex-1(=flex-basis:0)이 height보다 우선해 높이 제약이 무시된다.
+          모바일(<631px)은 기존대로 페이지 전체 스크롤. */}
+      <div className="flex flex-1 min-[631px]:h-[calc(100svh-59px)] min-[631px]:flex-none min-[631px]:overflow-hidden">
+        <aside className="hidden h-full w-[232px] flex-none flex-col gap-0.5 border-r border-gray-200 px-2.5 py-3.5 min-[631px]:flex">
+          <SidebarNav pathname={pathname} />
         </aside>
-        <main className="min-w-0 flex-1 p-5 pb-[76px] min-[631px]:p-6 min-[631px]:pb-6">
+        <main className="min-w-0 flex-1 p-5 pb-[76px] min-[631px]:overflow-y-auto min-[631px]:p-6 min-[631px]:pb-6">
           <Outlet />
         </main>
       </div>
@@ -322,12 +459,8 @@ export function AppShell() {
                 <CloseIcon />
               </button>
             </div>
-            <div className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 py-3.5">
-              <SidebarNav
-                pathname={pathname}
-                isAdmin={isAdmin}
-                onNavigate={() => setDrawerOpen(false)}
-              />
+            <div className="flex min-h-0 flex-1 flex-col gap-0.5 px-2.5 py-3.5">
+              <SidebarNav pathname={pathname} onNavigate={() => setDrawerOpen(false)} />
             </div>
           </div>
         </div>
@@ -421,22 +554,6 @@ function HomeIcon({ className }: IconProps) {
     >
       <path d="M3 11l9-7 9 7" />
       <path d="M5.5 9.5V20h13V9.5" />
-    </svg>
-  )
-}
-function ClockIcon({ className }: IconProps) {
-  return (
-    <svg
-      className={className ?? base}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M12 7.5V12l3 2" />
     </svg>
   )
 }

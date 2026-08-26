@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
-import { ORG, countUnder, isTeam, orgById, orgKids, teamsUnder } from '@/components/admin/adminData'
+import { ORG, countUnder, isTeam, orgById, orgKids, teamsUnder } from '@/components/settings/treeData'
 
 export type PickerMode = 'scope' | 'admin'
 
