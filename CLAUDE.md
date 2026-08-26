@@ -24,7 +24,7 @@
 
 - Main branch: `develop`
 - Branch naming: `feat/<topic>`, `fix/<topic>`
-- Hosting: 원격 저장소 없음 — 로컬 커밋만 유지 (원격 추가 시 여기에 기재).
+- Hosting: GitHub — `origin` = https://github.com/jiran-dotdotot/oc-board-front.git (기본 브랜치 `develop`).
 - Commit/PR messages in **한국어 (Korean)**
 - Commit format: `<branch> <summary>`
 
