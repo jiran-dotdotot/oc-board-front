@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { PostForm } from '@/components/board/PostForm'
+import { WriteScreen } from '@/components/board/WriteScreen'
 
 export const Route = createFileRoute('/write')({
-  component: PostForm,
+  component: WriteScreen,
 })

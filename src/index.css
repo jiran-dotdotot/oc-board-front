@@ -1,13 +1,42 @@
+/* OfficeWave 브랜드 서체 — Pretendard (디자인 시스템 표준, Geist 대체).
+   @import url()은 다른 규칙보다 먼저 와야 하므로 맨 위 고정
+   (Tailwind는 자기 @import를 아래에서 규칙으로 인라인함). */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css');
+
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
-@import '@fontsource-variable/geist';
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: 'Geist Variable', sans-serif;
+  --font-sans:
+    'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui,
+    'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  /* OfficeWave 브랜드 블루 램프 — 라이트/다크 반전 위해 var 참조 (값은 :root / .dark) */
+  --color-ov-blue-50: var(--ov-blue-50);
+  --color-ov-blue-100: var(--ov-blue-100);
+  --color-ov-blue-200: var(--ov-blue-200);
+  --color-ov-blue-300: var(--ov-blue-300);
+  --color-ov-blue-400: var(--ov-blue-400);
+  --color-ov-blue-500: var(--ov-blue-500);
+  --color-ov-blue-600: var(--ov-blue-600);
+  --color-ov-blue-700: var(--ov-blue-700);
+  --color-ov-blue-800: var(--ov-blue-800);
+  --color-ov-blue-900: var(--ov-blue-900);
+  --color-l-red: #fae8e7;
+  --color-l-orange: #ffecdd;
+  --color-l-yellow: #fff7db;
+  --color-l-green: #e5f8f1;
+  --color-l-blue: #e8efff;
+  --color-l-purple: #f1ebff;
+  --color-l-pink: #ffebfb;
+  --color-l-lime: #fcffdd;
+  --color-l-mint: #edfeff;
+  --color-l-gray: #f3f4f6;
+  --color-warning: #ff9045;
+  --color-on-pastel: #1f2937;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,73 +77,115 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ============================================================
+   OfficeWave 디자인 토큰 → shadcn/ui 계약 (라이트)
+   출처: OfficeWave Design System (Claude Design "전체 페이지 리뉴얼 계획")
+   ============================================================ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: #ffffff;
+  --foreground: #21242b;
+  --card: #ffffff;
+  --card-foreground: #21242b;
+  --popover: #ffffff;
+  --popover-foreground: #21242b;
+  --primary: #3362ff;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f4f6;
+  --secondary-foreground: #21242b;
+  --muted: #f3f4f6;
+  --muted-foreground: #5d6c7d;
+  --accent: #f0f6ff;
+  --accent-foreground: #122db3;
+  --destructive: #fd4c45;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #3362ff;
+  --chart-1: #3362ff;
+  --chart-2: #58bd7d;
+  --chart-3: #ff9045;
+  --chart-4: #7543ff;
+  --chart-5: #ff50b9;
+  --radius: 0.5rem;
+  --sidebar: #f9fafb;
+  --sidebar-foreground: #21242b;
+  --sidebar-primary: #3362ff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f3f4f6;
+  --sidebar-accent-foreground: #21242b;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #3362ff;
+
+  /* ov-blue 램프 (라이트) — @theme inline 이 var 참조 */
+  --ov-blue-50: #f7faff;
+  --ov-blue-100: #f0f6ff;
+  --ov-blue-200: #d6e5ff;
+  --ov-blue-300: #adc9ff;
+  --ov-blue-400: #85a9ff;
+  --ov-blue-500: #5c87ff;
+  --ov-blue-600: #3362ff;
+  --ov-blue-700: #2145d9;
+  --ov-blue-800: #122db3;
+  --ov-blue-900: #07198c;
 }
 
+/* 다크 테마 — 화면별 .dc(예: 화면 07 자료실) per-screen dark 토큰 반영.
+   페이지 배경 = gray-50(#1C1C1F), 카드/표면 = --color-bg(#26262A) → 페이지·카드 톤 분리. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #1c1c1f;
+  --foreground: #f7f7fa;
+  --card: #26262a;
+  --card-foreground: #f7f7fa;
+  --popover: #2e2e33;
+  --popover-foreground: #f7f7fa;
+  --primary: #4b79ff;
+  --primary-foreground: #ffffff;
+  --secondary: #303036;
+  --secondary-foreground: #f7f7fa;
+  --muted: #303036;
+  --muted-foreground: #a4a4af;
+  --accent: rgba(75, 121, 255, 0.16);
+  --accent-foreground: #93aeff;
+  --destructive: #fd4c45;
+  --border: #3c3c43;
+  --input: #4f4f58;
+  --ring: #4b79ff;
+  --chart-1: #4b79ff;
+  --chart-2: #5ee4af;
+  --chart-3: #ffb17c;
+  --chart-4: #956ffe;
+  --chart-5: #ff50b9;
+  --sidebar: #1c1c1f;
+  --sidebar-foreground: #f7f7fa;
+  --sidebar-primary: #4b79ff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(75, 121, 255, 0.16);
+  --sidebar-accent-foreground: #93aeff;
+  --sidebar-border: #3c3c43;
+  --sidebar-ring: #4b79ff;
+
+  /* ov-blue 램프 (다크) — 50~200 은 블루 틴트, 300+ 는 밝은 블루 */
+  --ov-blue-50: rgba(75, 121, 255, 0.16);
+  --ov-blue-100: rgba(75, 121, 255, 0.24);
+  --ov-blue-200: rgba(124, 158, 255, 0.38);
+  --ov-blue-300: #4a72ff;
+  --ov-blue-400: #7fa0ff;
+  --ov-blue-500: #93aeff;
+  --ov-blue-600: #4b79ff;
+  --ov-blue-700: #6d93ff;
+  --ov-blue-800: #b9ccff;
+  --ov-blue-900: #d6e5ff;
+
+  /* Tailwind gray 램프 반전 (per-screen .dc dark 값) */
+  --color-gray-50: #1c1c1f;
+  --color-gray-100: #303036;
+  --color-gray-200: #3c3c43;
+  --color-gray-300: #4f4f58;
+  --color-gray-400: #8e8e99;
+  --color-gray-500: #a4a4af;
+  --color-gray-600: #c7c7d0;
+  --color-gray-700: #dfdfe5;
+  --color-gray-800: #efeff2;
+  --color-gray-900: #f7f7fa;
 }
 
 @layer base {
@@ -123,8 +194,22 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-size: 0.875rem; /* OfficeWave는 조밀: 14px 기준 */
+    line-height: 1.45;
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* 로그인 버튼 지연 스피너 — 250ms 넘어갈 때만 텍스트↔스피너 전환 (빠른 응답 깜빡임 방지) */
+@keyframes login-hide {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes login-show {
+  to {
+    opacity: 1;
   }
 }

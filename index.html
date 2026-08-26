@@ -5,6 +5,14 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>app-tmp</title>
+    <script>
+      // 다크모드 초기 적용 (FOUC 방지) — 저장된 선호 또는 시스템 설정
+      try {
+        var t = localStorage.getItem('theme')
+        if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme: dark)').matches))
+          document.documentElement.classList.add('dark')
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

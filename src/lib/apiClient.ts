@@ -1,3 +1,4 @@
+import { clearTokens, getAccessToken } from '@/lib/authStorage'
 import axios from 'axios'
 
 /**
@@ -11,19 +12,27 @@ export const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// 요청: 저장된 토큰이 있으면 Authorization 헤더 부착. (auth 스토어 연결 지점)
+// 요청: 저장된 access token이 있으면 Authorization 헤더 부착.
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('oc-board-token')
+  const token = getAccessToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
   return config
 })
 
-// 응답: 전역 에러 처리 지점. (예: 401 → 로그인 유도 등을 여기에 연결)
+// 응답: 401(만료/무효) → 토큰 정리 후 로그인으로. (로그인 요청 자체는 제외)
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => Promise.reject(error),
+  (error) => {
+    const status = error?.response?.status
+    const url: string = error?.config?.url ?? ''
+    if (status === 401 && !url.includes('/login')) {
+      clearTokens()
+      if (window.location.pathname !== '/login') window.location.assign('/login')
+    }
+    return Promise.reject(error)
+  },
 )
 
 export default apiClient
