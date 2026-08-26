@@ -84,9 +84,15 @@ Every code change must pass all of these before it's "done":
 - `npm run test:e2e` [if applicable]
 
 ## API type policy
-- Generate response types from the actual API source (don't guess). If unknown, read the source or ask.
+- IMPORTANT: **기능/페이지 개발 전에 `docs/guides/api-catalog.md`(전체 72개 엔드포인트 색인)를 먼저 확인한다.**
+  이미 서버가 제공하는 API가 있으면 구현 전에 "이런 API가 있는데 붙일까요?" 로 먼저 제안할 것.
+  - 색인: `docs/guides/api-catalog.md` (도메인별 표 + 화면↔API 매핑 + 전역 함정 12가지)
+  - 전문: `docs/api/00-overview.md` ~ `10-*.md` (백엔드 `jupiter-board-api/doc/api/` 스냅샷 — **직접 수정 금지**, 갱신은 재복사)
+  - 프론트 연동 상세(service/hook/캐싱): `docs/guides/api-reference.md` · 권한: `docs/guides/permissions-guide.md`
+- Generate response types from the actual API source (don't guess). If unknown, read `docs/api/` or ask.
 - Save generated types in `src/types/`; reuse existing ones.
 - HTTP는 `src/lib/apiClient.ts`(axios), 서버 상태는 `@tanstack/react-query`.
+- 쿼리 불리언은 **`1`/`0`** (문자열 `"false"`도 truthy로 켜짐), 빈 문자열 파라미터는 0건 → 생략. 상세는 카탈로그 §0.
 
 ## Golden Reference
 - 예시 도메인: `src/components/board/`(`types.ts` · `constants.ts` · `BoardList.tsx` · `PostForm.tsx`) + 라우트 `src/routes/index.tsx`·`write.tsx`.
