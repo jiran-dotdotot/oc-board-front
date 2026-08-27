@@ -47,6 +47,12 @@ export interface Post {
   files?: PostFile[]
   user?: PostUser
   thumbnail?: PostThumbnail | null
+  // $appends — 매 응답에 항상 포함(docs/api/05-post-read.md §공통). 현재 유저 기준 계산값.
+  is_writable?: boolean // 내 글 여부(작성자==나) — "쓰기 권한"이 아님
+  is_view?: boolean // 내가 읽었는지(읽음=true, 내 글이면 항상 true)
+  is_bookmark?: boolean // 내 북마크 여부
+  is_like?: boolean // 내 공감 여부
+  schedule_at_tz?: string | null // 예약 게시 일시(앱 타임존)
 }
 
 // Laravel 페이지네이션 응답

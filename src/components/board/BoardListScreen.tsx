@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 
 import { BOARDS, DEFAULT_BOARD } from './listData'
 import type { BoardRow, BoardView } from './listData'
-import { usePosts } from '@/hooks/usePosts'
+import { useNotices, usePosts } from '@/hooks/usePosts'
 import type { Post } from '@/types/post'
 
 const COLS = 'minmax(0,1fr) 130px 110px 96px 64px 64px'
@@ -21,7 +21,7 @@ function pastel(seed: string) {
 function fmtDate(s?: string | null) {
   return s ? s.slice(0, 10).replace(/-/g, '.') : ''
 }
-// API Post → 목록 뷰모델(BoardRow). 목록 응답엔 읽음여부·아바타색이 없어 기본/파생값 사용.
+// API Post → 목록 뷰모델(BoardRow). 읽음여부는 is_view($appends), 아바타색은 이름/id 파생.
 function toRow(p: Post): BoardRow {
   const author = p.user?.name ?? ''
   return {
@@ -36,7 +36,7 @@ function toRow(p: Post): BoardRow {
     likes: p.like_count,
     comments: p.comment_count,
     notice: (p.badges ?? []).some((b) => b.type === 'NOTICE'),
-    read: true,
+    read: p.is_view ?? true, // 서버가 글마다 읽음여부 제공(없으면 읽음 취급)
     hasFile: (p.files?.length ?? 0) > 0,
     snippet: p.text_content ?? '',
     hasThumb: !!p.thumbnail,
@@ -67,21 +67,25 @@ export function BoardListScreen() {
 
   // 라우트 param이 실제 UUID면 board_id로 필터, 샘플 슬러그면 전체 접근 가능 글
   const boardIdParam = UUID_RE.test(boardId) ? boardId : undefined
+  // 안읽음(안 본 글)=is_view 0, 전체=생략 (서버측 필터). 공지·일반 목록에 동일 적용.
+  const isView = listFilter === 'unread' ? false : undefined
+  // 일반 목록: 공지 제외(except_badges) + 페이지네이션. 공지는 아래 useNotices로 따로.
   const { data, isLoading, isError, refetch } = usePosts({
     board_id: boardIdParam,
+    except_badges: ['NOTICE'],
     take: Number(perPage),
     page,
     sort: { by: 'posted_at', order: 'desc' },
-    // 안읽음(안 본 글)=is_view 0, 전체=생략 (서버측 필터)
-    is_view: listFilter === 'unread' ? false : undefined,
+    is_view: isView,
   })
-  const rows = (data?.data ?? []).map(toRow)
+  // 공지: 유효한 NOTICE 글 전량(is_not_paging), 모든 페이지 상단 고정. 안읽음이면 안 읽은 공지만.
+  const { data: noticeData } = useNotices({ board_id: boardIdParam, is_view: isView })
+  const notices = (noticeData ?? []).map(toRow)
+  const listRows = (data?.data ?? []).map(toRow)
+  const rows = [...notices, ...listRows] // 공지 먼저(상단 고정), 그 뒤 일반 목록
   const totalPages = data?.last_page ?? 1
-  const totalCount = data?.total ?? 0
+  const totalCount = (data?.total ?? 0) + notices.length // "N개의 글" = 일반글 + 공지
   const isEmpty = !isLoading && !isError && rows.length === 0
-  // 안읽음 개수 배지: is_view=0(안 본 글)의 total(페이지 무관 정확). 게시판별로 집계.
-  const { data: unreadData } = usePosts({ board_id: boardIdParam, take: 1, is_view: false })
-  const unreadCount = unreadData?.total ?? 0
 
   useEffect(() => {
     if (!toast) return
@@ -158,10 +162,9 @@ export function BoardListScreen() {
                 setListFilter('unread')
                 setPage(1)
               }}
-              className={`inline-flex h-[30px] items-center gap-1 rounded px-3 text-[12.5px] font-semibold ${listFilter === 'unread' ? 'bg-card text-primary shadow-[0_4px_8px_rgba(0,0,0,0.1)]' : 'text-gray-500'}`}
+              className={`inline-flex h-[30px] items-center rounded px-3 text-[12.5px] font-semibold ${listFilter === 'unread' ? 'bg-card text-primary shadow-[0_4px_8px_rgba(0,0,0,0.1)]' : 'text-gray-500'}`}
             >
               {t('list-filter-unread')}
-              <span className="text-[11px] font-bold opacity-75">{unreadCount}</span>
             </button>
           </div>
 

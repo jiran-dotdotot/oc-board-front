@@ -1,7 +1,7 @@
 // 게시글 API 서비스. GET /api/v1/post (selectPost) — 전부 쿼리 파라미터.
 import { apiClient } from '@/lib/apiClient'
 import { serializeParams } from '@/lib/queryParams'
-import type { Paginated, Post, PostListParams } from '@/types/post'
+import type { Paginated, Post, PostListParams, PostSort } from '@/types/post'
 
 export async function selectPost(params: PostListParams, lang: string): Promise<Paginated<Post>> {
   const q: Record<string, unknown> = {
@@ -32,6 +32,31 @@ export async function selectPost(params: PostListParams, lang: string): Promise<
   if (sort.value) q['sort[value]'] = sort.value
 
   const { data } = await apiClient.get<Paginated<Post>>('/post', {
+    params: q,
+    paramsSerializer: { serialize: serializeParams },
+    headers: { lang },
+  })
+  return data
+}
+
+// 공지 목록: 유효한 NOTICE 뱃지 글을 페이징 없이 전량(is_not_paging=1 → 배열 반환).
+// 게시판 목록 상단 고정용. 안읽음 필터일 땐 안 읽은 공지만(is_view=0).
+export async function selectNotices(
+  params: { board_id?: string; is_view?: boolean; sort?: PostSort },
+  lang: string,
+): Promise<Post[]> {
+  const q: Record<string, unknown> = {
+    board_id: params.board_id,
+    badges: ['NOTICE'],
+    is_not_paging: 1,
+    limit: 100, // ponytail: 활성 공지 상한 100 — 실무상 충분, 넘치면 limit만 상향
+  }
+  if (params.is_view !== undefined) q.is_view = params.is_view ? 1 : 0
+  const sort = params.sort ?? { by: 'posted_at', order: 'desc' }
+  q['sort[by]'] = sort.by
+  q['sort[order]'] = sort.order
+
+  const { data } = await apiClient.get<Post[]>('/post', {
     params: q,
     paramsSerializer: { serialize: serializeParams },
     headers: { lang },
