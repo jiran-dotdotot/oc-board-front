@@ -23,6 +23,17 @@ export async function selectBookmarkedBoards(lang: string): Promise<CategoryBoar
   return (data.data ?? []).filter((b) => b.is_active !== false)
 }
 
+// 게시판 상세. 게시판명(title)·글쓰기 권한(is_writable)·관리 권한(is_admin)이 온다.
+// ⚠ 응답에 is_bookmark 는 없다(docs/api/04-board.md §3.4) → 즐겨찾기 상태는
+//   useBookmarkedBoards 로 판정한다. 읽기 권한 없으면 403.
+// 컬럼 구성이 CategoryBoard 와 같고 is_writable/is_admin 도 이미 있어 타입을 재사용한다.
+export async function selectBoard(boardId: string, lang: string): Promise<CategoryBoard> {
+  const { data } = await apiClient.get<CategoryBoard>(`/board/${boardId}`, {
+    headers: { lang },
+  })
+  return data
+}
+
 // 북마크 토글(등록↔해제). 해제도 200이라 응답의 deleted_at 유무로 현재 상태를 판정한다.
 export async function toggleBoardBookmark(boardId: string): Promise<boolean> {
   const { data } = await apiClient.post<{ deleted_at?: string | null }>(

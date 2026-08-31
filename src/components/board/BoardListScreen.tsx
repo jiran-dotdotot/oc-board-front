@@ -4,12 +4,21 @@ import { Link, useNavigate, useParams } from '@tanstack/react-router'
 
 import { useTranslation } from 'react-i18next'
 
+import { NOTICE_ROTATE_MS } from './constants'
 import { BOARDS, DEFAULT_BOARD } from './listData'
 import type { BoardRow, BoardView } from './listData'
+import { useBoard, useBoardBookmarkMutation, useBookmarkedBoards } from '@/hooks/useBoards'
 import { useNotices, usePosts } from '@/hooks/usePosts'
 import type { Post } from '@/types/post'
 
-const COLS = 'minmax(0,1fr) 130px 110px 96px 64px 64px'
+// 디자인 정본: 제목 / 작성자 / 작성일 / 조회 / 공감 — '위치' 컬럼은 없다
+// (게시판 안에 있으니 소속이 자명하다). 모바일은 이 grid를 쓰지 않고 한 줄로 접는다.
+const COLS = 'minmax(300px,1fr) 130px 96px 60px 60px'
+
+// 데스크톱 테이블 ↔ 모바일 한 줄. HomeScreen과 같은 패턴.
+const ROW =
+  'w-full items-center border-b border-gray-100 flex flex-col gap-1 px-3.5 py-[11px] min-h-[62px] min-[631px]:grid min-[631px]:flex-row min-[631px]:gap-0 min-[631px]:px-[18px] min-[631px]:py-0 min-[631px]:min-h-12'
+const CELL_DESKTOP = 'hidden truncate text-[12.5px] min-[631px]:block'
 const PASTELS = ['bg-l-blue', 'bg-l-green', 'bg-l-orange', 'bg-l-purple', 'bg-l-mint', 'bg-l-pink']
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -27,7 +36,6 @@ function toRow(p: Post): BoardRow {
   return {
     id: p.id,
     title: p.title,
-    location: p.board?.title ?? '',
     author,
     authorInitial: author ? author[0] : '?',
     avatarBg: pastel(author || String(p.user_id)),
@@ -54,16 +62,22 @@ interface RowCtx {
 export function BoardListScreen() {
   const { t } = useTranslation()
   const { boardId } = useParams({ from: '/board/$boardId' })
-  const board = BOARDS[boardId] ?? DEFAULT_BOARD
   const navigate = useNavigate()
   const [view, setView] = useState<BoardView>('board')
   const [listFilter, setListFilter] = useState<'all' | 'unread'>('all')
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState('20')
   const [countOpen, setCountOpen] = useState(false)
-  const [boardFav, setBoardFav] = useState(false)
   const [bookmarks, setBookmarks] = useState<Set<string | number>>(new Set())
   const [toast, setToast] = useState<string | null>(null)
+  // 공지 배너: 순회 인덱스 + 「전체 보기」 모달
+  const [ntIdx, setNtIdx] = useState(0)
+  const [ntAllOpen, setNtAllOpen] = useState(false)
+  // 배너에 마우스가 올라가거나 포커스가 들어오면 순환을 멈춘다 — 읽는 중에 바뀌면 안 되고,
+  // 누르려는 순간 대상이 바뀌면 엉뚱한 글이 열린다.
+  const [ntPaused, setNtPaused] = useState(false)
+  // 전환 방향 — 자동/다음은 오른쪽에서 들어오고, 이전은 왼쪽에서 들어온다(누른 버튼과 방향을 맞춘다).
+  const [ntDir, setNtDir] = useState<'next' | 'prev'>('next')
 
   // 라우트 param이 실제 UUID면 board_id로 필터, 샘플 슬러그면 전체 접근 가능 글
   const boardIdParam = UUID_RE.test(boardId) ? boardId : undefined
@@ -78,14 +92,53 @@ export function BoardListScreen() {
     sort: { by: 'posted_at', order: 'desc' },
     is_view: isView,
   })
-  // 공지: 유효한 NOTICE 글 전량(is_not_paging), 모든 페이지 상단 고정. 안읽음이면 안 읽은 공지만.
-  const { data: noticeData } = useNotices({ board_id: boardIdParam, is_view: isView })
+  // 공지: 유효한 NOTICE 글 전량(is_not_paging). 목록에 섞지 않고 위 배너로 순회한다(디자인 정본).
+  // ⚠ is_view를 넘기지 않는다 — 전체/안읽음 토글은 일반 목록에만 걸고, 배너는 항상 전량을 받아
+  //   읽음/안읽음 개수를 함께 표시해야 한다.
+  const { data: noticeData } = useNotices({ board_id: boardIdParam })
   const notices = (noticeData ?? []).map(toRow)
-  const listRows = (data?.data ?? []).map(toRow)
-  const rows = [...notices, ...listRows] // 공지 먼저(상단 고정), 그 뒤 일반 목록
+  const rows = (data?.data ?? []).map(toRow) // 일반 목록(공지 제외 — except_badges)
   const totalPages = data?.last_page ?? 1
   const totalCount = (data?.total ?? 0) + notices.length // "N개의 글" = 일반글 + 공지
   const isEmpty = !isLoading && !isError && rows.length === 0
+
+  // 배너는 안 읽은 공지를 우선 순회한다. 다 읽었으면 전체를 순회한다.
+  const unreadNotices = notices.filter((n) => !n.read)
+  const ntPool = unreadNotices.length > 0 ? unreadNotices : notices
+  const ntPos = ntPool.length > 0 ? ntIdx % ntPool.length : 0
+  const ntCur = ntPool[ntPos]
+  const ntLabel =
+    unreadNotices.length > 0
+      ? t('list-notice-index-unread', {
+          i: ntPos + 1,
+          unread: unreadNotices.length,
+          total: notices.length,
+        })
+      : t('list-notice-index-all', { i: ntPos + 1, total: notices.length })
+  const ntStep = (d: number) => {
+    setNtDir(d < 0 ? 'prev' : 'next')
+    setNtIdx((v) => (ntPool.length > 0 ? (v + d + ntPool.length) % ntPool.length : 0))
+  }
+
+  // 자동 순환. ntIdx를 deps에 두어 수동으로 넘겼을 때도 주기가 처음부터 다시 돈다.
+  // 멈추는 조건: 공지 1건 이하 · hover/포커스 · 「공지 전체」 모달 열림 · 모션 최소화 설정.
+  useEffect(() => {
+    if (ntPool.length < 2 || ntPaused || ntAllOpen) return
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    const id = setTimeout(() => {
+      setNtDir('next')
+      setNtIdx((v) => (v + 1) % ntPool.length)
+    }, NOTICE_ROTATE_MS)
+    return () => clearTimeout(id)
+  }, [ntIdx, ntPool.length, ntPaused, ntAllOpen])
+
+  // 게시판 헤더: 이름은 GET /board/{board}, 즐겨찾기는 북마크 목록 + 공용 토글 mutation.
+  // 슬러그 데모 경로(/board/notice)는 UUID가 아니라 쿼리가 꺼지므로 mock 이름으로 폴백한다.
+  const { data: boardDetail } = useBoard(boardIdParam)
+  const boardName = boardDetail?.title ?? (BOARDS[boardId] ?? DEFAULT_BOARD).name
+  const { data: favorites = [] } = useBookmarkedBoards()
+  const boardFav = !!boardIdParam && favorites.some((b) => b.id === boardIdParam)
+  const { mutate: toggleBoardBookmark } = useBoardBookmarkMutation()
 
   useEffect(() => {
     if (!toast) return
@@ -124,19 +177,21 @@ export function BoardListScreen() {
     <div className="flex w-full flex-col gap-3.5">
       {/* 헤더 한 줄: 게시판명 · 즐겨찾기 · 글 개수 | (우) 전체·안읽음 · 개수 · 뷰타입 */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span className="text-lg font-extrabold tracking-[-0.01em]">{board.name}</span>
-        <button
-          type="button"
-          aria-label={t('nav-favorites')}
-          aria-pressed={boardFav}
-          onClick={() => {
-            setBoardFav((v) => !v)
-            setToast(t(boardFav ? 'list-fav-remove' : 'list-fav-add'))
-          }}
-          className={`inline-flex size-[30px] flex-none items-center justify-center rounded-lg hover:bg-gray-100 ${boardFav ? 'text-warning' : 'text-gray-300'}`}
-        >
-          <StarIcon filled={boardFav} />
-        </button>
+        <span className="text-lg font-extrabold tracking-[-0.01em]">{boardName}</span>
+        {boardIdParam && (
+          <button
+            type="button"
+            aria-label={t('nav-favorites')}
+            aria-pressed={boardFav}
+            onClick={() => {
+              toggleBoardBookmark(boardIdParam)
+              setToast(t(boardFav ? 'list-fav-remove' : 'list-fav-add'))
+            }}
+            className={`inline-flex size-[30px] flex-none items-center justify-center rounded-lg hover:bg-gray-100 ${boardFav ? 'text-warning' : 'text-gray-300'}`}
+          >
+            <StarIcon filled={boardFav} />
+          </button>
+        )}
         <span className="flex-none text-[12.5px] text-gray-400">
           {t('list-count', { n: totalCount })}
         </span>
@@ -224,6 +279,60 @@ export function BoardListScreen() {
         </div>
       </div>
 
+      {/* 공지 배너 — 목록에 섞지 않고 한 건씩 순회한다 (디자인 정본) */}
+      {ntCur && (
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => ctx.open(ntCur.id)}
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && ctx.open(ntCur.id)}
+          onMouseEnter={() => setNtPaused(true)}
+          onMouseLeave={() => setNtPaused(false)}
+          onFocus={() => setNtPaused(true)}
+          onBlur={() => setNtPaused(false)}
+          className="flex h-[42px] cursor-pointer items-center gap-[9px] rounded-lg border border-ov-blue-200 bg-ov-blue-50 pr-1 pl-2.5"
+        >
+          <span className="inline-flex h-[19px] flex-none items-center rounded bg-primary px-[7px] text-[10.5px] font-bold text-white">
+            {t('badge-notice')}
+          </span>
+          {/* overflow-hidden: 가로 슬라이드(16px)가 인덱스 라벨 위로 삐져나오지 않게 제목 영역에서 자른다 */}
+          <span className="flex min-w-0 flex-1 overflow-hidden">
+            <span
+              key={ntCur.id}
+              className={`flex min-w-0 flex-1 animate-in items-center gap-1.5 fade-in duration-300 ease-out motion-reduce:animate-none ${
+                ntDir === 'prev' ? 'slide-in-from-left-4' : 'slide-in-from-right-4'
+              }`}
+            >
+              {!ntCur.read && <span className="size-1.5 flex-none rounded-full bg-primary" />}
+              <span className="truncate text-[13px] font-semibold text-gray-900">
+                {ntCur.title}
+              </span>
+            </span>
+          </span>
+          {notices.length > 1 && (
+            <span className="flex-none text-[11.5px] whitespace-nowrap text-gray-400 tabular-nums">
+              {ntLabel}
+            </span>
+          )}
+          {ntPool.length > 1 && (
+            <>
+              <NoticeNav label={t('list-notice-prev')} onClick={() => ntStep(-1)} dir="left" />
+              <NoticeNav label={t('list-notice-next')} onClick={() => ntStep(1)} dir="right" />
+            </>
+          )}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              setNtAllOpen(true)
+            }}
+            className="inline-flex h-[26px] flex-none items-center rounded-md px-2.5 text-[11.5px] font-semibold text-primary hover:bg-ov-blue-100"
+          >
+            {t('list-notice-all')}
+          </button>
+        </div>
+      )}
+
       {/* 뷰 / 로딩 / 에러 / 빈 상태 */}
       {isError ? (
         <ErrorState onRetry={() => refetch()} />
@@ -269,6 +378,18 @@ export function BoardListScreen() {
         </>
       )}
 
+      {/* 공지 전체 모달 */}
+      {ntAllOpen && (
+        <NoticeAllModal
+          notices={notices}
+          onClose={() => setNtAllOpen(false)}
+          onPick={(id) => {
+            setNtAllOpen(false)
+            ctx.open(id)
+          }}
+        />
+      )}
+
       {/* 토스트 */}
       {toast && (
         <div className="fixed bottom-[18px] left-1/2 z-[80] flex h-11 max-w-[92%] -translate-x-1/2 items-center gap-2.5 rounded-lg bg-gray-900 px-4 text-[13.5px] text-gray-50 shadow-[var(--shadow-modal)]">
@@ -276,6 +397,106 @@ export function BoardListScreen() {
           <span className="truncate">{toast}</span>
         </div>
       )}
+    </div>
+  )
+}
+
+/* ── 공지 배너 이전/다음 ── */
+function NoticeNav({
+  label,
+  onClick,
+  dir,
+}: {
+  label: string
+  onClick: () => void
+  dir: 'left' | 'right'
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={(e) => {
+        e.stopPropagation()
+        onClick()
+      }}
+      className="inline-flex size-[26px] flex-none items-center justify-center rounded-md text-gray-500 hover:bg-ov-blue-100"
+    >
+      <Chevron dir={dir} />
+    </button>
+  )
+}
+
+/* ── 공지 전체 모달 ── */
+function NoticeAllModal({
+  notices,
+  onClose,
+  onPick,
+}: {
+  notices: BoardRow[]
+  onClose: () => void
+  onPick: (id: string | number) => void
+}) {
+  const { t } = useTranslation()
+  // ESC로 닫기 (디자인의 전역 _esc와 같은 규약)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-[var(--scrim-modal)] p-4"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('list-notice-all-title')}
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[calc(100dvh-80px)] w-[560px] max-w-[94%] flex-col overflow-hidden rounded-xl bg-card shadow-[var(--shadow-modal)]"
+      >
+        <div className="flex h-[54px] flex-none items-center gap-2 border-b border-gray-100 px-5">
+          <span className="text-[15px] font-bold">{t('list-notice-all-title')}</span>
+          <span className="text-xs text-gray-400 tabular-nums">{notices.length}</span>
+          <button
+            type="button"
+            aria-label={t('common-close')}
+            onClick={onClose}
+            className="ml-auto inline-flex size-[30px] items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100"
+          >
+            <CloseIcon />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-1.5">
+          {notices.map((n) => (
+            <button
+              key={n.id}
+              type="button"
+              onClick={() => onPick(n.id)}
+              className="flex w-full items-center gap-[9px] rounded-lg px-3 py-2.5 text-left hover:bg-gray-50"
+            >
+              <span className="inline-flex h-[19px] flex-none items-center rounded bg-l-blue px-[7px] text-[10.5px] font-bold text-primary">
+                {t('badge-notice')}
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="flex min-w-0 items-center gap-1.5">
+                  {!n.read && <span className="size-1.5 flex-none rounded-full bg-primary" />}
+                  <span
+                    className={`truncate text-[13px] ${n.read ? 'font-normal text-gray-500' : 'font-semibold text-gray-900'}`}
+                  >
+                    {n.title}
+                  </span>
+                </span>
+                <span className="text-[11.5px] text-gray-400">
+                  {t('list-meta', { author: n.author, date: n.date, views: n.views })}
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
@@ -363,7 +584,7 @@ function RowActions({ id, ctx }: { id: string | number; ctx: RowCtx }) {
   const { t } = useTranslation()
   const marked = ctx.bookmarks.has(id)
   return (
-    <span className="absolute top-1/2 right-2.5 flex -translate-y-1/2 items-center gap-0.5 rounded-lg bg-card/95 opacity-0 shadow-[0_2px_8px_rgba(0,0,0,0.12)] transition-opacity group-hover:opacity-100">
+    <span className="absolute top-1/2 right-2.5 hidden -translate-y-1/2 items-center gap-0.5 rounded-lg bg-card/95 opacity-0 shadow-[0_2px_8px_rgba(0,0,0,0.12)] transition-opacity group-hover:opacity-100 min-[631px]:flex">
       <button
         type="button"
         aria-label={t('nav-favorites')}
@@ -395,47 +616,45 @@ function BoardView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
   const { t } = useTranslation()
   return (
     <div className="bg-card">
-      <div className="overflow-x-auto">
-        <div className="min-w-[940px]">
-          <div
-            className="grid h-[42px] items-center border-b border-gray-200 px-1 text-xs text-gray-500"
-            style={{ gridTemplateColumns: COLS }}
-          >
-            <span>{t('col-title')}</span>
-            <span>{t('col-location')}</span>
-            <span>{t('col-author')}</span>
-            <span>{t('col-date')}</span>
-            <span className="text-center">{t('col-views')}</span>
-            <span className="text-center">{t('col-likes')}</span>
-          </div>
-          {rows.map((r) => (
-            <div
-              key={r.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => ctx.open(r.id)}
-              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && ctx.open(r.id)}
-              className={`group relative grid min-h-[46px] w-full cursor-pointer items-center border-b border-gray-100 px-1 text-left hover:bg-gray-50 ${r.notice ? 'bg-accent' : ''}`}
-              style={{ gridTemplateColumns: COLS }}
-            >
-              <span className="flex min-w-0 items-center gap-[7px] pr-3.5">
-                <TitleCell r={r} notice={t('badge-notice')} />
-              </span>
-              <span className="truncate pr-2 text-[12.5px] text-gray-500">{r.location}</span>
-              <span className="flex min-w-0 items-center gap-1.5 pr-2">
-                <Avatar r={r} />
-                <span className="truncate text-[12.5px] text-gray-600">{r.author}</span>
-              </span>
-              <span className="text-[12.5px] whitespace-nowrap text-gray-500">{r.date}</span>
-              <span className="text-center text-[12.5px] text-gray-500">
-                {r.views.toLocaleString()}
-              </span>
-              <span className="text-center text-[12.5px] text-gray-500">{r.likes}</span>
-              <RowActions id={r.id} ctx={ctx} />
-            </div>
-          ))}
-        </div>
+      <div
+        className="hidden h-[42px] items-center border-b border-gray-200 px-[18px] text-xs text-gray-500 min-[631px]:grid"
+        style={{ gridTemplateColumns: COLS }}
+      >
+        <span>{t('col-title')}</span>
+        <span>{t('col-author')}</span>
+        <span>{t('col-date')}</span>
+        <span className="text-center">{t('col-views')}</span>
+        <span className="text-center">{t('col-likes')}</span>
       </div>
+      {rows.map((r) => (
+        <div
+          key={r.id}
+          role="button"
+          tabIndex={0}
+          onClick={() => ctx.open(r.id)}
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && ctx.open(r.id)}
+          className={`group relative cursor-pointer text-left hover:bg-gray-50 ${ROW} ${r.notice ? 'bg-accent' : ''}`}
+          style={{ gridTemplateColumns: COLS }}
+        >
+          <span className="flex w-full min-w-0 items-center gap-[7px] min-[631px]:w-auto min-[631px]:pr-3.5">
+            <TitleCell r={r} notice={t('badge-notice')} />
+          </span>
+          {/* 모바일: 숨는 컬럼을 한 줄로 접는다 */}
+          <span className="w-full truncate text-[11.5px] text-gray-400 min-[631px]:hidden">
+            {t('list-meta', { author: r.author, date: r.date, views: r.views })}
+          </span>
+          <span className="hidden min-w-0 items-center gap-1.5 pr-2 min-[631px]:flex">
+            <Avatar r={r} />
+            <span className="truncate text-[12.5px] text-gray-600">{r.author}</span>
+          </span>
+          <span className={`${CELL_DESKTOP} whitespace-nowrap text-gray-500`}>{r.date}</span>
+          <span className={`${CELL_DESKTOP} text-center text-gray-500`}>
+            {r.views.toLocaleString()}
+          </span>
+          <span className={`${CELL_DESKTOP} text-center text-gray-500`}>{r.likes}</span>
+          <RowActions id={r.id} ctx={ctx} />
+        </div>
+      ))}
     </div>
   )
 }
@@ -777,6 +996,21 @@ function ImageIcon({ large }: { large?: boolean }) {
       <rect x="3.5" y="5" width="17" height="14" rx="2" />
       <circle cx="9" cy="10" r="1.6" />
       <path d="M3.5 16.5l5-4.5 4 3.5 3.5-3 4.5 4" />
+    </svg>
+  )
+}
+function CloseIcon() {
+  return (
+    <svg
+      className="size-3.5"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="M6 6l12 12M18 6L6 18" />
     </svg>
   )
 }

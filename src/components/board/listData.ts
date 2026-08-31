@@ -5,7 +5,6 @@ export type BoardView = 'board' | 'preview' | 'album'
 export interface BoardRow {
   id: string | number
   title: string
-  location: string // 위치(게시판명)
   author: string
   authorInitial: string
   avatarBg: string // bg-l-* 파스텔
