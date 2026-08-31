@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Category, CategoryBoard, CategoryTree } from '@/types/category'
-import { buildNavTree, collectBoards, favoriteBoards, flattenCategories } from '@/utils/category'
+import { buildNavTree, collectBoards, flattenCategories } from '@/utils/category'
 
 const board = (id: string, over: Partial<CategoryBoard> = {}) =>
   ({ id, title: id, is_active: true, ...over }) as CategoryBoard
@@ -55,17 +55,13 @@ describe('buildNavTree', () => {
   })
 })
 
-describe('collectBoards / favoriteBoards', () => {
+describe('collectBoards', () => {
   const tree: CategoryTree = {
     public_boards: [board('pub'), board('pub-off', { is_active: false })],
-    categories: [cat('c', [board('mine', { is_bookmark: 1 })])],
+    categories: [cat('c', [board('mine')])],
   }
 
   it('비활성 공개 게시판을 제외하고 합친다', () => {
     expect(collectBoards(tree).map((b) => b.id)).toEqual(['pub', 'mine'])
-  })
-
-  it('is_bookmark는 raw SQL alias라 truthy로 판정한다', () => {
-    expect(favoriteBoards(tree).map((b) => b.id)).toEqual(['mine'])
   })
 })

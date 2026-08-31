@@ -71,11 +71,6 @@ export function collectBoards(tree: CategoryTree | undefined): CategoryBoard[] {
   ]
 }
 
-// 즐겨찾기(북마크) 게시판. is_bookmark는 raw SQL alias라 truthy로 판정.
-export function favoriteBoards(tree: CategoryTree | undefined): CategoryBoard[] {
-  return collectBoards(tree).filter((b) => !!b.is_bookmark)
-}
-
 export function findBoard(tree: CategoryTree | undefined, id: string | undefined) {
   if (!id) return undefined
   return collectBoards(tree).find((b) => b.id === id)

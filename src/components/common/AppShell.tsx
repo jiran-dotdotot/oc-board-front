@@ -5,17 +5,21 @@ import { Link, Outlet, useLocation } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
+import { useBoardBookmarkMutation, useBookmarkedBoards } from '@/hooks/useBoards'
 import { useCategories } from '@/hooks/useCategories'
 import { useMe } from '@/hooks/useMe'
 import { type CategoryBoard, isDriveBoard } from '@/types/category'
-import { buildNavTree, favoriteBoards } from '@/utils/category'
+import { buildNavTree } from '@/utils/category'
 
 function itemClass(active: boolean) {
   return [
-    'flex h-10 items-center gap-2.5 rounded-lg px-3.5 text-sm',
+    'flex h-[38px] items-center gap-2.5 rounded-lg px-3.5 text-[13.5px]',
     active ? 'bg-accent font-semibold text-primary' : 'font-medium text-gray-700 hover:bg-gray-50',
   ].join(' ')
 }
+
+// 행(div)이 패딩·배경을 갖고, 링크는 그 안을 채운다.
+const LINK_INNER = 'flex min-w-0 flex-1 items-center gap-2.5'
 
 const SECTION_LABEL = 'px-3.5 pt-4 pb-1.5 text-[11px] font-semibold tracking-[0.06em] text-gray-400'
 
@@ -26,7 +30,10 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
   const { t } = useTranslation()
   // 사이드바 게시판 트리 = GET /category (공개 게시판 + 내 카테고리). 두 번 렌더돼도 쿼리는 공유됨.
   const { data: tree } = useCategories()
-  const favorites = favoriteBoards(tree)
+  // 즐겨찾기는 트리 파생이 아니라 전용 쿼리다 — 트리는 '카테고리' 멤버십으로 필터돼서
+  // 게시판 멤버로만 읽는 보드가 빠진다(boardService.selectBookmarkedBoards 주석).
+  const { data: favorites = [] } = useBookmarkedBoards()
+  const { mutate: toggleBookmark } = useBoardBookmarkMutation()
   const publicBoards = tree?.public_boards ?? []
   const sections = buildNavTree(tree?.categories)
   // 접힌 폴더만 기억한다(기본 펼침) — 디자인의 navFolderOpen[id] !== false 와 동일.
@@ -63,7 +70,8 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
                   board={b}
                   pathname={pathname}
                   onNavigate={onNavigate}
-                  star
+                  bookmarked
+                  onToggleBookmark={() => toggleBookmark(b.id)}
                 />
               ))}
             </>
@@ -78,7 +86,14 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
               />
               <Collapse open={!closed[PUBLIC_KEY]} rail>
                 {publicBoards.map((b) => (
-                  <BoardNavItem key={b.id} board={b} pathname={pathname} onNavigate={onNavigate} />
+                  <BoardNavItem
+                    key={b.id}
+                    board={b}
+                    pathname={pathname}
+                    onNavigate={onNavigate}
+                    bookmarked={!!b.is_bookmark}
+                    onToggleBookmark={() => toggleBookmark(b.id)}
+                  />
                 ))}
               </Collapse>
             </>
@@ -98,13 +113,13 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
                       type="button"
                       onClick={() => toggle(f.id)}
                       aria-expanded={!closed[f.id]}
-                      className="flex h-9 items-center gap-2 rounded-lg px-3 text-[13px] font-semibold text-gray-700 hover:bg-gray-50"
+                      className="flex h-9 items-center gap-2 rounded-lg px-3.5 text-[13px] font-semibold text-gray-700 hover:bg-gray-50"
                     >
                       <CaretIcon open={!closed[f.id]} />
                       <FolderIcon />
                       <span className="min-w-0 flex-1 truncate text-left">{f.name}</span>
                     </button>
-                    <Collapse open={!closed[f.id]} rail>
+                    <Collapse open={!closed[f.id]}>
                       {f.boards.map((b) => (
                         <BoardNavItem
                           key={b.id}
@@ -112,13 +127,22 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
                           pathname={pathname}
                           onNavigate={onNavigate}
                           indent
+                          bookmarked={!!b.is_bookmark}
+                          onToggleBookmark={() => toggleBookmark(b.id)}
                         />
                       ))}
                     </Collapse>
                   </Fragment>
                 ))}
                 {s.boards.map((b) => (
-                  <BoardNavItem key={b.id} board={b} pathname={pathname} onNavigate={onNavigate} />
+                  <BoardNavItem
+                    key={b.id}
+                    board={b}
+                    pathname={pathname}
+                    onNavigate={onNavigate}
+                    bookmarked={!!b.is_bookmark}
+                    onToggleBookmark={() => toggleBookmark(b.id)}
+                  />
                 ))}
               </Collapse>
             </Fragment>
@@ -158,7 +182,7 @@ function SectionToggle({
       type="button"
       onClick={onClick}
       aria-expanded={open}
-      className="mt-1.5 flex h-9 w-full items-center gap-1.5 rounded-lg px-3 text-[13px] font-semibold text-gray-700 hover:bg-gray-50"
+      className="flex w-full items-center gap-[7px] rounded-lg px-3 pt-3.5 pb-1.5 text-[13.5px] font-bold text-gray-800 hover:bg-gray-50"
     >
       <CaretIcon open={open} />
       <span className="min-w-0 truncate text-left">{label}</span>
@@ -170,7 +194,8 @@ function SectionToggle({
 // ⚠ 클리핑 박스(overflow-hidden)와 flex 컬럼은 반드시 분리한다. 한 요소로 합치면
 // 자식들이 flex-shrink로 눌렸다 펴져서, 위에서 밀려나오는 대신 크기가 배분되는 느낌이 난다.
 // rail: 카테고리 묶음을 왼쪽 세로선으로 표시 — 한 단계 들여쓰기(~34px)보다 훨씬 싸게
-// '이 아래는 같은 카테고리' 를 전달한다. 폴더 안 게시판은 rail을 한 번 더 중첩(2뎁스 구분).
+// '이 아래는 같은 카테고리' 를 전달한다. 세로선은 카테고리 한 겹뿐이다 — 폴더 안 게시판은
+// rail을 중첩하지 않고 폴더 아이콘 열에 맞춰 들여써서 소속을 표시한다(BoardNavItem indent).
 function Collapse({
   open,
   rail,
@@ -189,9 +214,10 @@ function Collapse({
     >
       <div className="min-h-0 overflow-hidden">
         <div
-          className={['flex flex-col gap-0.5', rail ? 'ml-2 border-l border-gray-200' : ''].join(
-            ' ',
-          )}
+          className={[
+            'flex flex-col gap-px',
+            rail ? 'mr-1 mb-1 ml-[17px] border-l border-gray-200 pl-[5px]' : '',
+          ].join(' ')}
         >
           {children}
         </div>
@@ -201,42 +227,36 @@ function Collapse({
 }
 
 // 사이드바 게시판 한 줄. 자료실(is_drive/type=DRIVE)이면 /drive, 아니면 /board/{uuid}로 간다.
+// 즐겨찾기는 우측 리본 토글 하나로 통일한다 — 등록·해제가 같은 자리·같은 아이콘·같은 클릭이고
+// 상태는 채움(text-warning)/비움(gray-400)으로만 갈린다. (CLAUDE.md UI verb-unification)
 function BoardNavItem({
   board,
   pathname,
   onNavigate,
-  star,
   indent,
+  bookmarked,
+  onToggleBookmark,
 }: {
   board: CategoryBoard
   pathname: string
   onNavigate?: () => void
-  star?: boolean
   indent?: boolean // 폴더(하위 카테고리) 안의 게시판
+  bookmarked?: boolean
+  onToggleBookmark?: () => void
 }) {
+  const { t } = useTranslation()
   const drive = isDriveBoard(board)
-  // 폴더 안 게시판: 예전엔 pl-[34px]로 깊게 밀었지만, 이제 폴더 rail(세로선)이 소속을
-  // 표시하므로 얕게만 띄운다 — 제목 폭을 되돌려 받는다. (arbitrary 값으로 itemClass의 px-3.5 확실히 override)
-  const pad = indent ? ' pl-[8px]' : ''
+  const active = drive ? pathname === '/drive' : pathname === `/board/${board.id}`
+  const pad = indent ? ' pl-[34px]' : ''
   const inner = (
     <>
-      {star ? (
-        <StarIcon className="size-[15px] flex-none text-warning" />
-      ) : drive ? (
-        <DriveIcon />
-      ) : (
-        <BoardIcon />
-      )}
+      {drive ? <DriveIcon /> : <BoardIcon />}
       <span className="min-w-0 flex-1 truncate text-left">{board.title}</span>
     </>
   )
-  return drive ? (
-    <Link
-      to="/drive"
-      search={{ b: board.id }}
-      onClick={onNavigate}
-      className={itemClass(pathname === '/drive') + pad}
-    >
+  // 행(div)이 패딩·배경을 갖고 링크가 그 안을 채운다 — 토글을 Link 안에 넣으면 a > button 중첩이 된다.
+  const link = drive ? (
+    <Link to="/drive" search={{ b: board.id }} onClick={onNavigate} className={LINK_INNER}>
       {inner}
     </Link>
   ) : (
@@ -244,10 +264,34 @@ function BoardNavItem({
       to="/board/$boardId"
       params={{ boardId: board.id }}
       onClick={onNavigate}
-      className={itemClass(pathname === `/board/${board.id}`) + pad}
+      className={LINK_INNER}
     >
       {inner}
     </Link>
+  )
+  if (!onToggleBookmark) return <div className={itemClass(active) + pad}>{link}</div>
+  const label = t(bookmarked ? 'nav-favorite-remove' : 'nav-favorite-add')
+  return (
+    <div className={`group ${itemClass(active)}${pad}`}>
+      {link}
+      <button
+        type="button"
+        onClick={onToggleBookmark}
+        aria-label={label}
+        aria-pressed={bookmarked}
+        title={label}
+        // -mr-1.5 = 디자인의 margin:0 -6px — 버튼을 행 우측 패딩 안으로 당겨 제목 폭을 지킨다.
+        // 등록된 행은 항상 보이고(트리에서 한눈에 구분), 아닌 행은 hover/포커스에만 뜬다.
+        className={[
+          '-mr-1.5 flex size-5 flex-none items-center justify-center rounded-md hover:bg-gray-200',
+          bookmarked
+            ? 'text-warning'
+            : 'text-gray-400 opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
+        ].join(' ')}
+      >
+        <BookmarkIcon filled={bookmarked} />
+      </button>
+    </div>
   )
 }
 
@@ -557,12 +601,13 @@ function HomeIcon({ className }: IconProps) {
     </svg>
   )
 }
-function StarIcon({ className }: IconProps) {
+// 즐겨찾기 리본. filled=등록됨(채움) / 아니면 외곽선만.
+function BookmarkIcon({ filled }: { filled?: boolean }) {
   return (
     <svg
-      className={className ?? base}
+      className="size-[13px] flex-none"
       viewBox="0 0 24 24"
-      fill="currentColor"
+      fill={filled ? 'currentColor' : 'none'}
       stroke="currentColor"
       strokeWidth="1.7"
       strokeLinejoin="round"

@@ -25,6 +25,8 @@
   --color-ov-blue-700: var(--ov-blue-700);
   --color-ov-blue-800: var(--ov-blue-800);
   --color-ov-blue-900: var(--ov-blue-900);
+  /* 로그인 브랜드 패널 — 라이트/다크 공통 고정색이라 var 반전을 타지 않는다 */
+  --color-brand-panel: var(--brand-panel);
   --color-l-red: #fae8e7;
   --color-l-orange: #ffecdd;
   --color-l-yellow: #fff7db;
@@ -124,6 +126,9 @@
   --ov-blue-500: #5c87ff;
   --ov-blue-600: #3362ff;
   --ov-blue-700: #2145d9;
+
+  /* 브랜드 패널(로그인 좌측). 디자인 :root 의 --brand-panel — 다크에서 재정의 안 함(의도) */
+  --brand-panel: #1b3aa8;
   --ov-blue-800: #122db3;
   --ov-blue-900: #07198c;
 
