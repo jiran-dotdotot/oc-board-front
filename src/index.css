@@ -97,6 +97,13 @@
   --muted: #f3f4f6;
   --muted-foreground: #5d6c7d;
   --accent: #f0f6ff;
+
+  /* 오버레이·그림자 (디자인 :root) — Tailwind 유틸이 아니라 var()로 직접 참조된다:
+     bg-[var(--scrim-modal)] · shadow-[var(--shadow-modal)] */
+  --scrim-modal: rgba(0, 0, 0, 0.5);
+  --scrim-sheet: rgba(0, 0, 0, 0.1);
+  --shadow-dropdown: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-modal: 0 4px 18px rgba(75, 70, 92, 0.1);
   --accent-foreground: #122db3;
   --destructive: #fd4c45;
   --border: #e5e7eb;
@@ -154,6 +161,12 @@
   --muted: #303036;
   --muted-foreground: #a4a4af;
   --accent: rgba(75, 121, 255, 0.16);
+
+  /* 오버레이·그림자 (다크는 더 짙게 — 디자인 dark 블록) */
+  --scrim-modal: rgba(0, 0, 0, 0.62);
+  --scrim-sheet: rgba(0, 0, 0, 0.4);
+  --shadow-dropdown: 0 6px 16px rgba(0, 0, 0, 0.45);
+  --shadow-modal: 0 10px 30px rgba(0, 0, 0, 0.55);
   --accent-foreground: #93aeff;
   --destructive: #fd4c45;
   --border: #3c3c43;
