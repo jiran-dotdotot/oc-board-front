@@ -14,12 +14,11 @@ import { buildNavTree } from '@/utils/category'
 function itemClass(active: boolean) {
   return [
     'flex h-[38px] items-center gap-2.5 rounded-lg px-3.5 text-[13.5px]',
-    active ? 'bg-accent font-semibold text-primary' : 'font-medium text-gray-700 hover:bg-gray-50',
+    active
+      ? 'bg-accent font-semibold text-primary hover:bg-ov-blue-200'
+      : 'font-medium text-gray-700 hover:bg-gray-50',
   ].join(' ')
 }
-
-// 행(div)이 패딩·배경을 갖고, 링크는 그 안을 채운다.
-const LINK_INNER = 'flex min-w-0 flex-1 items-center gap-2.5'
 
 const SECTION_LABEL = 'px-3.5 pt-4 pb-1.5 text-[11px] font-semibold tracking-[0.06em] text-gray-400'
 
@@ -80,7 +79,7 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
           {publicBoards.length > 0 && (
             <>
               <SectionToggle
-                label={`${t('nav-category')} · ${t('nav-public')}`}
+                label={t('nav-public')}
                 open={!closed[PUBLIC_KEY]}
                 onClick={() => toggle(PUBLIC_KEY)}
               />
@@ -102,7 +101,7 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
           {sections.map((s) => (
             <Fragment key={s.id}>
               <SectionToggle
-                label={`${t('nav-category')} · ${s.name}`}
+                label={s.name}
                 open={!closed[s.id]}
                 onClick={() => toggle(s.id)}
               />
@@ -245,18 +244,27 @@ function BoardNavItem({
   onToggleBookmark?: () => void
 }) {
   const { t } = useTranslation()
+  // 자료실은 경로가 전부 /drive 고 게시판은 ?b=<id> 로만 갈린다 —
+  // pathname 만 보면 /drive 에 있는 동안 사이드바의 모든 자료실이 활성으로 칠해진다.
+  const { searchStr } = useLocation()
   const drive = isDriveBoard(board)
-  const active = drive ? pathname === '/drive' : pathname === `/board/${board.id}`
+  const active = drive
+    ? pathname === '/drive' && new URLSearchParams(searchStr).get('b') === board.id
+    : pathname === `/board/${board.id}`
   const pad = indent ? ' pl-[34px]' : ''
+  // ★ 링크가 «칠해지는 영역 그 자체»여야 한다. 배경만 있는 래퍼 안에 링크를 넣으면
+  //   좌우 패딩(14px)과 위아래 여백이 클릭·hover 불가 사각지대가 된다.
+  //   즐겨찾기 버튼은 a > button 중첩을 피하려고 형제로 겹쳐 올린다(아래 relative).
+  // pr-[38px]: 버튼 자리 확보 = 우측 8px + 버튼 20px + 제목과의 간격 10px.
+  const rowClass = itemClass(active) + pad + (onToggleBookmark ? ' pr-[38px]' : '')
   const inner = (
     <>
       {drive ? <DriveIcon /> : <BoardIcon />}
       <span className="min-w-0 flex-1 truncate text-left">{board.title}</span>
     </>
   )
-  // 행(div)이 패딩·배경을 갖고 링크가 그 안을 채운다 — 토글을 Link 안에 넣으면 a > button 중첩이 된다.
   const link = drive ? (
-    <Link to="/drive" search={{ b: board.id }} onClick={onNavigate} className={LINK_INNER}>
+    <Link to="/drive" search={{ b: board.id }} onClick={onNavigate} className={rowClass}>
       {inner}
     </Link>
   ) : (
@@ -264,15 +272,15 @@ function BoardNavItem({
       to="/board/$boardId"
       params={{ boardId: board.id }}
       onClick={onNavigate}
-      className={LINK_INNER}
+      className={rowClass}
     >
       {inner}
     </Link>
   )
-  if (!onToggleBookmark) return <div className={itemClass(active) + pad}>{link}</div>
+  if (!onToggleBookmark) return link
   const label = t(bookmarked ? 'nav-favorite-remove' : 'nav-favorite-add')
   return (
-    <div className={`group ${itemClass(active)}${pad}`}>
+    <div className="group relative">
       {link}
       <button
         type="button"
@@ -280,10 +288,9 @@ function BoardNavItem({
         aria-label={label}
         aria-pressed={bookmarked}
         title={label}
-        // -mr-1.5 = 디자인의 margin:0 -6px — 버튼을 행 우측 패딩 안으로 당겨 제목 폭을 지킨다.
         // 등록된 행은 항상 보이고(트리에서 한눈에 구분), 아닌 행은 hover/포커스에만 뜬다.
         className={[
-          '-mr-1.5 flex size-5 flex-none items-center justify-center rounded-md hover:bg-gray-200',
+          'absolute top-1/2 right-2 flex size-5 -translate-y-1/2 items-center justify-center rounded-md hover:bg-gray-200',
           bookmarked
             ? 'text-warning'
             : 'text-gray-400 opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
