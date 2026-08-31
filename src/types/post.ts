@@ -14,9 +14,11 @@ export interface PostFile {
   name?: string
 }
 
+// ⚠ 게시판명 컬럼은 `title` 이다 — `name` 은 board.boards 에 없다(docs/api/04-board.md §1).
+// 예전 `name` 정의 때문에 목록의 '위치' 컬럼이 전부 빈 문자열로 렌더됐다.
 export interface PostBoard {
   id: string
-  name: string
+  title: string
 }
 
 export interface PostThumbnail {

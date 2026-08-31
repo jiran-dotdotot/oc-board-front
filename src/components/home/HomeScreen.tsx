@@ -2,11 +2,33 @@ import { useNavigate } from '@tanstack/react-router'
 
 import { useTranslation } from 'react-i18next'
 
-import { DRAFT_COUNT, EXT_BG, EXT_BG_DEFAULT, SCHED_COUNT } from './constants'
+import {
+  DEFAULT_LIMIT_DAY,
+  DRAFT_COUNT,
+  EXT_BG,
+  EXT_BG_DEFAULT,
+  HOME_TAKE,
+  NEW_BADGE,
+  SCHED_COUNT,
+  TODO_PILL,
+} from './constants'
 import { useDriveFiles } from '@/hooks/useDriveFiles'
+import { useMe } from '@/hooks/useMe'
 import { usePosts } from '@/hooks/usePosts'
 import type { ApiDriveFile } from '@/types/drive'
 import type { Post } from '@/types/post'
+
+// 데스크톱은 테이블(웹 정본), 모바일은 테두리 카드 + 한 줄 목록(모바일 정본).
+// 가로 스크롤은 쓰지 않는다 — 디자인은 스크롤이 아니라 컬럼을 meta 한 줄로 접는다.
+const SECTION_CARD = 'overflow-hidden rounded-lg border border-gray-200 min-[631px]:rounded-none min-[631px]:border-0'
+const SECTION_HEAD =
+  'flex h-12 items-center gap-2 border-b border-gray-100 px-[18px] min-[631px]:h-11 min-[631px]:border-b-0 min-[631px]:px-1'
+const SECTION_TITLE = 'text-[17px] font-extrabold tracking-[-0.01em]'
+// 행: 모바일 flex 한 줄 → 데스크톱 grid 테이블
+const ROW =
+  'h-[46px] w-full items-center border-b border-gray-100 px-[18px] flex gap-2 min-[631px]:grid min-[631px]:gap-0 min-[631px]:px-1'
+const CELL_DESKTOP = 'hidden truncate text-[12.5px] min-[631px]:block'
+const META_MOBILE = 'flex-none truncate text-xs text-gray-400 min-[631px]:hidden'
 
 const COLS_POSTS = 'minmax(0,1fr) 130px 96px 92px 60px 60px'
 const COLS_FILES = '52px minmax(0,1fr) 120px 90px 88px 96px'
@@ -31,13 +53,13 @@ function toHomePost(p: Post): HomePost {
   return {
     id: p.id,
     title: p.title,
-    board: p.board?.name ?? '',
+    board: p.board?.title ?? '',
     author: p.user?.name ?? '',
     date: fmtDate(p.posted_at ?? p.created_at),
     views: p.view_count,
     likes: p.like_count,
     notice: (p.badges ?? []).some((b) => b.type === 'NOTICE'),
-    unread: false,
+    unread: p.is_view === false, // 서버 is_view($appends) — 없으면 읽음 취급
     comments: p.comment_count,
   }
 }
@@ -55,7 +77,7 @@ function toHomeFile(f: ApiDriveFile): HomeFile {
     id: f.id,
     ext: (f.extension ?? '').toUpperCase(),
     name: f.origin_file_name,
-    folder: f.board?.name ?? '',
+    folder: f.board?.title ?? '',
     uploader: f.user?.name ?? '',
     date: fmtDate(f.created_at),
   }
@@ -64,9 +86,13 @@ function toHomeFile(f: ApiDriveFile): HomeFile {
 export function HomeScreen() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  // 홈 목록은 회사 설정 '최신글 노출 기간'으로 창을 좁힌다 — 하단 안내문이 주장하는 그 값.
+  const { data: me } = useMe()
+  const limitDay = me?.company_setting?.latest_post_day ?? DEFAULT_LIMIT_DAY
   // 로그인 후 홈 진입/새로고침 시 최근 게시글 자동 호출 (인증 상태에서만)
   const { data, isLoading, isError } = usePosts({
-    take: 5,
+    take: HOME_TAKE,
+    limit_day: limitDay,
     sort: { by: 'posted_at', order: 'desc' },
   })
   const posts = (data?.data ?? []).map(toHomePost)
@@ -75,56 +101,64 @@ export function HomeScreen() {
     data: fileData,
     isLoading: filesLoading,
     isError: filesError,
-  } = useDriveFiles({ limit: 4, sort: { by: 'created_at', order: 'desc' } })
-  const files = (fileData ?? []).slice(0, 4).map(toHomeFile)
+  } = useDriveFiles({
+    limit: HOME_TAKE,
+    limit_day: limitDay,
+    sort: { by: 'created_at', order: 'desc' },
+  })
+  const files = (fileData ?? []).slice(0, HOME_TAKE).map(toHomeFile)
+  // NEW 배지: 게시글은 안읽음 존재 여부. 자료는 서버 플래그가 없어 '기간 창 안에 항목 있음'으로 둔다.
+  const hasUnread = posts.some((p) => p.unread)
+  const hasNewFiles = files.length > 0
 
   return (
     <div className="flex w-full flex-col gap-4">
       <span className="text-lg font-extrabold tracking-[-0.01em]">{t('nav-home')}</span>
 
       {/* 해야 할 일 */}
-      <div className="flex flex-wrap items-center gap-3.5 rounded-lg border border-ov-blue-200 bg-card px-[18px] py-3.5">
-        <span className="inline-flex size-[34px] flex-none items-center justify-center rounded-lg bg-accent text-primary">
+      <div className="flex flex-wrap items-center gap-3.5 rounded-lg border border-gray-200 bg-gray-50 px-[18px] py-3.5">
+        <span className="inline-flex size-[34px] flex-none items-center justify-center rounded-lg bg-ov-blue-50 text-primary">
           <CheckIcon />
         </span>
-        <div className="flex min-w-0 flex-col gap-0.5">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="text-[13.5px] font-bold">{t('home-todo-title')}</span>
           <span className="text-xs text-gray-500">{t('home-todo-desc')}</span>
         </div>
-        <div className="ml-auto flex flex-wrap gap-1.5">
+        <div className="ml-auto flex flex-none flex-wrap gap-1.5">
           <button
             type="button"
             onClick={() => navigate({ to: '/my' })}
-            className="inline-flex h-8 items-center gap-1.5 rounded-full bg-l-orange px-3 text-[12.5px] font-semibold text-on-pastel hover:opacity-90"
+            className={TODO_PILL}
           >
             {t('home-draft')}
-            <span className="font-bold">{DRAFT_COUNT}</span>
+            <span className="font-bold text-warning">{DRAFT_COUNT}</span>
           </button>
           <button
             type="button"
             onClick={() => navigate({ to: '/my' })}
-            className="inline-flex h-8 items-center gap-1.5 rounded-full bg-l-blue px-3 text-[12.5px] font-semibold text-on-pastel hover:opacity-90"
+            className={TODO_PILL}
           >
             {t('home-sched')}
-            <span className="font-bold">{SCHED_COUNT}</span>
+            <span className="font-bold text-primary">{SCHED_COUNT}</span>
           </button>
         </div>
       </div>
 
       <div className="flex flex-col gap-4">
         {/* 최근 게시글 */}
-        <section>
-          <div className="flex h-11 items-center gap-2 px-1">
-            <span className="text-[14.5px] font-bold">{t('home-recent-posts')}</span>
+        <section className={SECTION_CARD}>
+          <div className={SECTION_HEAD}>
+            <span className={SECTION_TITLE}>{t('home-recent-posts')}</span>
+            {hasUnread && <span className={`${NEW_BADGE} bg-accent`}>NEW</span>}
             <MoreLink
               label={t('home-more')}
               onClick={() => navigate({ to: '/board/$boardId', params: { boardId: 'notice' } })}
             />
           </div>
-          <div className="overflow-x-auto">
-            <div className="min-w-[640px]">
+          <div>
+            <div>
               <div
-                className="grid h-10 items-center border-b border-gray-200 px-1 text-xs text-gray-500"
+                className="hidden h-10 items-center border-b border-gray-200 px-1 text-xs text-gray-500 min-[631px]:grid"
                 style={{ gridTemplateColumns: COLS_POSTS }}
               >
                 <span>{t('col-title')}</span>
@@ -135,18 +169,18 @@ export function HomeScreen() {
                 <span className="text-center">{t('col-likes')}</span>
               </div>
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
+                Array.from({ length: HOME_TAKE }).map((_, i) => (
                   <div
                     key={i}
-                    className="grid h-[46px] items-center gap-2 border-b border-gray-100 px-1"
+                    className={ROW}
                     style={{ gridTemplateColumns: COLS_POSTS }}
                   >
-                    <span className="h-3.5 animate-pulse rounded bg-gray-100" />
-                    <span className="h-3 animate-pulse rounded bg-gray-100" />
-                    <span className="h-3 animate-pulse rounded bg-gray-100" />
-                    <span className="h-3 animate-pulse rounded bg-gray-100" />
-                    <span className="h-3 animate-pulse rounded bg-gray-100" />
-                    <span className="h-3 animate-pulse rounded bg-gray-100" />
+                    <span className="h-3.5 flex-1 animate-pulse rounded bg-gray-100" />
+                    <span className="hidden h-3 animate-pulse rounded bg-gray-100 min-[631px]:block" />
+                    <span className="hidden h-3 animate-pulse rounded bg-gray-100 min-[631px]:block" />
+                    <span className="hidden h-3 animate-pulse rounded bg-gray-100 min-[631px]:block" />
+                    <span className="hidden h-3 animate-pulse rounded bg-gray-100 min-[631px]:block" />
+                    <span className="hidden h-3 animate-pulse rounded bg-gray-100 min-[631px]:block" />
                   </div>
                 ))
               ) : isError ? (
@@ -154,9 +188,9 @@ export function HomeScreen() {
                   {t('list-error')}
                 </div>
               ) : posts.length === 0 ? (
-                <div className="px-1 py-10 text-center text-[13px] text-gray-400">
-                  {t('list-empty')}
-                </div>
+                <EmptyState message={t('home-posts-empty')}>
+                  <DocIcon />
+                </EmptyState>
               ) : (
                 posts.map((p) => (
                   <button
@@ -165,10 +199,10 @@ export function HomeScreen() {
                     onClick={() =>
                       navigate({ to: '/post/$postId', params: { postId: String(p.id) } })
                     }
-                    className="grid h-[46px] w-full items-center border-b border-gray-100 px-1 text-left hover:bg-gray-50"
+                    className={`${ROW} text-left hover:bg-gray-50`}
                     style={{ gridTemplateColumns: COLS_POSTS }}
                   >
-                    <span className="flex min-w-0 items-center gap-[7px] pr-3.5">
+                    <span className="flex min-w-0 flex-1 items-center gap-2 min-[631px]:gap-[7px] min-[631px]:pr-3.5">
                       {p.unread && <span className="size-1.5 flex-none rounded-full bg-primary" />}
                       {p.notice && (
                         <span className="inline-flex h-[19px] flex-none items-center rounded bg-l-blue px-[7px] text-[10.5px] font-bold text-primary">
@@ -187,13 +221,19 @@ export function HomeScreen() {
                         </span>
                       )}
                     </span>
-                    <span className="truncate pr-3 text-[12.5px] text-gray-500">{p.board}</span>
-                    <span className="truncate pr-2 text-[12.5px] text-gray-600">{p.author}</span>
-                    <span className="text-[12.5px] whitespace-nowrap text-gray-500">{p.date}</span>
-                    <span className="text-center text-[12.5px] text-gray-500">
+                    <span className={`${CELL_DESKTOP} pr-3 text-gray-500`}>{p.board}</span>
+                    <span className={`${CELL_DESKTOP} pr-2 text-gray-600`}>{p.author}</span>
+                    <span className={`${CELL_DESKTOP} whitespace-nowrap text-gray-500`}>
+                      {p.date}
+                    </span>
+                    <span className={`${CELL_DESKTOP} text-center text-gray-500`}>
                       {p.views.toLocaleString()}
                     </span>
-                    <span className="text-center text-[12.5px] text-gray-500">{p.likes}</span>
+                    <span className={`${CELL_DESKTOP} text-center text-gray-500`}>{p.likes}</span>
+                    {/* 모바일: 위치·작성일을 한 줄로 접는다 (디자인 mobile의 p.meta) */}
+                    <span className={META_MOBILE}>
+                      {[p.board, p.date].filter(Boolean).join(' · ')}
+                    </span>
                   </button>
                 ))
               )}
@@ -202,15 +242,16 @@ export function HomeScreen() {
         </section>
 
         {/* 최근 자료 */}
-        <section>
-          <div className="flex h-11 items-center gap-2 px-1">
-            <span className="text-[14.5px] font-bold">{t('home-recent-files')}</span>
+        <section className={SECTION_CARD}>
+          <div className={SECTION_HEAD}>
+            <span className={SECTION_TITLE}>{t('home-recent-files')}</span>
+            {hasNewFiles && <span className={`${NEW_BADGE} bg-primary`}>NEW</span>}
             <MoreLink label={t('home-more')} onClick={() => navigate({ to: '/drive' })} />
           </div>
-          <div className="overflow-x-auto">
-            <div className="min-w-[620px]">
+          <div>
+            <div>
               <div
-                className="grid h-10 items-center border-b border-gray-200 px-1 text-xs text-gray-500"
+                className="hidden h-10 items-center border-b border-gray-200 px-1 text-xs text-gray-500 min-[631px]:grid"
                 style={{ gridTemplateColumns: COLS_FILES }}
               >
                 <span>{t('col-ext')}</span>
@@ -221,18 +262,18 @@ export function HomeScreen() {
                 <span />
               </div>
               {filesLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
+                Array.from({ length: HOME_TAKE }).map((_, i) => (
                   <div
                     key={i}
-                    className="grid h-[46px] items-center gap-2 border-b border-gray-100 px-1"
+                    className={ROW}
                     style={{ gridTemplateColumns: COLS_FILES }}
                   >
-                    <span className="h-5 w-10 animate-pulse rounded bg-gray-100" />
-                    <span className="h-3.5 animate-pulse rounded bg-gray-100" />
-                    <span className="h-3 animate-pulse rounded bg-gray-100" />
-                    <span className="h-3 animate-pulse rounded bg-gray-100" />
-                    <span className="h-3 animate-pulse rounded bg-gray-100" />
-                    <span />
+                    <span className="h-5 w-10 flex-none animate-pulse rounded bg-gray-100" />
+                    <span className="h-3.5 flex-1 animate-pulse rounded bg-gray-100" />
+                    <span className="hidden h-3 animate-pulse rounded bg-gray-100 min-[631px]:block" />
+                    <span className="hidden h-3 animate-pulse rounded bg-gray-100 min-[631px]:block" />
+                    <span className="hidden h-3 animate-pulse rounded bg-gray-100 min-[631px]:block" />
+                    <span className="hidden min-[631px]:block" />
                   </div>
                 ))
               ) : filesError ? (
@@ -240,9 +281,9 @@ export function HomeScreen() {
                   {t('list-error')}
                 </div>
               ) : files.length === 0 ? (
-                <div className="px-1 py-10 text-center text-[13px] text-gray-400">
-                  {t('drive-empty')}
-                </div>
+                <EmptyState message={t('home-files-empty')}>
+                  <DriveIcon />
+                </EmptyState>
               ) : (
                 files.map((f) => (
                   <div
@@ -253,7 +294,7 @@ export function HomeScreen() {
                     onKeyDown={(e) =>
                       (e.key === 'Enter' || e.key === ' ') && navigate({ to: '/drive' })
                     }
-                    className="grid h-[46px] cursor-pointer items-center border-b border-gray-100 px-1 hover:bg-gray-50"
+                    className={`${ROW} cursor-pointer hover:bg-gray-50`}
                     style={{ gridTemplateColumns: COLS_FILES }}
                   >
                     <span
@@ -261,11 +302,20 @@ export function HomeScreen() {
                     >
                       {f.ext}
                     </span>
-                    <span className="truncate pr-3.5 text-[13.5px] text-gray-800">{f.name}</span>
-                    <span className="truncate pr-2.5 text-[12.5px] text-gray-500">{f.folder}</span>
-                    <span className="truncate pr-2 text-[12.5px] text-gray-600">{f.uploader}</span>
-                    <span className="text-[12.5px] whitespace-nowrap text-gray-500">{f.date}</span>
-                    <span className="flex justify-end gap-0.5">
+                    <span className="min-w-0 flex-1 truncate text-[13.5px] text-gray-800 min-[631px]:pr-3.5">
+                      {f.name}
+                    </span>
+                    <span className={`${CELL_DESKTOP} pr-2.5 text-gray-500`}>{f.folder}</span>
+                    <span className={`${CELL_DESKTOP} pr-2 text-gray-600`}>{f.uploader}</span>
+                    <span className={`${CELL_DESKTOP} whitespace-nowrap text-gray-500`}>
+                      {f.date}
+                    </span>
+                    {/* 모바일: 위치·업로더·등록일을 한 줄로 접는다 (디자인 mobile의 f.meta) */}
+                    <span className={META_MOBILE}>
+                      {[f.folder, f.uploader, f.date].filter(Boolean).join(' · ')}
+                    </span>
+                    {/* 미리보기·다운로드는 데스크톱만 (모바일 디자인엔 없다) */}
+                    <span className="hidden justify-end gap-0.5 min-[631px]:flex">
                       <button
                         type="button"
                         aria-label={t('file-preview')}
@@ -297,8 +347,54 @@ export function HomeScreen() {
         </section>
       </div>
 
-      <span className="text-xs text-gray-400">{t('home-note')}</span>
+      <span className="text-xs text-gray-400">{t('home-note', { days: limitDay })}</span>
     </div>
+  )
+}
+
+// 빈 상태 — 디자인: 44px 원(gray-100) + 아이콘(gray-400) + 13px gray-500, 패딩 40/44px.
+function EmptyState({ message, children }: { message: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-center gap-2.5 px-5 py-10 min-[631px]:py-11">
+      <span className="inline-flex size-11 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+        {children}
+      </span>
+      <span className="text-[13px] text-gray-500">{message}</span>
+    </div>
+  )
+}
+
+function DocIcon() {
+  return (
+    <svg
+      className="size-[19px]"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6 3h9l4 4v14H6z" />
+      <path d="M14 3v5h5" />
+    </svg>
+  )
+}
+
+function DriveIcon() {
+  return (
+    <svg
+      className="size-[19px]"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3.5 13.5L6 5.5h12l2.5 8" />
+      <rect x="3.5" y="13.5" width="17" height="5.5" rx="1.5" />
+    </svg>
   )
 }
 

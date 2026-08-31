@@ -27,7 +27,7 @@ function toRow(p: Post): BoardRow {
   return {
     id: p.id,
     title: p.title,
-    location: p.board?.name ?? '',
+    location: p.board?.title ?? '',
     author,
     authorInitial: author ? author[0] : '?',
     avatarBg: pastel(author || String(p.user_id)),
