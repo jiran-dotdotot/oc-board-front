@@ -9,6 +9,8 @@ import '@/lib/i18n'
 import { queryClient } from '@/lib/queryClient'
 import { createRoot } from 'react-dom/client'
 
+if (import.meta.env.DEV) import('./dev/ping')
+
 const router = createRouter({ routeTree })
 
 declare module '@tanstack/react-router' {
