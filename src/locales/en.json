@@ -155,6 +155,7 @@
   "list-filter-unread": "Unread",
   "list-empty": "No posts yet.",
   "list-error": "Couldn't load posts.",
+  "list-board-deleted": "This board has been deleted.",
   "list-notice-expand": "Show all {{n}} hidden notices",
   "list-notice-collapse": "Collapse notices",
   "list-meta": "{{author}} · {{date}} · {{views}} views",

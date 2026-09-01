@@ -24,6 +24,11 @@ export function useBoard(boardId: string | undefined) {
     queryFn: () => selectBoard(boardId!, i18n.language),
     enabled: !!boardId && isAuthenticated(),
     staleTime: 5 * 60 * 1000,
+    // 삭제된 게시판(404)·권한 없음(403)은 재시도해도 결과가 같다.
+    retry: (count, err) => {
+      const status = (err as { response?: { status?: number } })?.response?.status
+      return status !== 404 && status !== 403 && count < 1
+    },
   })
 }
 

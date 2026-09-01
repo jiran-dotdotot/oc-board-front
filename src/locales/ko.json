@@ -155,6 +155,7 @@
   "list-filter-unread": "안읽음",
   "list-empty": "등록된 게시글이 없습니다.",
   "list-error": "목록을 불러오지 못했습니다.",
+  "list-board-deleted": "삭제된 게시판입니다.",
   "list-notice-expand": "숨은 공지 {{n}}건 모두 보기",
   "list-notice-collapse": "공지 접기",
   "list-meta": "{{author}} · {{date}} · 조회 {{views}}",
