@@ -23,11 +23,11 @@ import type { Post } from '@/types/post'
 const SECTION_CARD = 'overflow-hidden rounded-lg border border-gray-200 min-[631px]:rounded-none min-[631px]:border-0'
 const SECTION_HEAD =
   'flex h-12 items-center gap-2 border-b border-gray-100 px-[18px] min-[631px]:h-11 min-[631px]:border-b-0 min-[631px]:px-1'
-const SECTION_TITLE = 'text-[17px] font-extrabold tracking-[-0.01em]'
+const SECTION_TITLE = 'text-lg font-extrabold tracking-[-0.01em]'
 // 행: 모바일 flex 한 줄 → 데스크톱 grid 테이블
 const ROW =
   'h-[46px] w-full items-center border-b border-gray-100 px-[18px] flex gap-2 min-[631px]:grid min-[631px]:gap-0 min-[631px]:px-1'
-const CELL_DESKTOP = 'hidden truncate text-[12.5px] min-[631px]:block'
+const CELL_DESKTOP = 'hidden truncate text-s min-[631px]:block'
 const META_MOBILE = 'flex-none truncate text-xs text-gray-400 min-[631px]:hidden'
 
 const COLS_POSTS = 'minmax(0,1fr) 130px 96px 92px 60px 60px'
@@ -118,7 +118,7 @@ export function HomeScreen() {
           <CheckIcon />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="text-[13.5px] font-bold">{t('home-todo-title')}</span>
+          <span className="text-sm font-bold">{t('home-todo-title')}</span>
           <span className="text-xs text-gray-500">{t('home-todo-desc')}</span>
         </div>
         <div className="ml-auto flex flex-none flex-wrap gap-1.5">
@@ -183,7 +183,7 @@ export function HomeScreen() {
                   </div>
                 ))
               ) : isError ? (
-                <div className="px-1 py-10 text-center text-[13px] text-gray-400">
+                <div className="px-1 py-10 text-center text-s text-gray-400">
                   {t('list-error')}
                 </div>
               ) : posts.length === 0 ? (
@@ -210,12 +210,12 @@ export function HomeScreen() {
                         />
                       )}
                       {p.notice && (
-                        <span className="inline-flex h-[19px] flex-none items-center rounded bg-l-blue px-[7px] text-[10.5px] font-bold text-primary">
+                        <span className="inline-flex h-[19px] flex-none items-center rounded bg-l-blue px-[7px] text-2xs font-bold text-primary">
                           {t('badge-notice')}
                         </span>
                       )}
                       <span
-                        className={`truncate text-[13.5px] ${p.unread ? 'text-gray-900' : 'text-gray-500'}`}
+                        className={`truncate text-sm ${p.unread ? 'text-gray-900' : 'text-gray-500'}`}
                       >
                         {p.title}
                       </span>
@@ -283,7 +283,7 @@ export function HomeScreen() {
                   </div>
                 ))
               ) : filesError ? (
-                <div className="px-1 py-10 text-center text-[13px] text-gray-400">
+                <div className="px-1 py-10 text-center text-s text-gray-400">
                   {t('list-error')}
                 </div>
               ) : files.length === 0 ? (
@@ -304,11 +304,11 @@ export function HomeScreen() {
                     style={{ gridTemplateColumns: COLS_FILES }}
                   >
                     <span
-                      className={`inline-flex h-5 w-10 flex-none items-center justify-center rounded text-[10px] font-bold text-on-pastel ${EXT_BG[f.ext] ?? EXT_BG_DEFAULT}`}
+                      className={`inline-flex h-5 w-10 flex-none items-center justify-center rounded text-2xs font-bold text-on-pastel ${EXT_BG[f.ext] ?? EXT_BG_DEFAULT}`}
                     >
                       {f.ext}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-[13.5px] text-gray-800 min-[631px]:pr-3.5">
+                    <span className="min-w-0 flex-1 truncate text-sm text-gray-800 min-[631px]:pr-3.5">
                       {f.name}
                     </span>
                     <span className={`${CELL_DESKTOP} pr-2.5 text-gray-500`}>{f.folder}</span>
@@ -365,7 +365,7 @@ function EmptyState({ message, children }: { message: string; children: React.Re
       <span className="inline-flex size-[52px] items-center justify-center rounded-full bg-gray-100 text-gray-400">
         {children}
       </span>
-      <span className="text-[13px] text-gray-500">{message}</span>
+      <span className="text-s text-gray-500">{message}</span>
     </div>
   )
 }

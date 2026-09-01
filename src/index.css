@@ -14,6 +14,21 @@
   --font-sans:
     'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui,
     'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  /* ── 타이포 스케일 (OfficeWave DS typography.css · A-9 확정) ────────────────
+     DS 램프는 Tailwind 기본 ramp 와 같다 — xs 12 · sm 14 · base 16 · lg 18 · xl 20 · 2xl 24.
+     DS 에만 있는 두 단계(11 · 13)만 여기서 보탠다.
+     ⚠ 아트보드의 반픽셀 px(12.5 / 13.5 …)를 그대로 옮기지 마라. A-9 매핑표로 변환한다:
+        9.5·10.5→2xs · 11.5→xs · 12.5·13→s · 13.5·14.5→sm · 15→base · 17→lg · 19→xl · 22·25→2xl */
+  --text-2xs: 11px;
+  --text-2xs--line-height: 16px;
+  --text-s: 13px;
+  --text-s--line-height: 18px;
+
+  /* ── 레이아웃 (DS spacing.css · A-9) ──
+     sidebar-w 는 제품 결정이 DS 기본(240)을 이겼다 — 8/31 글자 잘림 확정으로 264px. */
+  --spacing-sidebar: 264px;
+  --spacing-topbar: 56px;
+
   /* OfficeWave 브랜드 블루 램프 — 라이트/다크 반전 위해 var 참조 (값은 :root / .dark) */
   --color-ov-blue-50: var(--ov-blue-50);
   --color-ov-blue-100: var(--ov-blue-100);

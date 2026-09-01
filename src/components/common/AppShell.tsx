@@ -14,7 +14,7 @@ import { buildNavTree } from '@/utils/category'
 
 function itemClass(active: boolean) {
   return [
-    'flex h-[38px] items-center gap-2.5 rounded-lg px-3.5 text-[13.5px]',
+    'flex h-[38px] items-center gap-2.5 rounded-lg px-3.5 text-sm',
     // 상태별 색 — 디자인 B-1 확정표.
     //   비선택: transparent / hover gray-50  / active gray-100
     //   선택  : ov-blue-50  / hover ov-blue-100 / active ov-blue-200
@@ -24,7 +24,7 @@ function itemClass(active: boolean) {
   ].join(' ')
 }
 
-const SECTION_LABEL = 'px-3.5 pt-4 pb-1.5 text-[11px] font-semibold tracking-[0.06em] text-gray-400'
+const SECTION_LABEL = 'px-3.5 pt-4 pb-1.5 text-2xs font-semibold tracking-[0.06em] text-gray-400'
 
 // 공개 게시판 섹션은 카테고리 id가 없어 접힘 상태용 고정 키를 쓴다.
 const PUBLIC_KEY = '__public'
@@ -116,7 +116,7 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
                       type="button"
                       onClick={() => toggle(f.id)}
                       aria-expanded={!closed[f.id]}
-                      className="flex h-9 items-center gap-2 rounded-lg pr-3 pl-[26px] text-[13px] font-semibold text-gray-700 hover:bg-gray-50"
+                      className="flex h-9 items-center gap-2 rounded-lg pr-3 pl-[26px] text-s font-semibold text-gray-700 hover:bg-gray-50"
                     >
                       <FolderIcon />
                       <span className="min-w-0 flex-1 truncate text-left">{f.name}</span>
@@ -185,7 +185,7 @@ function SectionToggle({
       type="button"
       onClick={onClick}
       aria-expanded={open}
-      className="flex w-full items-center gap-[7px] rounded-lg pt-3.5 pr-3 pb-1.5 pl-3 text-[13.5px] font-bold text-gray-800 hover:bg-gray-50"
+      className="flex w-full items-center gap-[7px] rounded-lg pt-3.5 pr-3 pb-1.5 pl-3 text-sm font-bold text-gray-800 hover:bg-gray-50"
     >
       <span className="min-w-0 flex-1 truncate text-left">{label}</span>
       <CaretIcon open={open} />
@@ -385,13 +385,13 @@ export function AppShell() {
         </div>
 
         {/* 데스크톱 */}
-        <div className="hidden h-[58px] items-center gap-[18px] px-5 min-[631px]:flex">
-          <Logo className="flex-none text-[17px]" />
-          <div className="flex h-[38px] w-[340px] items-center gap-2 rounded-[5px] bg-gray-100 py-0 pr-1.5 pl-3">
+        <div className="hidden h-(--spacing-topbar) items-center gap-[18px] px-5 min-[631px]:flex">
+          <Logo className="flex-none text-lg" />
+          <div className="flex h-10 w-[340px] items-center gap-2 rounded-[5px] bg-gray-100 py-0 pr-1.5 pl-3">
             <SearchIcon className="size-[15px] flex-none text-gray-400" />
             <input
               placeholder={t('nav-search-placeholder')}
-              className="min-w-0 flex-1 border-none bg-transparent text-[13.5px] outline-none"
+              className="min-w-0 flex-1 border-none bg-transparent text-sm outline-none"
             />
             <Link
               to="/search"
@@ -409,10 +409,10 @@ export function AppShell() {
                 className="flex items-center gap-2 rounded-lg py-1 pr-2 pl-1 hover:bg-gray-100 aria-expanded:bg-gray-100"
                 aria-expanded={profileOpen}
               >
-                <span className="inline-flex size-8 items-center justify-center rounded-full bg-l-blue text-[13px] font-bold text-on-pastel">
+                <span className="inline-flex size-8 items-center justify-center rounded-full bg-l-blue text-s font-bold text-on-pastel">
                   {meInitial}
                 </span>
-                <span className="text-[13px] font-semibold whitespace-nowrap text-gray-800">
+                <span className="text-s font-semibold whitespace-nowrap text-gray-800">
                   {meName}
                 </span>
                 <ChevronDownIcon />
@@ -420,12 +420,12 @@ export function AppShell() {
               {profileOpen && (
                 <div className="absolute top-[calc(100%+4px)] right-0 z-[var(--z-dropdown)] w-[200px] rounded-lg border border-gray-200 bg-card p-1 shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
                   <div className="flex flex-col gap-px border-b border-gray-100 px-2.5 pt-2 pb-1.5">
-                    <span className="text-[13px] font-bold">{meName}</span>
-                    <span className="text-[11.5px] text-gray-400">{meEmail}</span>
+                    <span className="text-s font-bold">{meName}</span>
+                    <span className="text-xs text-gray-400">{meEmail}</span>
                   </div>
                   <button
                     type="button"
-                    className="flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-[13.5px] text-gray-800 hover:bg-gray-100"
+                    className="flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm text-gray-800 hover:bg-gray-100"
                   >
                     <UserIcon className="size-3.5" />
                     {t('nav-my')}
@@ -436,7 +436,7 @@ export function AppShell() {
                   <Link
                     to="/login"
                     onClick={() => setProfileOpen(false)}
-                    className="flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-[13.5px] text-gray-800 hover:bg-gray-100"
+                    className="flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm text-gray-800 hover:bg-gray-100"
                   >
                     <LogoutIcon />
                     {t('nav-logout')}
@@ -453,7 +453,7 @@ export function AppShell() {
           ⚠ flex-none 필수: 부모가 flex-col이라 flex-1(=flex-basis:0)이 height보다 우선해 높이 제약이 무시된다.
           모바일(<631px)은 기존대로 페이지 전체 스크롤. */}
       <div className="flex flex-1 min-[631px]:h-[calc(100svh-59px)] min-[631px]:flex-none min-[631px]:overflow-hidden">
-        <aside className="hidden h-full w-[232px] flex-none flex-col gap-0.5 border-r border-gray-200 px-2.5 py-3.5 min-[631px]:flex">
+        <aside className="hidden h-full w-(--spacing-sidebar) flex-none flex-col gap-0.5 border-r border-gray-200 px-2.5 py-3.5 min-[631px]:flex">
           <SidebarNav pathname={pathname} />
         </aside>
         <main className="min-w-0 flex-1 p-5 pb-[76px] min-[631px]:overflow-y-auto min-[631px]:p-6 min-[631px]:pb-6">
@@ -490,12 +490,12 @@ export function AppShell() {
           />
           <div className="absolute inset-y-0 left-0 flex w-[280px] flex-col bg-card">
             <div className="flex items-center gap-2.5 border-b border-gray-200 p-4">
-              <span className="inline-flex size-9 items-center justify-center rounded-full bg-l-blue text-[13px] font-bold text-on-pastel">
+              <span className="inline-flex size-9 items-center justify-center rounded-full bg-l-blue text-s font-bold text-on-pastel">
                 {meInitial}
               </span>
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-sm font-bold">{meName}</span>
-                <span className="truncate text-[11.5px] text-gray-400">{meEmail}</span>
+                <span className="truncate text-xs text-gray-400">{meEmail}</span>
               </div>
               <button
                 type="button"
@@ -527,7 +527,7 @@ function BottomTab({
   icon: React.ReactNode
   label: string
 }) {
-  const cls = `flex flex-1 flex-col items-center justify-center gap-1 text-[11px] ${active ? 'font-semibold text-primary' : 'text-gray-500'}`
+  const cls = `flex flex-1 flex-col items-center justify-center gap-1 text-2xs ${active ? 'font-semibold text-primary' : 'text-gray-500'}`
   return to ? (
     <Link to={to} className={cls}>
       {icon}

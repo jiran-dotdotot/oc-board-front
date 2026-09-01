@@ -46,7 +46,7 @@ export function PostDetailScreen() {
         <Link
           to="/board/$boardId"
           params={{ boardId: 'notice' }}
-          className="inline-flex h-[34px] items-center gap-1.5 rounded-[5px] bg-gray-100 px-3 text-[13px] font-semibold text-gray-700 hover:bg-gray-200"
+          className="inline-flex h-8 items-center gap-1.5 rounded-[5px] bg-gray-100 px-3 text-s font-semibold text-gray-700 hover:bg-gray-200"
         >
           <ChevronIcon dir="left" />
           {t('detail-to-list')}
@@ -54,14 +54,14 @@ export function PostDetailScreen() {
         <div className="ml-auto flex gap-1">
           <button
             type="button"
-            className="inline-flex h-[34px] items-center gap-1.5 rounded-[5px] px-3 text-[13px] text-gray-600 hover:bg-gray-100"
+            className="inline-flex h-8 items-center gap-1.5 rounded-[5px] px-3 text-s text-gray-600 hover:bg-gray-100"
           >
             <ArrowIcon dir="up" />
             {t('detail-prev')}
           </button>
           <button
             type="button"
-            className="inline-flex h-[34px] items-center gap-1.5 rounded-[5px] px-3 text-[13px] text-gray-600 hover:bg-gray-100"
+            className="inline-flex h-8 items-center gap-1.5 rounded-[5px] px-3 text-s text-gray-600 hover:bg-gray-100"
           >
             <ArrowIcon dir="down" />
             {t('detail-next')}
@@ -74,13 +74,13 @@ export function PostDetailScreen() {
         <div className="px-7 pt-6">
           <div className="flex flex-wrap items-center gap-2">
             {POST.notice && (
-              <span className="inline-flex h-[22px] flex-none items-center rounded bg-l-blue px-2 text-[11px] font-bold text-primary">
+              <span className="inline-flex h-[22px] flex-none items-center rounded bg-l-blue px-2 text-2xs font-bold text-primary">
                 {t('badge-notice')}
               </span>
             )}
-            <span className="text-[12.5px] text-gray-400">{POST.board}</span>
+            <span className="text-s text-gray-400">{POST.board}</span>
           </div>
-          <h1 className="text-wrap-pretty mt-2.5 text-[22px] leading-[1.4] font-extrabold tracking-[-0.01em]">
+          <h1 className="text-wrap-pretty mt-2.5 text-2xl leading-[1.4] font-extrabold tracking-[-0.01em]">
             {POST.title}
           </h1>
           <div className="mt-4 flex flex-wrap items-center gap-2.5 border-b border-gray-100 pb-[18px]">
@@ -88,7 +88,7 @@ export function PostDetailScreen() {
               {POST.authorInitial}
             </span>
             <div className="flex min-w-0 flex-col gap-px">
-              <span className="text-[13.5px] font-semibold">{POST.author}</span>
+              <span className="text-sm font-semibold">{POST.author}</span>
               <span className="text-xs text-gray-400">{POST.meta}</span>
             </div>
             <div className="ml-auto flex flex-none gap-0.5">
@@ -116,7 +116,7 @@ export function PostDetailScreen() {
         </div>
 
         {/* 본문 */}
-        <div className="px-7 pt-6 pb-2 text-[14.5px] leading-[1.75] text-gray-800">
+        <div className="px-7 pt-6 pb-2 text-sm leading-[1.75] text-gray-800">
           <p className="mb-4">{POST.paragraphs[0]}</p>
           <p className="mb-4">{POST.paragraphs[1]}</p>
           <button
@@ -125,7 +125,7 @@ export function PostDetailScreen() {
             className={`relative my-5 flex h-[240px] w-full max-w-[520px] cursor-zoom-in items-center justify-center rounded-lg text-on-pastel ${POST.imageBg}`}
           >
             <ImageIcon size={34} />
-            <span className="absolute right-3 bottom-2.5 inline-flex h-6 items-center gap-1.5 rounded-[5px] bg-black/45 px-2.5 text-[11.5px] text-white">
+            <span className="absolute right-3 bottom-2.5 inline-flex h-6 items-center gap-1.5 rounded-[5px] bg-black/45 px-2.5 text-xs text-white">
               <ZoomIcon />
               {t('detail-click-zoom')}
             </span>
@@ -136,7 +136,7 @@ export function PostDetailScreen() {
         {/* 첨부 */}
         <div className="px-7 pb-[22px]">
           <div className="overflow-hidden rounded-lg border border-gray-200">
-            <div className="flex h-[38px] items-center gap-1.5 border-b border-gray-200 bg-gray-50 px-3.5 text-[12.5px] font-semibold text-gray-600">
+            <div className="flex h-[38px] items-center gap-1.5 border-b border-gray-200 bg-gray-50 px-3.5 text-s font-semibold text-gray-600">
               <PaperclipIcon />
               {t('detail-attachments', { n: ATTACHMENTS.length })}
             </div>
@@ -146,12 +146,12 @@ export function PostDetailScreen() {
                 className={`flex h-11 items-center gap-2.5 px-3.5 ${i < ATTACHMENTS.length - 1 ? 'border-b border-gray-100' : ''}`}
               >
                 <span
-                  className={`inline-flex h-5 w-10 flex-none items-center justify-center rounded text-[10px] font-bold text-on-pastel ${f.bg}`}
+                  className={`inline-flex h-5 w-10 flex-none items-center justify-center rounded text-2xs font-bold text-on-pastel ${f.bg}`}
                 >
                   {f.ext}
                 </span>
-                <span className="flex-1 truncate text-[13px] text-gray-800">{f.name}</span>
-                <span className="flex-none text-[11.5px] text-gray-400">{f.size}</span>
+                <span className="flex-1 truncate text-s text-gray-800">{f.name}</span>
+                <span className="flex-none text-xs text-gray-400">{f.size}</span>
                 <IconBtn small label={t('file-preview')} onClick={() => setViewerOpen(true)}>
                   <EyeIcon />
                 </IconBtn>
@@ -168,7 +168,7 @@ export function PostDetailScreen() {
           <button
             type="button"
             onClick={toggleLike}
-            className={`inline-flex h-[34px] items-center gap-1.5 rounded-full border px-[13px] text-[13px] font-semibold ${liked ? 'border-primary bg-accent text-primary' : 'border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+            className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-[13px] text-s font-semibold ${liked ? 'border-primary bg-accent text-primary' : 'border-gray-200 text-gray-600 hover:bg-gray-100'}`}
           >
             <HeartIcon filled={liked} />
             {likeCount}
@@ -177,7 +177,7 @@ export function PostDetailScreen() {
             <button
               key={r.emoji}
               type="button"
-              className="inline-flex h-[34px] items-center gap-1.5 rounded-full border border-gray-200 px-[13px] text-[13px] text-gray-600 hover:bg-gray-100"
+              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-gray-200 px-[13px] text-s text-gray-600 hover:bg-gray-100"
             >
               {r.emoji} {r.count}
             </button>
@@ -185,7 +185,7 @@ export function PostDetailScreen() {
           <button
             type="button"
             onClick={() => setLikersOpen(true)}
-            className="ml-auto inline-flex items-center gap-1 text-[12.5px] text-gray-400 hover:text-primary"
+            className="ml-auto inline-flex items-center gap-1 text-s text-gray-400 hover:text-primary"
           >
             {t('detail-view-likers')}
             <ChevronIcon dir="right" small />
@@ -195,11 +195,11 @@ export function PostDetailScreen() {
 
       {/* 댓글 카드 */}
       <div className="rounded-lg border border-gray-200 bg-card px-7 pt-[22px] pb-[26px]">
-        <span className="text-[14.5px] font-bold">
+        <span className="text-sm font-bold">
           {t('detail-comments')} <span className="text-primary">{COMMENTS.length}</span>
         </span>
         <div className="mt-3.5 flex gap-2.5">
-          <span className="inline-flex size-8 flex-none items-center justify-center rounded-full bg-l-blue text-[12.5px] font-bold text-on-pastel">
+          <span className="inline-flex size-8 flex-none items-center justify-center rounded-full bg-l-blue text-s font-bold text-on-pastel">
             김
           </span>
           <div className="flex flex-1 flex-col gap-2">
@@ -207,14 +207,14 @@ export function PostDetailScreen() {
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               placeholder={t('detail-comment-ph')}
-              className={`min-h-16 w-full resize-y rounded-[5px] border bg-card px-3 py-2.5 text-[13.5px] leading-[1.6] outline-none focus:border-primary ${draft ? 'border-primary' : 'border-gray-300'}`}
+              className={`min-h-16 w-full resize-y rounded-[5px] border bg-card px-3 py-2.5 text-sm leading-[1.6] outline-none focus:border-primary ${draft ? 'border-primary' : 'border-gray-300'}`}
             />
             <div className="flex justify-end">
               <button
                 type="button"
                 disabled={!draft.trim()}
                 onClick={() => setDraft('')}
-                className="inline-flex h-[34px] items-center rounded-[5px] bg-primary px-4 text-[13px] font-semibold text-white disabled:bg-gray-100 disabled:text-gray-300"
+                className="inline-flex h-8 items-center rounded-[5px] bg-primary px-4 text-s font-semibold text-white disabled:bg-gray-100 disabled:text-gray-300"
               >
                 {t('detail-register')}
               </button>
@@ -258,7 +258,7 @@ export function PostDetailScreen() {
           >
             <ImageIcon size={44} />
           </span>
-          <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[12.5px] text-white/85">
+          <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-s text-white/85">
             1 / 2
           </span>
         </div>
@@ -268,10 +268,10 @@ export function PostDetailScreen() {
       {deleteOpen && (
         <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/50">
           <div className="flex w-80 flex-col items-center gap-2 rounded-lg bg-card px-[22px] pt-[26px] pb-[18px] shadow-[0_4px_18px_rgba(75,70,92,0.1)]">
-            <span className="text-center text-[14.5px] font-semibold text-gray-900">
+            <span className="text-center text-sm font-semibold text-gray-900">
               {t('detail-delete-confirm')}
             </span>
-            <span className="text-[12.5px] text-gray-500">{t('detail-delete-sub')}</span>
+            <span className="text-s text-gray-500">{t('detail-delete-sub')}</span>
             <div className="mt-2.5 flex w-full gap-2">
               <button
                 type="button"
@@ -297,7 +297,7 @@ export function PostDetailScreen() {
         <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/50">
           <div className="flex max-h-[80vh] w-[340px] flex-col overflow-hidden rounded-lg bg-card shadow-[0_4px_18px_rgba(75,70,92,0.1)]">
             <div className="flex h-[52px] items-center border-b border-gray-100 px-[18px]">
-              <span className="text-[14.5px] font-bold">
+              <span className="text-sm font-bold">
                 {t('detail-likers-title')} <span className="text-primary">{POST.likersCount}</span>
               </span>
               <button
@@ -313,7 +313,7 @@ export function PostDetailScreen() {
               {LIKERS.map((u) => (
                 <div
                   key={u.name}
-                  className="flex h-[46px] items-center gap-2.5 rounded-lg px-2.5 hover:bg-gray-50"
+                  className="flex h-12 items-center gap-2.5 rounded-lg px-2.5 hover:bg-gray-50"
                 >
                   <span
                     className={`inline-flex size-[30px] flex-none items-center justify-center rounded-full text-xs font-bold text-on-pastel ${u.bg}`}
@@ -321,8 +321,8 @@ export function PostDetailScreen() {
                     {u.initial}
                   </span>
                   <div className="flex min-w-0 flex-col gap-px">
-                    <span className="text-[13px] font-semibold">{u.name}</span>
-                    <span className="truncate text-[11.5px] text-gray-400">{u.dept}</span>
+                    <span className="text-s font-semibold">{u.name}</span>
+                    <span className="truncate text-xs text-gray-400">{u.dept}</span>
                   </div>
                   <span className="ml-auto text-sm">{u.emoji}</span>
                 </div>
@@ -356,14 +356,14 @@ function CommentItem({
       >
         {reply && <ReplyArrow />}
         <span
-          className={`inline-flex ${reply ? 'size-[30px]' : 'size-8'} mt-px flex-none items-center justify-center rounded-full text-[12.5px] font-bold text-on-pastel ${c.avatarBg}`}
+          className={`inline-flex ${reply ? 'size-[30px]' : 'size-8'} mt-px flex-none items-center justify-center rounded-full text-s font-bold text-on-pastel ${c.avatarBg}`}
         >
           {c.initial}
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-[5px]">
           <div className="flex items-center gap-2">
-            <span className="text-[13px] font-semibold">{c.author}</span>
-            <span className="text-[11.5px] text-gray-400">{c.time}</span>
+            <span className="text-s font-semibold">{c.author}</span>
+            <span className="text-xs text-gray-400">{c.time}</span>
             {c.own && (
               <div className="relative ml-auto">
                 <button
@@ -381,7 +381,7 @@ function CommentItem({
                     <button
                       type="button"
                       onClick={onDelete}
-                      className="flex h-[34px] w-full items-center gap-2 rounded-md px-2.5 text-[13px] text-destructive hover:bg-l-red"
+                      className="flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-s text-destructive hover:bg-l-red"
                     >
                       <TrashIcon />
                       {t('common-delete')}
@@ -391,7 +391,7 @@ function CommentItem({
               </div>
             )}
           </div>
-          <span className="text-[13.5px] leading-[1.65] text-gray-800">{c.text}</span>
+          <span className="text-sm leading-[1.65] text-gray-800">{c.text}</span>
           {!reply && (
             <div className="mt-0.5 flex items-center gap-3">
               <button
@@ -448,7 +448,7 @@ function MenuRow({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
     <button
       type="button"
-      className="flex h-[34px] w-full items-center gap-2 rounded-md px-2.5 text-[13px] text-gray-800 hover:bg-gray-100"
+      className="flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-s text-gray-800 hover:bg-gray-100"
     >
       {icon}
       {label}

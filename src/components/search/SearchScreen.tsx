@@ -46,7 +46,7 @@ export function SearchScreen() {
             onChange={(e) => setQ(e.target.value)}
             onFocus={() => setRecentOpen(true)}
             placeholder={t('nav-search-placeholder')}
-            className="min-w-0 flex-1 border-none bg-transparent text-[15px] text-gray-900 outline-none"
+            className="min-w-0 flex-1 border-none bg-transparent text-base text-gray-900 outline-none"
           />
           {q && (
             <button
@@ -63,14 +63,14 @@ export function SearchScreen() {
           )}
           <button
             type="button"
-            className="inline-flex h-[34px] flex-none items-center rounded-[5px] bg-primary px-[15px] text-[13.5px] font-semibold text-white hover:bg-ov-blue-700"
+            className="inline-flex h-8 flex-none items-center rounded-[5px] bg-primary px-[15px] text-sm font-semibold text-white hover:bg-ov-blue-700"
           >
             {t('common-search')}
           </button>
         </div>
         {recentOpen && recents.length > 0 && (
           <div className="absolute inset-x-0 top-[calc(100%+4px)] z-[var(--z-dropdown)] rounded-lg border border-gray-200 bg-card p-1.5 shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
-            <div className="flex h-[30px] items-center px-2.5 text-[11.5px] text-gray-400">
+            <div className="flex h-8 items-center px-2.5 text-xs text-gray-400">
               {t('search-recent')}
               <button
                 type="button"
@@ -92,7 +92,7 @@ export function SearchScreen() {
                     setQ(r)
                     setRecentOpen(false)
                   }}
-                  className="min-w-0 flex-1 truncate text-left text-[13.5px] text-gray-800"
+                  className="min-w-0 flex-1 truncate text-left text-sm text-gray-800"
                 >
                   {r}
                 </button>
@@ -115,7 +115,7 @@ export function SearchScreen() {
         <button
           type="button"
           onClick={() => setFilterOpen((v) => !v)}
-          className={`inline-flex h-[34px] items-center gap-1.5 rounded-[5px] border px-[13px] text-[13px] font-semibold ${filterOpen ? 'border-primary bg-accent text-primary' : 'border-gray-200 bg-card text-gray-700'}`}
+          className={`inline-flex h-8 items-center gap-1.5 rounded-[5px] border px-[13px] text-s font-semibold ${filterOpen ? 'border-primary bg-accent text-primary' : 'border-gray-200 bg-card text-gray-700'}`}
         >
           <FilterIcon />
           {t('search-advanced')}
@@ -128,7 +128,7 @@ export function SearchScreen() {
       {filterOpen && (
         <div className="-mt-2.5 flex flex-col gap-3.5 rounded-lg border border-gray-200 bg-card px-5 py-[18px]">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="w-14 flex-none text-[13px] font-semibold text-gray-700">
+            <span className="w-14 flex-none text-s font-semibold text-gray-700">
               {t('search-period')}
             </span>
             <div className="flex flex-wrap gap-1.5">
@@ -137,7 +137,7 @@ export function SearchScreen() {
                   key={p.value}
                   type="button"
                   onClick={() => setPreset(p.value)}
-                  className={`inline-flex h-[30px] items-center rounded-full px-[13px] text-[12.5px] font-semibold ${preset === p.value ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'}`}
+                  className={`inline-flex h-8 items-center rounded-full px-[13px] text-s font-semibold ${preset === p.value ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'}`}
                 >
                   {p.label}
                 </button>
@@ -152,24 +152,24 @@ export function SearchScreen() {
             </div>
           )}
           <div className="flex flex-wrap items-center gap-3">
-            <span className="w-14 flex-none text-[13px] font-semibold text-gray-700">
+            <span className="w-14 flex-none text-s font-semibold text-gray-700">
               {t('nav-board')}
             </span>
             <button
               type="button"
               className="inline-flex h-9 w-[220px] items-center gap-2 rounded-[5px] border border-gray-200 bg-card px-3"
             >
-              <span className="flex-1 text-left text-[13px] text-gray-400">
+              <span className="flex-1 text-left text-s text-gray-400">
                 {t('search-board-all')}
               </span>
               <Chevron />
             </button>
-            <span className="w-14 flex-none text-[13px] font-semibold text-gray-700">
+            <span className="w-14 flex-none text-s font-semibold text-gray-700">
               {t('search-author')}
             </span>
             <input
               placeholder={t('search-author-ph')}
-              className="h-9 w-[150px] rounded-[5px] border border-gray-300 bg-card px-3 text-[13px] outline-none focus:border-primary"
+              className="h-9 w-[150px] rounded-[5px] border border-gray-300 bg-card px-3 text-s outline-none focus:border-primary"
             />
           </div>
         </div>
@@ -197,7 +197,7 @@ export function SearchScreen() {
           <span className="inline-flex size-[52px] items-center justify-center rounded-full bg-accent text-primary">
             <SearchIcon big />
           </span>
-          <span className="text-[13.5px] text-gray-500">{t('search-empty')}</span>
+          <span className="text-sm text-gray-500">{t('search-empty')}</span>
           <span className="text-xs text-gray-400">{t('search-empty-sub')}</span>
         </div>
       ) : tab === 'post' ? (
@@ -212,7 +212,7 @@ export function SearchScreen() {
               <span className="text-sm leading-[1.5] font-semibold text-gray-900">
                 <Highlight text={r.title} q={q} />
               </span>
-              <span className="line-clamp-2 text-[12.5px] leading-[1.6] [overflow-wrap:anywhere] text-gray-500">
+              <span className="line-clamp-2 text-s leading-[1.6] [overflow-wrap:anywhere] text-gray-500">
                 <Highlight text={r.snippet} q={q} />
               </span>
               <span className="flex flex-wrap items-center gap-2 text-xs text-gray-400">
@@ -240,15 +240,15 @@ export function SearchScreen() {
               className="flex items-center gap-2.5 border-b border-gray-100 px-[18px] py-[13px] last:border-b-0 hover:bg-gray-50"
             >
               <span
-                className={`inline-flex h-5 w-10 flex-none items-center justify-center rounded text-[10px] font-bold text-on-pastel ${f.tagBg}`}
+                className={`inline-flex h-5 w-10 flex-none items-center justify-center rounded text-2xs font-bold text-on-pastel ${f.tagBg}`}
               >
                 {f.ext}
               </span>
               <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
-                <span className="truncate text-[13.5px] text-gray-900">
+                <span className="truncate text-sm text-gray-900">
                   <Highlight text={f.name} q={q} />
                 </span>
-                <span className="text-[11.5px] text-gray-400">{f.meta}</span>
+                <span className="text-xs text-gray-400">{f.meta}</span>
               </span>
               <button
                 type="button"
@@ -308,7 +308,7 @@ function TabButton({
 
 function DateChip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex h-9 items-center gap-2 rounded-[5px] border border-gray-200 bg-card px-3 text-[13px] text-gray-800">
+    <span className="inline-flex h-9 items-center gap-2 rounded-[5px] border border-gray-200 bg-card px-3 text-s text-gray-800">
       <CalendarIcon />
       {children}
     </span>

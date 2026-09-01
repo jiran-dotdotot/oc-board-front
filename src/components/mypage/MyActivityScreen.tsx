@@ -137,7 +137,7 @@ export function MyActivityScreen() {
         </span>
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="text-lg font-extrabold">{ME.name}</span>
-          <span className="text-[12.5px] text-gray-500">{ME.meta}</span>
+          <span className="text-s text-gray-500">{ME.meta}</span>
         </div>
         <div className="ml-auto flex flex-none gap-[18px]">
           <Stat n={IMPORTANT.length + 20} label={t('my-chip-my')} />
@@ -156,13 +156,13 @@ export function MyActivityScreen() {
               type="button"
               onClick={() => pickChip(c)}
               className={[
-                'inline-flex h-[34px] items-center gap-1.5 rounded-full px-[15px] text-[13px] font-semibold whitespace-nowrap',
+                'inline-flex h-8 items-center gap-1.5 rounded-full px-[15px] text-s font-semibold whitespace-nowrap',
                 on ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:opacity-90',
               ].join(' ')}
             >
               {t(CHIP_KEY[c])}
               {c === 'draft' && (
-                <span className="text-[11.5px] font-bold opacity-80">{DRAFTS.length}</span>
+                <span className="text-xs font-bold opacity-80">{DRAFTS.length}</span>
               )}
             </button>
           )
@@ -180,7 +180,7 @@ export function MyActivityScreen() {
                 type="button"
                 onClick={() => pickTab(tb)}
                 className={[
-                  '-mb-px border-b-2 px-0.5 pb-[9px] text-[13.5px] font-semibold whitespace-nowrap',
+                  '-mb-px border-b-2 px-0.5 pb-[9px] text-sm font-semibold whitespace-nowrap',
                   on ? 'border-primary text-gray-900' : 'border-transparent text-gray-500',
                 ].join(' ')}
               >
@@ -195,7 +195,7 @@ export function MyActivityScreen() {
       {/* 일괄 선택 툴바 */}
       {selCount > 0 && (
         <div className="-mb-1 flex flex-wrap items-center gap-2">
-          <span className="text-[13px] text-gray-600">
+          <span className="text-s text-gray-600">
             <b className="text-primary">{selCount}</b>
             {t('drive-selected-suffix')}
           </span>
@@ -278,19 +278,19 @@ export function MyActivityScreen() {
                     )}
                     {r.isFile && (
                       <span
-                        className={`inline-flex h-5 w-10 flex-none items-center justify-center rounded text-[10px] font-bold text-on-pastel ${r.tagBg ?? 'bg-l-gray'}`}
+                        className={`inline-flex h-5 w-10 flex-none items-center justify-center rounded text-2xs font-bold text-on-pastel ${r.tagBg ?? 'bg-l-gray'}`}
                       >
                         {r.ext}
                       </span>
                     )}
                     {r.isNotice && (
-                      <span className="inline-flex h-[19px] flex-none items-center rounded bg-l-blue px-[7px] text-[10.5px] font-bold text-primary">
+                      <span className="inline-flex h-[19px] flex-none items-center rounded bg-l-blue px-[7px] text-2xs font-bold text-primary">
                         {t('badge-notice')}
                       </span>
                     )}
                     <span
                       className={[
-                        'truncate text-[13.5px]',
+                        'truncate text-sm',
                         r.dim ? 'font-normal text-gray-400' : 'font-semibold text-gray-900',
                       ].join(' ')}
                     >
@@ -300,23 +300,23 @@ export function MyActivityScreen() {
                     {r.cmt != null && r.cmt > 0 && <CommentCount n={r.cmt} />}
                   </span>
                   {/* 위치 */}
-                  <span className="truncate pr-2.5 text-[12.5px] text-gray-500">{r.where}</span>
+                  <span className="truncate pr-2.5 text-s text-gray-500">{r.where}</span>
                   {/* 휴지통: 삭제자 · 등록일 */}
                   {cfg.trash && (
                     <>
-                      <span className="truncate pr-2 text-[12.5px] text-gray-600">{r.by}</span>
-                      <span className="text-[12.5px] whitespace-nowrap text-gray-500">
+                      <span className="truncate pr-2 text-s text-gray-600">{r.by}</span>
+                      <span className="text-s whitespace-nowrap text-gray-500">
                         {r.created}
                       </span>
                     </>
                   )}
                   {/* 날짜 */}
-                  <span className="text-[12.5px] whitespace-nowrap text-gray-500">{r.when}</span>
+                  <span className="text-s whitespace-nowrap text-gray-500">{r.when}</span>
                   {/* 조회 · 공감 */}
                   {cfg.stats && (
                     <>
-                      <span className="text-center text-[12.5px] text-gray-500">{r.views}</span>
-                      <span className="text-center text-[12.5px] text-gray-500">{r.likes}</span>
+                      <span className="text-center text-s text-gray-500">{r.views}</span>
+                      <span className="text-center text-s text-gray-500">{r.likes}</span>
                     </>
                   )}
                   {/* 액션 (이어쓰기) */}
@@ -343,7 +343,7 @@ export function MyActivityScreen() {
           <span className="inline-flex size-[52px] items-center justify-center rounded-full bg-gray-100 text-gray-400">
             <TrashIcon size={22} />
           </span>
-          <span className="text-[13.5px] text-gray-500">{t('my-empty-trash')}</span>
+          <span className="text-sm text-gray-500">{t('my-empty-trash')}</span>
         </div>
       )}
 
@@ -357,10 +357,10 @@ export function MyActivityScreen() {
             <span className="inline-flex size-[42px] items-center justify-center rounded-full bg-l-red text-destructive">
               <TrashIcon size={20} />
             </span>
-            <span className="mt-1 text-center text-[14.5px] font-semibold">
+            <span className="mt-1 text-center text-sm font-semibold">
               {t('my-purge-confirm', { n: selCount })}
             </span>
-            <span className="text-center text-[12.5px] text-gray-500">{t('my-purge-sub')}</span>
+            <span className="text-center text-s text-gray-500">{t('my-purge-sub')}</span>
             <div className="mt-2.5 flex w-full gap-2">
               <button
                 type="button"
@@ -390,7 +390,7 @@ function Stat({ n, label }: { n: number; label: string }) {
   return (
     <span className="flex flex-col items-center gap-px">
       <span className="text-base font-extrabold text-primary">{n}</span>
-      <span className="text-[11.5px] text-gray-400">{label}</span>
+      <span className="text-xs text-gray-400">{label}</span>
     </span>
   )
 }
@@ -411,7 +411,7 @@ function ToolbarBtn({
       type="button"
       onClick={onClick}
       className={[
-        'inline-flex h-[34px] items-center gap-1.5 rounded-[5px] border border-gray-200 bg-card px-[13px] text-[13px] font-semibold whitespace-nowrap',
+        'inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 bg-card px-[13px] text-s font-semibold whitespace-nowrap',
         danger ? 'text-destructive hover:bg-l-red' : 'text-gray-700 hover:bg-gray-100',
       ].join(' ')}
     >

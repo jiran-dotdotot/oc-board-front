@@ -373,14 +373,14 @@ export function SettingsScreen() {
       {/* 헤더 */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <span className="text-lg font-extrabold tracking-[-0.01em]">{t('env-title')}</span>
-        <span className="text-[12.5px] text-gray-400">{t('env-subtitle')}</span>
+        <span className="text-s text-gray-400">{t('env-subtitle')}</span>
         {/* 추가 드롭다운 — 게시판 관리 탭에서만 */}
         {tab === 'content' && (
           <span data-dd="addmenu" className="relative ml-auto">
             <button
               type="button"
               onClick={() => setAddMenuOpen((v) => !v)}
-              className="inline-flex h-9 items-center gap-1.5 rounded-[5px] bg-primary px-3.5 text-[13.5px] font-semibold text-white hover:bg-ov-blue-700"
+              className="inline-flex h-9 items-center gap-1.5 rounded-[5px] bg-primary px-3.5 text-sm font-semibold text-white hover:bg-ov-blue-700"
             >
               <PlusIcon /> {t('admin-add')} <CaretDown />
             </button>
@@ -392,7 +392,7 @@ export function SettingsScreen() {
                     <MenuItem onClick={() => openAdd('folder')}>{t('admin-add-folder')}</MenuItem>
                   </>
                 ) : (
-                  <span className="flex h-[34px] items-center px-2.5 text-xs text-gray-300">
+                  <span className="flex h-8 items-center px-2.5 text-xs text-gray-300">
                     {t('admin-add-super-only')}
                   </span>
                 )}
@@ -428,7 +428,7 @@ export function SettingsScreen() {
               <span className="flex min-w-0 flex-col gap-px">
                 <span
                   className={[
-                    'text-[13.5px] font-bold',
+                    'text-sm font-bold',
                     tab === rl.id ? 'text-primary' : 'text-gray-800',
                   ].join(' ')}
                 >
@@ -436,7 +436,7 @@ export function SettingsScreen() {
                 </span>
                 <span
                   className={[
-                    'text-[11px]',
+                    'text-2xs',
                     tab === rl.id ? 'text-gray-500' : 'text-gray-400',
                   ].join(' ')}
                 >
@@ -450,7 +450,7 @@ export function SettingsScreen() {
               )}
             </button>
           ))}
-          <span className="mt-2.5 px-2.5 text-[11px] leading-relaxed text-gray-400 min-[820px]:mt-3.5">
+          <span className="mt-2.5 px-2.5 text-2xs leading-relaxed text-gray-400 min-[820px]:mt-3.5">
             {t('env-rail-note')}
           </span>
         </div>
@@ -490,7 +490,7 @@ export function SettingsScreen() {
                           setDragOver(null)
                         }}
                         className={[
-                          'flex h-9 cursor-grab items-center gap-2 rounded-lg pr-2.5 text-[13px] active:cursor-grabbing',
+                          'flex h-9 cursor-grab items-center gap-2 rounded-lg pr-2.5 text-s active:cursor-grabbing',
                           on ? 'bg-accent' : 'hover:bg-gray-50',
                         ].join(' ')}
                         style={{
@@ -521,14 +521,14 @@ export function SettingsScreen() {
                         </span>
                         {n.scoped && <ScopedIcon />}
                         {n.paused && (
-                          <span className="inline-flex h-[18px] flex-none items-center rounded bg-l-gray px-1.5 text-[10px] font-bold text-gray-500">
+                          <span className="inline-flex h-[18px] flex-none items-center rounded bg-l-gray px-1.5 text-2xs font-bold text-gray-500">
                             {t('admin-paused')}
                           </span>
                         )}
                       </button>
                     )
                   })}
-                  <span className="mt-2 border-t border-gray-100 px-2.5 pt-2 text-[11.5px] leading-relaxed text-gray-400">
+                  <span className="mt-2 border-t border-gray-100 px-2.5 pt-2 text-xs leading-relaxed text-gray-400">
                     {t('admin-tree-note')}
                   </span>
                 </div>
@@ -537,7 +537,7 @@ export function SettingsScreen() {
                 <div className="flex flex-col gap-[18px] rounded-lg border border-gray-200 bg-card px-[22px] py-5">
                   {/* 이름 + 삭제 */}
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <span className="inline-flex h-[22px] flex-none items-center rounded bg-l-blue px-2 text-[11px] font-bold text-primary">
+                    <span className="inline-flex h-[22px] flex-none items-center rounded bg-l-blue px-2 text-2xs font-bold text-primary">
                       {t(TYPE_KEY[soKind])}
                     </span>
                     <input
@@ -545,7 +545,7 @@ export function SettingsScreen() {
                       onChange={(e) =>
                         patchSel({ name: Array.from(e.target.value).slice(0, 60).join('') })
                       }
-                      className="h-[38px] w-[250px] max-w-full rounded-[5px] border border-gray-300 px-3 text-sm font-semibold focus:border-primary focus:outline-none"
+                      className="h-10 w-[250px] max-w-full rounded-[5px] border border-gray-300 px-3 text-sm font-semibold focus:border-primary focus:outline-none"
                     />
                     {isFixed ? (
                       <span className="text-xs text-gray-400">{t('admin-fixed-note')}</span>
@@ -553,7 +553,7 @@ export function SettingsScreen() {
                       <button
                         type="button"
                         onClick={() => showToast(t('admin-toast-del-demo', { name: so.name }))}
-                        className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 px-3 text-[12.5px] font-semibold text-destructive hover:bg-l-red"
+                        className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 px-3 text-s font-semibold text-destructive hover:bg-l-red"
                       >
                         <TrashIcon /> {t('common-delete')}
                       </button>
@@ -563,7 +563,7 @@ export function SettingsScreen() {
                   {/* 공개 범위 */}
                   <Section title={t('admin-scope')}>
                     {isFixed ? (
-                      <span className="text-[12.5px] text-gray-500">
+                      <span className="text-s text-gray-500">
                         {t('admin-fixed-scope-note')}
                       </span>
                     ) : (
@@ -583,13 +583,13 @@ export function SettingsScreen() {
                             <button
                               type="button"
                               onClick={() => setPicker({ mode: 'scope', target: 'sel' })}
-                              className="inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 px-3 text-[12.5px] font-semibold text-gray-700 hover:bg-gray-100"
+                              className="inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 px-3 text-s font-semibold text-gray-700 hover:bg-gray-100"
                             >
                               <PersonIcon /> {so.scopeLabel || t('admin-scope-default')}
                             </button>
                           )}
                         </div>
-                        <span className="text-[11.5px] text-gray-400">{t('admin-scope-hint')}</span>
+                        <span className="text-xs text-gray-400">{t('admin-scope-hint')}</span>
                       </>
                     )}
                   </Section>
@@ -597,11 +597,11 @@ export function SettingsScreen() {
                   {/* 관리자 */}
                   <Section title={t('admin-managers')}>
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex h-[34px] items-center gap-[7px] rounded-full bg-gray-50 pr-3 pl-1.5">
-                        <span className="inline-flex size-6 items-center justify-center rounded-full bg-l-blue text-[11px] font-bold text-on-pastel">
+                      <span className="inline-flex h-8 items-center gap-[7px] rounded-full bg-gray-50 pr-3 pl-1.5">
+                        <span className="inline-flex size-6 items-center justify-center rounded-full bg-l-blue text-2xs font-bold text-on-pastel">
                           {ME_NAME[0]}
                         </span>
-                        <span className="text-[12.5px] text-gray-700">
+                        <span className="text-s text-gray-700">
                           {ME_NAME} ({t('admin-me')})
                         </span>
                       </span>
@@ -614,12 +614,12 @@ export function SettingsScreen() {
                       ).map((name) => (
                         <span
                           key={name}
-                          className="inline-flex h-[34px] items-center gap-[7px] rounded-full bg-gray-50 pr-2 pl-1.5"
+                          className="inline-flex h-8 items-center gap-[7px] rounded-full bg-gray-50 pr-2 pl-1.5"
                         >
-                          <span className="inline-flex size-6 items-center justify-center rounded-full bg-l-green text-[11px] font-bold text-on-pastel">
+                          <span className="inline-flex size-6 items-center justify-center rounded-full bg-l-green text-2xs font-bold text-on-pastel">
                             {name[0]}
                           </span>
-                          <span className="text-[12.5px] text-gray-700">{name}</span>
+                          <span className="text-s text-gray-700">{name}</span>
                           <button
                             type="button"
                             aria-label={t('common-delete')}
@@ -639,19 +639,19 @@ export function SettingsScreen() {
                       <button
                         type="button"
                         onClick={() => setPicker({ mode: 'admin', target: 'sel' })}
-                        className="inline-flex h-[34px] items-center gap-1.5 rounded-full border border-dashed border-gray-300 px-[13px] text-[12.5px] font-semibold text-gray-500 hover:bg-gray-50"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-full border border-dashed border-gray-300 px-[13px] text-s font-semibold text-gray-500 hover:bg-gray-50"
                       >
                         <PlusMini /> {t('admin-add-manager')}
                       </button>
                     </div>
-                    <span className="text-[11.5px] text-gray-400">{t('admin-managers-hint')}</span>
+                    <span className="text-xs text-gray-400">{t('admin-managers-hint')}</span>
                   </Section>
 
                   {/* 게시판 설정 */}
                   {soKind === 'board' && soItem && (
                     <Section title={t('admin-board-settings')}>
                       <div className="flex flex-wrap items-center gap-[18px]">
-                        <span className="w-[70px] flex-none text-[12.5px] text-gray-500">
+                        <span className="w-[70px] flex-none text-s text-gray-500">
                           {t('admin-type')}
                         </span>
                         {(['BOARD', 'PREVIEW', 'ALBUM'] as BType[]).map((bt) => (
@@ -664,7 +664,7 @@ export function SettingsScreen() {
                         ))}
                       </div>
                       <div className="flex items-center gap-[18px]">
-                        <span className="w-[70px] flex-none text-[12.5px] text-gray-500">
+                        <span className="w-[70px] flex-none text-s text-gray-500">
                           {t('admin-alarm-new')}
                         </span>
                         <Toggle
@@ -673,7 +673,7 @@ export function SettingsScreen() {
                         />
                       </div>
                       <div className="flex items-center gap-[18px]">
-                        <span className="w-[70px] flex-none text-[12.5px] text-gray-500">
+                        <span className="w-[70px] flex-none text-s text-gray-500">
                           {t('admin-active')}
                         </span>
                         <Toggle
@@ -689,7 +689,7 @@ export function SettingsScreen() {
                   {soKind === 'drive' && soItem && (
                     <Section title={t('admin-drive-settings')}>
                       <div className="flex flex-wrap items-center gap-3">
-                        <span className="w-[110px] flex-none text-[12.5px] text-gray-500">
+                        <span className="w-[110px] flex-none text-s text-gray-500">
                           {t('admin-file-max')}
                         </span>
                         {FILE_MAX_OPTS.map((v) => (
@@ -702,7 +702,7 @@ export function SettingsScreen() {
                         ))}
                       </div>
                       <div className="flex flex-wrap items-center gap-3">
-                        <span className="w-[110px] flex-none text-[12.5px] text-gray-500">
+                        <span className="w-[110px] flex-none text-s text-gray-500">
                           {t('admin-total-max')}
                         </span>
                         {TOTAL_MAX_OPTS.map((v) => (
@@ -715,7 +715,7 @@ export function SettingsScreen() {
                         ))}
                       </div>
                       <div className="flex flex-wrap items-start gap-3">
-                        <span className="w-[110px] flex-none pt-1.5 text-[12.5px] text-gray-500">
+                        <span className="w-[110px] flex-none pt-1.5 text-s text-gray-500">
                           {t('admin-ext-block')}
                         </span>
                         <div className="flex min-w-[200px] flex-1 flex-wrap items-center gap-1.5">
@@ -756,7 +756,7 @@ export function SettingsScreen() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="w-[110px] flex-none text-[12.5px] text-gray-500">
+                        <span className="w-[110px] flex-none text-s text-gray-500">
                           {t('admin-drive-alarm')}
                         </span>
                         <Toggle
@@ -772,7 +772,7 @@ export function SettingsScreen() {
                     <button
                       type="button"
                       onClick={() => showToast(t('admin-toast-saved'))}
-                      className="inline-flex h-[38px] items-center rounded-[5px] bg-primary px-[18px] text-[13.5px] font-semibold text-white hover:bg-ov-blue-700"
+                      className="inline-flex h-10 items-center rounded-[5px] bg-primary px-[18px] text-sm font-semibold text-white hover:bg-ov-blue-700"
                     >
                       {t('common-save')}
                     </button>
@@ -793,7 +793,7 @@ export function SettingsScreen() {
         >
           <div className="flex max-h-[calc(100dvh-64px)] w-[420px] max-w-full flex-col rounded-lg bg-card shadow-[var(--shadow-modal)]">
             <div className="flex items-center border-b border-gray-100 px-5 pt-[18px] pb-3.5">
-              <span className="text-[15px] font-bold">
+              <span className="text-base font-bold">
                 {t(TYPE_KEY[addKind])} {t('admin-add')}
               </span>
               <button
@@ -815,7 +815,7 @@ export function SettingsScreen() {
                       onClick={() => setALocOpen((v) => !v)}
                       className="flex h-10 w-full items-center gap-2 rounded-[5px] border border-gray-300 px-3"
                     >
-                      <span className="flex-1 text-left text-[13.5px] text-gray-900">
+                      <span className="flex-1 text-left text-sm text-gray-900">
                         {curLoc?.label}
                       </span>
                       <CaretDown
@@ -834,7 +834,7 @@ export function SettingsScreen() {
                               setALocOpen(false)
                             }}
                             className={[
-                              'flex h-[34px] cursor-pointer items-center rounded-[5px] px-2.5 text-[13px] hover:bg-gray-100',
+                              'flex h-8 cursor-pointer items-center rounded-[5px] px-2.5 text-s hover:bg-gray-100',
                               aLoc === o.v ? 'font-semibold text-primary' : 'text-gray-800',
                             ].join(' ')}
                           >
@@ -853,7 +853,7 @@ export function SettingsScreen() {
                     value={aName}
                     onChange={(e) => setAName(Array.from(e.target.value).slice(0, 60).join(''))}
                     placeholder={t('admin-name-required')}
-                    className="h-10 w-full rounded-[5px] border bg-card pr-16 pl-3 text-[13.5px] focus:outline-none"
+                    className="h-10 w-full rounded-[5px] border bg-card pr-16 pl-3 text-sm focus:outline-none"
                     style={{
                       borderColor:
                         aTried && !aName.trim()
@@ -863,7 +863,7 @@ export function SettingsScreen() {
                             : 'var(--color-gray-300)',
                     }}
                   />
-                  <span className="absolute top-3 right-3 text-[11.5px] text-gray-400">
+                  <span className="absolute top-3 right-3 text-xs text-gray-400">
                     {Array.from(aName).length}/60
                   </span>
                 </span>
@@ -890,7 +890,7 @@ export function SettingsScreen() {
                     <button
                       type="button"
                       onClick={() => setPicker({ mode: 'scope', target: 'add' })}
-                      className="inline-flex h-[30px] items-center gap-1.5 rounded-[5px] border border-gray-200 px-3 text-xs font-semibold text-gray-700 hover:bg-gray-100"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 px-3 text-xs font-semibold text-gray-700 hover:bg-gray-100"
                     >
                       <PersonIcon /> {aScopeLabel || t('admin-scope-default')}
                     </button>
@@ -901,10 +901,10 @@ export function SettingsScreen() {
               <Field label={t('admin-managers')}>
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="inline-flex h-8 items-center gap-[7px] rounded-full bg-gray-50 pr-[11px] pl-[5px]">
-                    <span className="inline-flex size-[22px] items-center justify-center rounded-full bg-l-blue text-[10.5px] font-bold text-on-pastel">
+                    <span className="inline-flex size-[22px] items-center justify-center rounded-full bg-l-blue text-2xs font-bold text-on-pastel">
                       {ME_NAME[0]}
                     </span>
-                    <span className="text-[12.5px] text-gray-700">
+                    <span className="text-s text-gray-700">
                       {ME_NAME} ({t('admin-me')})
                     </span>
                   </span>
@@ -913,10 +913,10 @@ export function SettingsScreen() {
                       key={name}
                       className="inline-flex h-8 items-center gap-[7px] rounded-full bg-gray-50 pr-[7px] pl-[5px]"
                     >
-                      <span className="inline-flex size-[22px] items-center justify-center rounded-full bg-l-green text-[10.5px] font-bold text-on-pastel">
+                      <span className="inline-flex size-[22px] items-center justify-center rounded-full bg-l-green text-2xs font-bold text-on-pastel">
                         {name[0]}
                       </span>
-                      <span className="text-[12.5px] text-gray-700">{name}</span>
+                      <span className="text-s text-gray-700">{name}</span>
                       <button
                         type="button"
                         aria-label={t('common-delete')}
@@ -948,9 +948,9 @@ export function SettingsScreen() {
                         }
                         placeholder={t('admin-board-desc-ph')}
                         rows={2}
-                        className="w-full resize-none rounded-[5px] border border-gray-300 px-3 py-2 text-[13.5px] focus:border-primary focus:outline-none"
+                        className="w-full resize-none rounded-[5px] border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
                       />
-                      <span className="absolute right-3 bottom-2.5 text-[11.5px] text-gray-400">
+                      <span className="absolute right-3 bottom-2.5 text-xs text-gray-400">
                         {Array.from(aDesc).length}/300
                       </span>
                     </span>
@@ -968,13 +968,13 @@ export function SettingsScreen() {
                     </div>
                   </Field>
                   <div className="flex items-center gap-3">
-                    <span className="text-[13px] font-semibold text-gray-700">
+                    <span className="text-s font-semibold text-gray-700">
                       {t('admin-alarm-new')}
                     </span>
                     <Toggle on={aAlarm} onClick={() => setAAlarm((v) => !v)} />
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-[13px] font-semibold text-gray-700">
+                    <span className="text-s font-semibold text-gray-700">
                       {t('admin-active')}
                     </span>
                     <Toggle on={aActive} onClick={() => setAActive((v) => !v)} />
@@ -986,7 +986,7 @@ export function SettingsScreen() {
               {addKind === 'drive' && (
                 <>
                   <div className="flex flex-wrap items-center gap-3">
-                    <span className="w-[110px] flex-none text-[13px] font-semibold text-gray-700">
+                    <span className="w-[110px] flex-none text-s font-semibold text-gray-700">
                       {t('admin-file-max')}
                     </span>
                     {FILE_MAX_OPTS.map((v) => (
@@ -999,7 +999,7 @@ export function SettingsScreen() {
                     ))}
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <span className="w-[110px] flex-none text-[13px] font-semibold text-gray-700">
+                    <span className="w-[110px] flex-none text-s font-semibold text-gray-700">
                       {t('admin-total-max')}
                     </span>
                     {TOTAL_MAX_OPTS.map((v) => (
@@ -1012,7 +1012,7 @@ export function SettingsScreen() {
                     ))}
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="w-[110px] flex-none text-[13px] font-semibold text-gray-700">
+                    <span className="w-[110px] flex-none text-s font-semibold text-gray-700">
                       {t('admin-drive-alarm')}
                     </span>
                     <Toggle on={aAlarm} onClick={() => setAAlarm((v) => !v)} />
@@ -1022,7 +1022,7 @@ export function SettingsScreen() {
                       value={aExt}
                       onChange={(e) => setAExt(e.target.value)}
                       placeholder={t('admin-ext-ph-modal')}
-                      className="h-10 w-full rounded-[5px] border border-gray-300 px-3 text-[13.5px] focus:border-primary focus:outline-none"
+                      className="h-10 w-full rounded-[5px] border border-gray-300 px-3 text-sm focus:border-primary focus:outline-none"
                     />
                   </Field>
                 </>
@@ -1032,14 +1032,14 @@ export function SettingsScreen() {
               <button
                 type="button"
                 onClick={() => setAddOpen(false)}
-                className="inline-flex h-[38px] items-center rounded-[5px] border border-gray-200 bg-card px-4 text-[13.5px] font-semibold text-gray-800 hover:bg-gray-100"
+                className="inline-flex h-10 items-center rounded-[5px] border border-gray-200 bg-card px-4 text-sm font-semibold text-gray-800 hover:bg-gray-100"
               >
                 {t('common-cancel')}
               </button>
               <button
                 type="button"
                 onClick={aSave}
-                className="inline-flex h-[38px] items-center rounded-[5px] bg-primary px-[18px] text-[13.5px] font-semibold text-white hover:bg-ov-blue-700"
+                className="inline-flex h-10 items-center rounded-[5px] bg-primary px-[18px] text-sm font-semibold text-white hover:bg-ov-blue-700"
               >
                 {t('admin-add')}
               </button>
@@ -1067,7 +1067,7 @@ export function SettingsScreen() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2 border-t border-gray-100 pt-4">
-      <span className="text-[13px] font-bold">{title}</span>
+      <span className="text-s font-bold">{title}</span>
       {children}
     </div>
   )
@@ -1087,7 +1087,7 @@ function Field({
   const { t } = useTranslation()
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-[13px] font-semibold text-gray-700">
+      <span className="text-s font-semibold text-gray-700">
         {label}
         {required && <span className="text-destructive"> *</span>}
         {optional && <span className="font-normal text-gray-400"> {t('admin-ext-optional')}</span>}
@@ -1134,7 +1134,7 @@ function MenuItem({ onClick, children }: { onClick: () => void; children: React.
     <button
       type="button"
       onClick={onClick}
-      className="flex h-[34px] w-full items-center rounded-[5px] px-2.5 text-[13px] text-gray-800 hover:bg-gray-100"
+      className="flex h-8 w-full items-center rounded-[5px] px-2.5 text-s text-gray-800 hover:bg-gray-100"
     >
       {children}
     </button>
@@ -1150,7 +1150,7 @@ function RadioRow({ label, on, onClick }: { label: string; on: boolean; onClick:
           border: on ? '5px solid var(--color-primary)' : '1.5px solid var(--color-gray-300)',
         }}
       />
-      <span className="text-[13px]">{label}</span>
+      <span className="text-s">{label}</span>
     </button>
   )
 }

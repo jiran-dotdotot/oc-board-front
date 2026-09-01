@@ -33,7 +33,7 @@ const COLS = 'minmax(300px,1fr) 130px 96px 60px 60px'
 // 데스크톱 테이블 ↔ 모바일 한 줄. HomeScreen과 같은 패턴.
 const ROW =
   'w-full items-center border-b border-gray-100 flex flex-col gap-1 px-3.5 py-[11px] min-h-[62px] min-[631px]:grid min-[631px]:flex-row min-[631px]:gap-0 min-[631px]:px-[18px] min-[631px]:py-0 min-[631px]:min-h-12'
-const CELL_DESKTOP = 'hidden truncate text-[12.5px] min-[631px]:block'
+const CELL_DESKTOP = 'hidden truncate text-s min-[631px]:block'
 const PASTELS = ['bg-l-blue', 'bg-l-green', 'bg-l-orange', 'bg-l-purple', 'bg-l-mint', 'bg-l-pink']
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -212,7 +212,7 @@ export function BoardListScreen() {
             <StarIcon filled={boardFav} />
           </button>
         )}
-        <span className="flex-none text-[12.5px] text-gray-400">
+        <span className="flex-none text-s text-gray-400">
           {t('list-count', { n: totalCount })}
         </span>
 
@@ -223,7 +223,7 @@ export function BoardListScreen() {
               type="button"
               aria-pressed={listFilter === 'all'}
               onClick={() => setSearch({ read: undefined, page: undefined })}
-              className={`inline-flex h-[30px] items-center rounded px-3 text-[12.5px] font-semibold ${listFilter !== 'before' ? 'bg-card text-primary shadow-[0_4px_8px_rgba(0,0,0,0.1)]' : 'text-gray-500'}`}
+              className={`inline-flex h-8 items-center rounded px-3 text-s font-semibold ${listFilter !== 'before' ? 'bg-card text-primary shadow-[0_4px_8px_rgba(0,0,0,0.1)]' : 'text-gray-500'}`}
             >
               {t('list-filter-all')}
             </button>
@@ -231,7 +231,7 @@ export function BoardListScreen() {
               type="button"
               aria-pressed={listFilter === 'before'}
               onClick={() => setSearch({ read: 'before', page: undefined })}
-              className={`inline-flex h-[30px] items-center rounded px-3 text-[12.5px] font-semibold ${listFilter === 'before' ? 'bg-card text-primary shadow-[0_4px_8px_rgba(0,0,0,0.1)]' : 'text-gray-500'}`}
+              className={`inline-flex h-8 items-center rounded px-3 text-s font-semibold ${listFilter === 'before' ? 'bg-card text-primary shadow-[0_4px_8px_rgba(0,0,0,0.1)]' : 'text-gray-500'}`}
             >
               {t('list-filter-unread')}
             </button>
@@ -242,7 +242,7 @@ export function BoardListScreen() {
             <button
               type="button"
               onClick={() => setCountOpen((v) => !v)}
-              className="inline-flex h-[34px] items-center gap-1.5 rounded-[5px] border border-gray-200 bg-card px-3 text-[12.5px] whitespace-nowrap text-gray-700 hover:bg-gray-100"
+              className="inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 bg-card px-3 text-s whitespace-nowrap text-gray-700 hover:bg-gray-100"
             >
               {t('list-per-page', { n: perPage })}
               <ChevronDownIcon className={countOpen ? 'rotate-180' : ''} />
@@ -266,7 +266,7 @@ export function BoardListScreen() {
                         setSearch({ limit: v, page: undefined })
                         setCountOpen(false)
                       }}
-                      className={`flex h-[34px] w-full items-center rounded-md px-2.5 text-[12.5px] hover:bg-gray-100 ${v === perPage ? 'font-semibold text-primary' : 'text-gray-800'}`}
+                      className={`flex h-8 w-full items-center rounded-md px-2.5 text-s hover:bg-gray-100 ${v === perPage ? 'font-semibold text-primary' : 'text-gray-800'}`}
                     >
                       {t('list-per-page', { n: v })}
                     </button>
@@ -285,7 +285,7 @@ export function BoardListScreen() {
                 aria-label={v.label}
                 aria-pressed={view === v.key}
                 onClick={() => setSearch({ viewType: v.key })}
-                className={`flex h-[30px] w-8 items-center justify-center rounded ${view === v.key ? 'bg-card text-primary' : 'text-gray-400'}`}
+                className={`flex h-8 w-8 items-center justify-center rounded ${view === v.key ? 'bg-card text-primary' : 'text-gray-400'}`}
               >
                 {v.icon}
               </button>
@@ -334,7 +334,7 @@ export function BoardListScreen() {
                 key={n}
                 type="button"
                 onClick={() => setSearch({ page: n > 1 ? n : undefined })}
-                className={`mx-px inline-flex h-7 min-w-[28px] items-center justify-center rounded-full border px-1.5 text-[12.5px] ${
+                className={`mx-px inline-flex h-7 min-w-[28px] items-center justify-center rounded-full border px-1.5 text-s ${
                   n === page
                     ? 'border-primary font-bold text-primary'
                     : 'border-transparent text-gray-500 hover:bg-gray-100'
@@ -397,7 +397,7 @@ function BoardBlockedModal({ message, onClose }: { message: string; onClose: () 
         onClick={(e) => e.stopPropagation()}
         className="flex w-[320px] max-w-full flex-col items-center gap-[18px] rounded-lg bg-card px-[22px] pt-[26px] pb-[18px] shadow-[var(--shadow-modal)]"
       >
-        <span className="text-center text-[14.5px] font-semibold text-gray-900">{message}</span>
+        <span className="text-center text-sm font-semibold text-gray-900">{message}</span>
         <button
           type="button"
           autoFocus
@@ -436,12 +436,12 @@ function NoticeRow({ r, ctx }: { r: BoardRow; ctx: RowCtx }) {
       <span className="flex w-full min-w-0 items-center gap-[7px] min-[631px]:w-auto min-[631px]:pr-3.5">
         <TitleCell r={r} notice={t('badge-notice')} />
       </span>
-      <span className="w-full truncate text-[11.5px] text-gray-400 min-[631px]:hidden">
+      <span className="w-full truncate text-xs text-gray-400 min-[631px]:hidden">
         {t('list-meta', { author: r.author, date: r.date, views: r.views })}
       </span>
       <span className="hidden min-w-0 items-center gap-1.5 pr-2 min-[631px]:flex">
         <Avatar r={r} />
-        <span className="truncate text-[12.5px] text-gray-600">{r.author}</span>
+        <span className="truncate text-s text-gray-600">{r.author}</span>
       </span>
       <span className={`${CELL_DESKTOP} whitespace-nowrap text-gray-500`}>{r.date}</span>
       <span className={`${CELL_DESKTOP} text-center text-gray-500`}>
@@ -488,11 +488,11 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
           <path d="M12 7.5V13M12 16.5h.01" />
         </svg>
       </span>
-      <span className="text-[13.5px] text-gray-500">{t('list-error')}</span>
+      <span className="text-sm text-gray-500">{t('list-error')}</span>
       <button
         type="button"
         onClick={onRetry}
-        className="inline-flex h-9 items-center rounded-[5px] border border-gray-200 bg-card px-4 text-[13px] font-semibold text-gray-700 hover:bg-gray-100"
+        className="inline-flex h-9 items-center rounded-[5px] border border-gray-200 bg-card px-4 text-s font-semibold text-gray-700 hover:bg-gray-100"
       >
         {t('common-retry')}
       </button>
@@ -521,11 +521,11 @@ function EmptyState({ canWrite }: { canWrite: boolean }) {
           <path d="M14 3v5h5" />
         </svg>
       </span>
-      <span className="text-[13.5px] text-gray-500">{t('list-empty')}</span>
+      <span className="text-sm text-gray-500">{t('list-empty')}</span>
       {canWrite && (
         <Link
           to="/write"
-          className="inline-flex h-9 items-center gap-1.5 rounded-[5px] bg-primary px-4 text-[13px] font-semibold text-white hover:bg-ov-blue-700"
+          className="inline-flex h-9 items-center gap-1.5 rounded-[5px] bg-primary px-4 text-s font-semibold text-white hover:bg-ov-blue-700"
         >
           <PlusIcon />
           {t('board-write')}
@@ -608,7 +608,7 @@ function BoardView({
               type="button"
               onClick={onToggleNotices}
               aria-expanded={expanded}
-              className="flex h-[34px] w-full items-center justify-center gap-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 hover:text-primary"
+              className="flex h-8 w-full items-center justify-center gap-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 hover:text-primary"
             >
               {expanded
                 ? t('list-notice-collapse')
@@ -633,12 +633,12 @@ function BoardView({
             <TitleCell r={r} notice={t('badge-notice')} />
           </span>
           {/* 모바일: 숨는 컬럼을 한 줄로 접는다 */}
-          <span className="w-full truncate text-[11.5px] text-gray-400 min-[631px]:hidden">
+          <span className="w-full truncate text-xs text-gray-400 min-[631px]:hidden">
             {t('list-meta', { author: r.author, date: r.date, views: r.views })}
           </span>
           <span className="hidden min-w-0 items-center gap-1.5 pr-2 min-[631px]:flex">
             <Avatar r={r} />
-            <span className="truncate text-[12.5px] text-gray-600">{r.author}</span>
+            <span className="truncate text-s text-gray-600">{r.author}</span>
           </span>
           <span className={`${CELL_DESKTOP} whitespace-nowrap text-gray-500`}>{r.date}</span>
           <span className={`${CELL_DESKTOP} text-center text-gray-500`}>
@@ -679,7 +679,7 @@ function PreviewView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
               {r.comments > 0 && <CommentCount n={r.comments} />}
             </span>
             {/* 모바일은 스니펫을 뺀다 — 제목 2줄 + 메타 한 줄로 압축(디자인 B-4) */}
-            <span className="hidden line-clamp-2 text-[12.5px] leading-[1.55] text-gray-500 min-[631px]:block">
+            <span className="hidden line-clamp-2 text-s leading-[1.55] text-gray-500 min-[631px]:block">
               {r.snippet}
             </span>
             <span className="flex items-center gap-2 text-xs text-gray-400">
@@ -734,17 +734,17 @@ function AlbumView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
               {!r.read && <UnreadDot />}
               {r.notice && <NoticeBadge label={t('badge-notice')} />}
               <span
-                className={`line-clamp-2 text-[13.5px] min-[631px]:truncate ${r.read ? 'text-gray-500' : 'text-gray-900'}`}
+                className={`line-clamp-2 text-sm min-[631px]:truncate ${r.read ? 'text-gray-500' : 'text-gray-900'}`}
               >
                 {r.title}
               </span>
             </span>
-            <span className="flex items-center gap-[7px] text-[11.5px] text-gray-400">
+            <span className="flex items-center gap-[7px] text-xs text-gray-400">
               <span>{r.author}</span>
               <span>·</span>
               <span>{r.date}</span>
             </span>
-            <span className="text-[11.5px] text-gray-400">
+            <span className="text-xs text-gray-400">
               {t('col-views')} {r.views.toLocaleString()} · {t('col-likes')} {r.likes}
             </span>
           </span>
@@ -760,7 +760,7 @@ function TitleCell({ r, notice }: { r: BoardRow; notice: string }) {
       {!r.read && <UnreadDot />}
       {r.notice && <NoticeBadge label={notice} />}
       <span
-        className={`truncate text-[13.5px] ${r.read ? 'text-gray-500' : 'text-gray-900'}`}
+        className={`truncate text-sm ${r.read ? 'text-gray-500' : 'text-gray-900'}`}
       >
         {r.title}
       </span>
@@ -773,7 +773,7 @@ function TitleCell({ r, notice }: { r: BoardRow; notice: string }) {
 function Avatar({ r }: { r: BoardRow }) {
   return (
     <span
-      className={`inline-flex size-[22px] flex-none items-center justify-center rounded-full text-[10.5px] font-bold text-on-pastel ${r.avatarBg}`}
+      className={`inline-flex size-[22px] flex-none items-center justify-center rounded-full text-2xs font-bold text-on-pastel ${r.avatarBg}`}
     >
       {r.authorInitial}
     </span>
@@ -781,7 +781,7 @@ function Avatar({ r }: { r: BoardRow }) {
 }
 function NoticeBadge({ label }: { label: string }) {
   return (
-    <span className="inline-flex h-5 flex-none items-center rounded bg-l-blue px-[7px] text-[10.5px] font-bold text-primary">
+    <span className="inline-flex h-5 flex-none items-center rounded bg-l-blue px-[7px] text-2xs font-bold text-primary">
       {label}
     </span>
   )

@@ -174,11 +174,11 @@ export function DriveScreen() {
       {/* 헤더: 자료실명 + 자료 수 + 저장 용량 게이지 */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <span className="text-lg font-extrabold tracking-[-0.01em]">{curName}</span>
-        <span className="text-[12.5px] text-gray-400">
+        <span className="text-s text-gray-400">
           {t('drive-file-count', { n: driveFiles.length })}
         </span>
         <div className="ml-auto flex w-[150px] flex-col gap-1.5">
-          <div className="flex items-center justify-between text-[11px] text-gray-500">
+          <div className="flex items-center justify-between text-2xs text-gray-500">
             <span>{t('drive-storage')}</span>
             <span className="font-semibold">
               {STORAGE.used} / {STORAGE.total}
@@ -194,14 +194,14 @@ export function DriveScreen() {
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {selCount > 0 && (
           <>
-            <span className="text-[13px] text-gray-600">
+            <span className="text-s text-gray-600">
               <b className="text-primary">{selCount}</b>
               {t('drive-selected-suffix')}
             </span>
             <button
               type="button"
               onClick={() => setDlOpen(true)}
-              className="inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 bg-card px-3 text-[12.5px] font-semibold text-gray-700 hover:bg-gray-100"
+              className="inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 bg-card px-3 text-s font-semibold text-gray-700 hover:bg-gray-100"
             >
               <DownloadIcon /> {t('file-download')}
             </button>
@@ -210,7 +210,7 @@ export function DriveScreen() {
               disabled={selHasOthers}
               onClick={() => !selHasOthers && setDelOpen(true)}
               className={[
-                'inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 bg-card px-3 text-[12.5px] font-semibold',
+                'inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 bg-card px-3 text-s font-semibold',
                 selHasOthers
                   ? 'cursor-not-allowed text-gray-300'
                   : 'text-destructive hover:bg-l-red',
@@ -219,14 +219,14 @@ export function DriveScreen() {
               <TrashIcon /> {t('common-delete')}
             </button>
             {selHasOthers && (
-              <span className="text-[11.5px] text-gray-400">{t('drive-del-note')}</span>
+              <span className="text-xs text-gray-400">{t('drive-del-note')}</span>
             )}
           </>
         )}
         <button
           type="button"
           onClick={upStart}
-          className="ml-auto inline-flex h-[34px] flex-none items-center gap-1.5 rounded-[5px] bg-primary px-3.5 text-[13px] font-semibold text-white hover:bg-ov-blue-700"
+          className="ml-auto inline-flex h-8 flex-none items-center gap-1.5 rounded-[5px] bg-primary px-3.5 text-s font-semibold text-white hover:bg-ov-blue-700"
         >
           <UploadIcon /> {t('drive-upload')}
         </button>
@@ -236,7 +236,7 @@ export function DriveScreen() {
       <div className="mt-3 overflow-x-auto">
         <div className="min-w-[720px]">
           {/* 헤더 행 */}
-          <div className="flex h-10 items-center gap-2.5 border-b border-gray-200 px-1 text-[11.5px] text-gray-500">
+          <div className="flex h-10 items-center gap-2.5 border-b border-gray-200 px-1 text-xs text-gray-500">
             <span className="flex w-[26px] flex-none justify-center">
               <Checkbox
                 checked={allChecked}
@@ -268,17 +268,17 @@ export function DriveScreen() {
             ))
           ) : isError ? (
             <div className="flex flex-col items-center gap-3 px-1 py-14 text-center">
-              <span className="text-[13px] text-gray-400">{t('list-error')}</span>
+              <span className="text-s text-gray-400">{t('list-error')}</span>
               <button
                 type="button"
                 onClick={() => refetch()}
-                className="inline-flex h-9 items-center rounded-[5px] border border-gray-200 bg-card px-4 text-[13px] font-semibold text-gray-700 hover:bg-gray-100"
+                className="inline-flex h-9 items-center rounded-[5px] border border-gray-200 bg-card px-4 text-s font-semibold text-gray-700 hover:bg-gray-100"
               >
                 {t('common-retry')}
               </button>
             </div>
           ) : isEmpty ? (
-            <div className="px-1 py-14 text-center text-[13px] text-gray-400">
+            <div className="px-1 py-14 text-center text-s text-gray-400">
               {t('drive-empty')}
             </div>
           ) : (
@@ -300,7 +300,7 @@ export function DriveScreen() {
                 </span>
                 <span className="w-[46px] flex-none">
                   <span
-                    className={`inline-flex h-[19px] w-[38px] items-center justify-center rounded text-[9.5px] font-bold text-on-pastel ${f.tagBg}`}
+                    className={`inline-flex h-[19px] w-[38px] items-center justify-center rounded text-2xs font-bold text-on-pastel ${f.tagBg}`}
                   >
                     {f.ext}
                   </span>
@@ -308,7 +308,7 @@ export function DriveScreen() {
                 <span className="flex min-w-0 flex-1 flex-col gap-1 pr-3">
                   <span
                     className={[
-                      'truncate text-[13px]',
+                      'truncate text-s',
                       f.state === 'up' ? 'text-gray-500' : 'text-gray-900',
                     ].join(' ')}
                   >
@@ -356,12 +356,12 @@ export function DriveScreen() {
                     </>
                   )}
                   {f.state === 'up' && (
-                    <span className="text-[11.5px] font-semibold whitespace-nowrap text-primary">
+                    <span className="text-xs font-semibold whitespace-nowrap text-primary">
                       {t('drive-up-progress', { n: f.pct ?? 0 })}
                     </span>
                   )}
                   {f.state === 'done' && (
-                    <span className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[var(--color-accent)]">
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-accent)]">
                       <CheckIcon /> {t('drive-up-done')}
                     </span>
                   )}
@@ -371,7 +371,7 @@ export function DriveScreen() {
           )}
         </div>
       </div>
-      <span className="mt-2.5 block text-[11.5px] text-gray-400">{t('drive-demo-note')}</span>
+      <span className="mt-2.5 block text-xs text-gray-400">{t('drive-demo-note')}</span>
 
       {/* 삭제 확인 모달 */}
       {delOpen && (
@@ -380,10 +380,10 @@ export function DriveScreen() {
             <span className="inline-flex size-[42px] items-center justify-center rounded-full bg-l-red text-destructive">
               <TrashIcon size={20} />
             </span>
-            <span className="mt-1 text-center text-[14.5px] font-semibold">
+            <span className="mt-1 text-center text-sm font-semibold">
               {t('drive-del-confirm', { n: selCount })}
             </span>
-            <span className="text-center text-[12.5px] text-gray-500">{t('drive-del-sub')}</span>
+            <span className="text-center text-s text-gray-500">{t('drive-del-sub')}</span>
             <div className="mt-2.5 flex w-full gap-2">
               <button
                 type="button"
@@ -409,7 +409,7 @@ export function DriveScreen() {
         <Modal onClose={() => setDlCancelAsk(true)}>
           <div className="flex w-[340px] flex-col gap-3.5 rounded-lg bg-card px-5 pt-[22px] pb-[18px] shadow-[var(--shadow-modal)]">
             <div className="flex items-center">
-              <span className="text-[14.5px] font-bold">{t('drive-dl-title')}</span>
+              <span className="text-sm font-bold">{t('drive-dl-title')}</span>
               <button
                 type="button"
                 aria-label={t('common-cancel')}
@@ -420,7 +420,7 @@ export function DriveScreen() {
               </button>
             </div>
             <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between text-[12.5px]">
+              <div className="flex items-center justify-between text-s">
                 <span className="text-gray-600">{t('drive-dl-progress')}</span>
                 <span className="flex-none text-gray-500">82 %</span>
               </div>
@@ -430,7 +430,7 @@ export function DriveScreen() {
             </div>
             {dlCancelAsk && (
               <div className="flex flex-col items-center gap-3 border-t border-gray-100 pt-3.5">
-                <span className="text-center text-[13.5px] font-semibold">
+                <span className="text-center text-sm font-semibold">
                   {t('drive-dl-cancel-ask')}
                 </span>
                 <div className="flex w-full gap-2">
@@ -441,14 +441,14 @@ export function DriveScreen() {
                       setDlCancelAsk(false)
                       showToast(t('drive-dl-canceled'))
                     }}
-                    className="inline-flex h-[38px] flex-1 items-center justify-center rounded-[5px] border border-gray-200 bg-card text-[13px] font-semibold text-gray-800 hover:bg-gray-100"
+                    className="inline-flex h-10 flex-1 items-center justify-center rounded-[5px] border border-gray-200 bg-card text-s font-semibold text-gray-800 hover:bg-gray-100"
                   >
                     {t('common-cancel')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setDlCancelAsk(false)}
-                    className="inline-flex h-[38px] flex-1 items-center justify-center gap-1.5 rounded-[5px] bg-primary text-[13px] font-semibold text-white hover:bg-ov-blue-700"
+                    className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-[5px] bg-primary text-s font-semibold text-white hover:bg-ov-blue-700"
                   >
                     <DownloadIcon /> {t('drive-dl-continue')}
                   </button>
@@ -482,7 +482,7 @@ export function DriveScreen() {
           <div className="flex h-[62%] w-[min(58%,520px)] items-center justify-center rounded-lg bg-l-purple text-on-pastel">
             <ImageIcon />
           </div>
-          <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[12.5px] text-white/85">
+          <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-s text-white/85">
             {preview}
           </span>
         </div>

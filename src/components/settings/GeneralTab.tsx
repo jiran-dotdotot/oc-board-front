@@ -70,7 +70,7 @@ export function GeneralTab({ onToast }: { onToast: (msg: string) => void }) {
 
   return (
     <div className="flex max-w-[860px] flex-col">
-      <span className="px-0 pt-1.5 pb-0.5 text-[15px] font-bold">{t('env-gen-title')}</span>
+      <span className="px-0 pt-1.5 pb-0.5 text-base font-bold">{t('env-gen-title')}</span>
 
       <SwitchRow
         title={t('env-gen-comment')}
@@ -88,7 +88,7 @@ export function GeneralTab({ onToast }: { onToast: (msg: string) => void }) {
 
       <div className="flex flex-wrap items-start gap-3 pt-[18px]">
         <div className="flex min-w-0 flex-col gap-[3px]">
-          <span className="text-[15px] font-bold">{t('env-gen-board-title')}</span>
+          <span className="text-base font-bold">{t('env-gen-board-title')}</span>
           <span className="text-xs leading-relaxed text-gray-400">{t('env-gen-board-desc')}</span>
         </div>
         <div className="ml-auto flex flex-none items-center gap-4 pt-[3px]">
@@ -112,10 +112,10 @@ export function GeneralTab({ onToast }: { onToast: (msg: string) => void }) {
           <span className="text-center">{t('env-gen-col-alarm')}</span>
         </div>
 
-        {isError && <div className="py-6 text-[13px] text-gray-500">{t('env-error')}</div>}
+        {isError && <div className="py-6 text-s text-gray-500">{t('env-error')}</div>}
 
         {!isError && sections.length === 0 && publicBoards.length === 0 && (
-          <div className="py-6 text-[13px] text-gray-500">{t('env-gen-empty')}</div>
+          <div className="py-6 text-s text-gray-500">{t('env-gen-empty')}</div>
         )}
 
         {publicBoards.length > 0 && (
@@ -140,7 +140,7 @@ export function GeneralTab({ onToast }: { onToast: (msg: string) => void }) {
 function Group({ name, children }: { name: string; children: React.ReactNode }) {
   return (
     <>
-      <div className="flex h-[38px] items-center border-b border-gray-100 text-[12.5px] font-semibold text-gray-500">
+      <div className="flex h-[38px] items-center border-b border-gray-100 text-s font-semibold text-gray-500">
         {name}
       </div>
       {children}
@@ -162,7 +162,7 @@ function BoardRow({
     <div className="grid h-11 grid-cols-[minmax(0,1fr)_56px_56px] items-center border-b border-gray-100">
       <span className="flex min-w-0 items-center gap-2.5 pl-1.5">
         {drive ? <DriveIcon /> : <BoardIcon />}
-        <span className="truncate text-[13.5px] text-gray-800">{board.title}</span>
+        <span className="truncate text-sm text-gray-800">{board.title}</span>
       </span>
       {/* 자료실은 공지 개념이 없어 체크박스를 두지 않는다 (디자인 동일) */}
       <span className="flex justify-center">
@@ -203,7 +203,7 @@ function SwitchRow({
       )}
     >
       <span className="flex flex-col gap-0.5">
-        <span className="text-[13.5px] font-semibold">{title}</span>
+        <span className="text-sm font-semibold">{title}</span>
         <span className="text-xs text-gray-400">{desc}</span>
       </span>
       <span className="ml-auto flex-none">
@@ -216,7 +216,7 @@ function SwitchRow({
 function InlineSwitch({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
   return (
     <span className="inline-flex items-center gap-[7px]">
-      <span className="text-[12.5px] text-gray-600">{label}</span>
+      <span className="text-s text-gray-600">{label}</span>
       <Switch on={on} onClick={onClick} label={label} />
     </span>
   )

@@ -75,19 +75,19 @@ export function LoginScreen() {
             <span className="inline-flex size-[34px] flex-none items-center justify-center rounded-[10px] bg-white/15">
               <WaveMark />
             </span>
-            <span className="text-[19px] tracking-[-0.01em]">
+            <span className="text-xl tracking-[-0.01em]">
               <span className="font-medium opacity-80">Office</span>
               <span className="font-extrabold">NEXT</span>
             </span>
           </div>
-          <div className="relative z-[1] mt-3 flex flex-col text-lg leading-[1.44] font-extrabold tracking-[-0.02em] min-[631px]:mt-[30px] min-[631px]:text-[25px] min-[631px]:leading-[1.42]">
+          <div className="relative z-[1] mt-3 flex flex-col text-lg leading-[1.44] font-extrabold tracking-[-0.02em] min-[631px]:mt-[30px] min-[631px]:text-2xl min-[631px]:leading-[1.42]">
             {BRAND_LINES.map((k) => (
               <span key={k}>{t(k)}</span>
             ))}
           </div>
           <div className="relative z-[1] mt-[26px] hidden flex-col gap-3 min-[631px]:flex">
             {BRAND_BULLETS.map((k) => (
-              <span key={k} className="flex items-center gap-2.5 text-[13.5px] text-white/90">
+              <span key={k} className="flex items-center gap-2.5 text-sm text-white/90">
                 <CheckIcon className="size-[15px] flex-none opacity-85" />
                 {t(k)}
               </span>
@@ -98,10 +98,10 @@ export function LoginScreen() {
 
         {/* ── 폼 패널 (우 / 모바일은 겹치는 하단 카드) ── */}
         <div className="relative z-[1] -mt-4 flex flex-1 flex-col rounded-t-2xl bg-card px-5 pt-6 pb-[30px] min-[631px]:mt-0 min-[631px]:rounded-none min-[631px]:px-[42px] min-[631px]:pt-[44px] min-[631px]:pb-[30px]">
-          <span className="text-lg font-extrabold tracking-[-0.02em] text-gray-900 min-[631px]:text-[22px]">
+          <span className="text-lg font-extrabold tracking-[-0.02em] text-gray-900 min-[631px]:text-2xl">
             {t('login-title')}
           </span>
-          <span className="mt-[7px] hidden text-[13.5px] text-gray-500 min-[631px]:block">
+          <span className="mt-[7px] hidden text-sm text-gray-500 min-[631px]:block">
             {t('login-subtitle')}
           </span>
 
@@ -115,7 +115,7 @@ export function LoginScreen() {
               <div className="flex flex-col gap-[7px]">
                 <label
                   htmlFor="login-email"
-                  className="text-[12.5px] font-semibold text-gray-600"
+                  className="text-s font-semibold text-gray-600"
                 >
                   {t('login-email-label')}
                 </label>
@@ -129,7 +129,7 @@ export function LoginScreen() {
                     autoComplete="email"
                     aria-invalid={!!errors.email}
                     placeholder={t('login-email-placeholder')}
-                    className="min-w-0 flex-1 border-none bg-transparent text-[14.5px] text-gray-900 outline-none"
+                    className="min-w-0 flex-1 border-none bg-transparent text-sm text-gray-900 outline-none"
                     {...register('email')}
                   />
                   {email && (
@@ -150,7 +150,7 @@ export function LoginScreen() {
               <div className="flex flex-col gap-[7px]">
                 <label
                   htmlFor="login-password"
-                  className="text-[12.5px] font-semibold text-gray-600"
+                  className="text-s font-semibold text-gray-600"
                 >
                   {t('login-password-label')}
                 </label>
@@ -164,7 +164,7 @@ export function LoginScreen() {
                     autoComplete="current-password"
                     aria-invalid={!!errors.password}
                     placeholder={t('login-password-placeholder')}
-                    className="min-w-0 flex-1 border-none bg-transparent text-[14.5px] text-gray-900 outline-none"
+                    className="min-w-0 flex-1 border-none bg-transparent text-sm text-gray-900 outline-none"
                     {...register('password')}
                   />
                   <button
@@ -192,18 +192,18 @@ export function LoginScreen() {
                 >
                   {remember && <CheckIcon className="size-[11px]" strokeWidth={3.4} />}
                 </span>
-                <span className="text-[13px] text-gray-600">{t('login-remember')}</span>
+                <span className="text-s text-gray-600">{t('login-remember')}</span>
               </button>
               <button
                 type="button"
-                className="ml-auto text-[13px] text-gray-500 hover:text-primary"
+                className="ml-auto text-s text-gray-500 hover:text-primary"
               >
                 {t('login-forgot')}
               </button>
             </div>
 
             {loginMutation.isError && (
-              <p className="mt-4 rounded-[8px] bg-l-red px-3 py-2.5 text-[13px] font-medium text-destructive">
+              <p className="mt-4 rounded-[8px] bg-l-red px-3 py-2.5 text-s font-medium text-destructive">
                 {t('login-error')}
               </p>
             )}
@@ -211,7 +211,7 @@ export function LoginScreen() {
             <button
               type="submit"
               disabled={loginMutation.isPending}
-              className="relative mt-5 flex h-[50px] w-full items-center justify-center rounded-[10px] bg-primary text-[15px] font-bold text-white transition-colors hover:bg-ov-blue-700"
+              className="relative mt-5 flex h-12 w-full items-center justify-center rounded-[10px] bg-primary text-base font-bold text-white transition-colors hover:bg-ov-blue-700"
             >
               {/* 빠른 응답이면 텍스트 유지, 250ms 넘어가면 CSS로 스피너 전환 (state 없이 깜빡임 방지) */}
               <span

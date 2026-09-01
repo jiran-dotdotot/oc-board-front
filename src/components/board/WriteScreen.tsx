@@ -108,7 +108,7 @@ export function WriteScreen() {
                       setBoardOpen(false)
                       setErrBoard(false)
                     }}
-                    className={`flex h-9 w-full items-center rounded-md px-2.5 text-left text-[13.5px] hover:bg-gray-100 ${board === i ? 'font-semibold text-primary' : 'text-gray-800'}`}
+                    className={`flex h-9 w-full items-center rounded-md px-2.5 text-left text-sm hover:bg-gray-100 ${board === i ? 'font-semibold text-primary' : 'text-gray-800'}`}
                   >
                     {o}
                   </button>
@@ -144,9 +144,9 @@ export function WriteScreen() {
         {/* 본문 에디터 */}
         <div className="flex flex-col">
           <div className="flex flex-wrap gap-0.5 rounded-t-[5px] border border-gray-200 bg-gray-50 px-2 py-1.5">
-            <ToolBtn className="text-[13.5px] font-extrabold">B</ToolBtn>
-            <ToolBtn className="text-[13.5px] font-semibold italic">I</ToolBtn>
-            <ToolBtn className="text-[13.5px] underline">U</ToolBtn>
+            <ToolBtn className="text-sm font-extrabold">B</ToolBtn>
+            <ToolBtn className="text-sm font-semibold italic">I</ToolBtn>
+            <ToolBtn className="text-sm underline">U</ToolBtn>
             <span className="mx-1 my-[5px] h-5 w-px bg-gray-200" />
             <ToolBtn>
               <LinkIcon />
@@ -171,7 +171,7 @@ export function WriteScreen() {
           <FieldLabel>{t('write-attach')}</FieldLabel>
           <button
             type="button"
-            className="flex items-center justify-center gap-2 rounded-lg border-[1.5px] border-dashed border-gray-300 p-[18px] text-[13px] text-gray-400 hover:border-primary hover:text-primary"
+            className="flex items-center justify-center gap-2 rounded-lg border-[1.5px] border-dashed border-gray-300 p-[18px] text-s text-gray-400 hover:border-primary hover:text-primary"
           >
             <UploadIcon />
             {t('write-dropzone')}
@@ -183,19 +183,19 @@ export function WriteScreen() {
                 className={`flex items-center gap-2.5 px-3 ${f.progress == null ? 'h-[42px]' : 'h-[46px]'} ${i < WRITE_ATTACHMENTS.length - 1 ? 'border-b border-gray-100' : ''}`}
               >
                 <span
-                  className={`inline-flex h-5 w-10 flex-none items-center justify-center rounded text-[10px] font-bold text-on-pastel ${f.bg}`}
+                  className={`inline-flex h-5 w-10 flex-none items-center justify-center rounded text-2xs font-bold text-on-pastel ${f.bg}`}
                 >
                   {f.ext}
                 </span>
                 {f.progress == null ? (
                   <>
-                    <span className="flex-1 truncate text-[13px] text-gray-800">{f.name}</span>
-                    <span className="flex-none text-[11.5px] text-gray-400">{f.size}</span>
+                    <span className="flex-1 truncate text-s text-gray-800">{f.name}</span>
+                    <span className="flex-none text-xs text-gray-400">{f.size}</span>
                   </>
                 ) : (
                   <>
                     <span className="flex min-w-0 flex-1 flex-col gap-[5px]">
-                      <span className="truncate text-[13px] text-gray-800">{f.name}</span>
+                      <span className="truncate text-s text-gray-800">{f.name}</span>
                       <span className="block h-1 overflow-hidden rounded-full bg-gray-100">
                         <span
                           className="block h-full rounded-full bg-primary"
@@ -245,7 +245,7 @@ export function WriteScreen() {
                 <button
                   type="button"
                   onClick={() => setOrgOpen(true)}
-                  className="inline-flex h-[34px] items-center gap-1.5 rounded-[5px] border border-gray-200 bg-card px-[13px] text-[13px] font-semibold text-gray-700 hover:bg-gray-100"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 bg-card px-[13px] text-s font-semibold text-gray-700 hover:bg-gray-100"
                 >
                   <OrgIcon />
                   {t('write-pick-org')}
@@ -321,10 +321,10 @@ export function WriteScreen() {
       <div className="flex items-center gap-2">
         <button
           type="button"
-          className="inline-flex h-10 items-center gap-1.5 rounded-[5px] border border-gray-200 bg-card px-4 text-[13.5px] font-semibold text-gray-700 hover:bg-gray-100"
+          className="inline-flex h-10 items-center gap-1.5 rounded-[5px] border border-gray-200 bg-card px-4 text-sm font-semibold text-gray-700 hover:bg-gray-100"
         >
           {t('write-draft-save')}
-          <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-gray-100 px-1.5 text-[11px] font-bold text-gray-500">
+          <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-gray-100 px-1.5 text-2xs font-bold text-gray-500">
             {DRAFT_COUNT}
           </span>
         </button>
@@ -351,7 +351,7 @@ export function WriteScreen() {
         <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/50">
           <div className="flex max-h-[80vh] w-[420px] max-w-[92%] flex-col overflow-hidden rounded-lg bg-card shadow-[0_4px_18px_rgba(75,70,92,0.1)]">
             <div className="flex h-[54px] flex-none items-center border-b border-gray-100 px-5">
-              <span className="text-[15px] font-bold">{t('write-org-modal-title')}</span>
+              <span className="text-base font-bold">{t('write-org-modal-title')}</span>
               <button
                 type="button"
                 aria-label={t('common-cancel')}
@@ -375,7 +375,7 @@ export function WriteScreen() {
                     <DashIcon />
                   ) : null}
                 </button>
-                <span className="text-[13.5px] font-semibold text-gray-800">{ORG_ROOT}</span>
+                <span className="text-sm font-semibold text-gray-800">{ORG_ROOT}</span>
               </div>
               {ORG_KIDS.map((k, i) => (
                 <button
@@ -393,7 +393,7 @@ export function WriteScreen() {
                   >
                     {orgChecks[i] && <CheckIcon />}
                   </span>
-                  <span className="text-[13.5px] text-gray-800">{k.label}</span>
+                  <span className="text-sm text-gray-800">{k.label}</span>
                   <span className="text-xs text-gray-400">{k.count}</span>
                 </button>
               ))}
@@ -402,14 +402,14 @@ export function WriteScreen() {
               <button
                 type="button"
                 onClick={() => setOrgOpen(false)}
-                className="inline-flex h-[38px] items-center rounded-[5px] border border-gray-200 bg-card px-4 text-[13.5px] font-semibold text-gray-800 hover:bg-gray-100"
+                className="inline-flex h-10 items-center rounded-[5px] border border-gray-200 bg-card px-4 text-sm font-semibold text-gray-800 hover:bg-gray-100"
               >
                 {t('common-cancel')}
               </button>
               <button
                 type="button"
                 onClick={() => setOrgOpen(false)}
-                className="inline-flex h-[38px] items-center rounded-[5px] bg-primary px-[18px] text-[13.5px] font-semibold text-white hover:bg-ov-blue-700"
+                className="inline-flex h-10 items-center rounded-[5px] bg-primary px-[18px] text-sm font-semibold text-white hover:bg-ov-blue-700"
               >
                 {t('write-apply')}
               </button>
@@ -422,10 +422,10 @@ export function WriteScreen() {
       {leaveOpen && (
         <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/50">
           <div className="flex w-80 flex-col items-center gap-2 rounded-lg bg-card px-[22px] pt-[26px] pb-[18px] shadow-[0_4px_18px_rgba(75,70,92,0.1)]">
-            <span className="text-center text-[14.5px] font-semibold text-gray-900">
+            <span className="text-center text-sm font-semibold text-gray-900">
               {t('write-leave-title')}
             </span>
-            <span className="text-center text-[12.5px] text-gray-500">{t('write-leave-sub')}</span>
+            <span className="text-center text-s text-gray-500">{t('write-leave-sub')}</span>
             <div className="mt-2.5 flex w-full gap-2">
               <button
                 type="button"
@@ -464,7 +464,7 @@ export function WriteScreen() {
                 strokeLinecap="round"
               />
             </svg>
-            <span className="text-[13.5px] whitespace-nowrap text-gray-600">
+            <span className="text-sm whitespace-nowrap text-gray-600">
               {t('write-saving')}
             </span>
           </div>
@@ -479,7 +479,7 @@ export function WriteScreen() {
 /* ── 서브 컴포넌트 ── */
 function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
-    <span className="text-[13px] font-semibold text-gray-700">
+    <span className="text-s font-semibold text-gray-700">
       {children}
       {required && <span className="text-destructive"> *</span>}
     </span>
@@ -505,7 +505,7 @@ function OptionRow({
   return (
     <div className={`flex flex-wrap gap-3.5 ${alignTop ? 'items-start' : 'items-center'}`}>
       <span
-        className={`w-[88px] flex-none text-[13px] font-semibold text-gray-700 ${alignTop ? 'pt-1.5' : ''}`}
+        className={`w-[88px] flex-none text-s font-semibold text-gray-700 ${alignTop ? 'pt-1.5' : ''}`}
       >
         {label}
       </span>
@@ -522,7 +522,7 @@ function Radio({ on, onClick, label }: { on: boolean; onClick: () => void; label
       <span
         className={`box-border inline-block size-[18px] flex-none rounded-full bg-card ${on ? 'border-[5px] border-primary' : 'border-[1.5px] border-gray-300'}`}
       />
-      <span className="text-[13.5px] text-gray-800">{label}</span>
+      <span className="text-sm text-gray-800">{label}</span>
     </button>
   )
 }
@@ -536,7 +536,7 @@ function Toggle({ on, onClick, label }: { on: boolean; onClick: () => void; labe
           className={`absolute top-[3px] size-[18px] rounded-full bg-white shadow-sm transition-all ${on ? 'left-[21px]' : 'left-[3px]'}`}
         />
       </span>
-      <span className="text-[13.5px] text-gray-800">{label}</span>
+      <span className="text-sm text-gray-800">{label}</span>
     </button>
   )
 }
@@ -548,13 +548,13 @@ function Checkbox({ on, onClick, label }: { on: boolean; onClick: () => void; la
       >
         {on && <CheckIcon />}
       </span>
-      <span className="text-[13.5px] text-gray-800">{label}</span>
+      <span className="text-sm text-gray-800">{label}</span>
     </button>
   )
 }
 function DateChip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex h-9 items-center gap-2 rounded-[5px] border border-gray-200 bg-card px-3 text-[13px] text-gray-800">
+    <span className="inline-flex h-9 items-center gap-2 rounded-[5px] border border-gray-200 bg-card px-3 text-s text-gray-800">
       <CalendarIcon />
       {children}
     </span>

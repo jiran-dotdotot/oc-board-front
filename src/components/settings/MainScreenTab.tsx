@@ -32,11 +32,11 @@ export function MainScreenTab({ onToast }: { onToast: (msg: string) => void }) {
 
   return (
     <div className="flex max-w-[860px] flex-col">
-      <span className="pt-1.5 pb-0.5 text-[15px] font-bold">{t('env-main-title')}</span>
+      <span className="pt-1.5 pb-0.5 text-base font-bold">{t('env-main-title')}</span>
       <span className="text-xs text-gray-400">{t('env-main-desc')}</span>
 
       <div className="mt-3.5 flex flex-col gap-2 border-y border-gray-100 py-4">
-        <span className="text-[13.5px] font-semibold">{t('env-main-days')}</span>
+        <span className="text-sm font-semibold">{t('env-main-days')}</span>
         <span className="text-xs text-gray-400">{t('env-main-days-desc')}</span>
         <div className="flex flex-wrap gap-6 pt-1.5">
           {DAY_OPTS.map((d) => (
@@ -54,7 +54,7 @@ export function MainScreenTab({ onToast }: { onToast: (msg: string) => void }) {
                   days === d ? 'border-[5px] border-primary' : 'border-[1.5px] border-gray-300',
                 ].join(' ')}
               />
-              <span className="text-[13.5px] text-gray-800">{t('env-main-day', { n: d })}</span>
+              <span className="text-sm text-gray-800">{t('env-main-day', { n: d })}</span>
             </button>
           ))}
         </div>
@@ -67,7 +67,7 @@ export function MainScreenTab({ onToast }: { onToast: (msg: string) => void }) {
           type="button"
           onClick={save}
           disabled={!canSave || mut.isPending}
-          className="ml-auto inline-flex h-[38px] items-center rounded-lg bg-primary px-5 text-[13.5px] font-semibold text-white hover:bg-ov-blue-700 disabled:opacity-40"
+          className="ml-auto inline-flex h-10 items-center rounded-lg bg-primary px-5 text-sm font-semibold text-white hover:bg-ov-blue-700 disabled:opacity-40"
         >
           {t('common-save')}
         </button>

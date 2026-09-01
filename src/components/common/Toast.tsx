@@ -22,7 +22,7 @@ export function Toast({ toast, onClose }: { toast: ToastState | null; onClose: (
       className="fixed bottom-[18px] left-1/2 z-[var(--z-toast)] flex h-[46px] max-w-[92%] -translate-x-1/2 animate-in items-center gap-2.5 rounded-lg bg-gray-900 py-0 pr-2.5 pl-3.5 text-gray-50 shadow-[var(--shadow-modal)] duration-100 fade-in slide-in-from-bottom-2 motion-reduce:animate-none"
     >
       <ToneIcon className={`size-4 flex-none ${TONE_ICON[toast.tone]}`} tone={toast.tone} />
-      <span className="truncate text-[13px] font-medium">{toast.message}</span>
+      <span className="truncate text-s font-medium">{toast.message}</span>
       <button
         type="button"
         onClick={onClose}

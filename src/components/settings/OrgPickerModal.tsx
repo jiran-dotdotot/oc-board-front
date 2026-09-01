@@ -261,7 +261,7 @@ export function OrgPickerModal({
       <div className="flex max-h-[calc(100dvh-64px)] w-[720px] max-w-full flex-col overflow-hidden rounded-lg bg-card shadow-[var(--shadow-modal)]">
         <div className="flex items-center gap-2.5 border-b border-gray-100 px-5 pt-4 pb-3">
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[15px] font-bold">{title}</span>
+            <span className="text-base font-bold">{title}</span>
             <span className="text-xs text-gray-400">{hint}</span>
           </div>
           <button
@@ -283,7 +283,7 @@ export function OrgPickerModal({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={t('admin-pk-search')}
-                className="h-[34px] w-full rounded-lg border border-gray-200 bg-gray-50 pr-2.5 pl-[34px] text-[12.5px] focus:border-primary focus:bg-card focus:outline-none"
+                className="h-8 w-full rounded-lg border border-gray-200 bg-gray-50 pr-2.5 pl-[34px] text-s focus:border-primary focus:bg-card focus:outline-none"
               />
             </div>
             <div className="flex flex-1 flex-col gap-px overflow-y-auto px-2 pt-1 pb-2.5">
@@ -313,11 +313,11 @@ export function OrgPickerModal({
                   <PickCheckbox on={r.on} mixed={r.mixed} />
                   {r.isRoot && <BuildingIcon />}
                   {r.isPerson && (
-                    <span className="inline-flex size-[22px] flex-none items-center justify-center rounded-full bg-l-blue text-[10.5px] font-bold text-on-pastel">
+                    <span className="inline-flex size-[22px] flex-none items-center justify-center rounded-full bg-l-blue text-2xs font-bold text-on-pastel">
                       {r.ini}
                     </span>
                   )}
-                  <span className="truncate text-[13px] text-gray-800">{r.name}</span>
+                  <span className="truncate text-s text-gray-800">{r.name}</span>
                   {r.count != null && (
                     <span className="flex-none text-xs text-gray-400">{r.count}</span>
                   )}
@@ -330,7 +330,7 @@ export function OrgPickerModal({
           <div className="flex h-[380px] flex-col">
             <div className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
               {chips.length === 0 ? (
-                <span className="px-2 py-6 text-center text-[12.5px] text-gray-400">
+                <span className="px-2 py-6 text-center text-s text-gray-400">
                   {t('admin-pk-empty')}
                 </span>
               ) : (
@@ -347,10 +347,10 @@ export function OrgPickerModal({
                       )}
                     </span>
                     <div className="flex min-w-0 flex-1 flex-col gap-px">
-                      <span className="truncate text-[13px] font-semibold text-gray-900">
+                      <span className="truncate text-s font-semibold text-gray-900">
                         {c.name}
                       </span>
-                      <span className="truncate text-[11.5px] text-gray-400">{c.sub}</span>
+                      <span className="truncate text-xs text-gray-400">{c.sub}</span>
                     </div>
                     <button
                       type="button"
@@ -365,14 +365,14 @@ export function OrgPickerModal({
               )}
             </div>
             <div className="flex items-center gap-2 border-t border-gray-100 p-3">
-              <span className="text-[13px] text-gray-600">{t('admin-pk-total', { n: total })}</span>
+              <span className="text-s text-gray-600">{t('admin-pk-total', { n: total })}</span>
               <button
                 type="button"
                 onClick={() => {
                   setTeamsSel([])
                   setPeopleSel([])
                 }}
-                className="ml-auto inline-flex h-[30px] items-center rounded-[5px] border border-gray-200 bg-card px-[11px] text-xs font-semibold text-gray-600 hover:bg-gray-100"
+                className="ml-auto inline-flex h-8 items-center rounded-[5px] border border-gray-200 bg-card px-[11px] text-xs font-semibold text-gray-600 hover:bg-gray-100"
               >
                 {t('admin-pk-reset')}
               </button>
@@ -384,14 +384,14 @@ export function OrgPickerModal({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-[38px] items-center rounded-[5px] border border-gray-200 bg-card px-4 text-[13.5px] font-semibold text-gray-800 hover:bg-gray-100"
+            className="inline-flex h-10 items-center rounded-[5px] border border-gray-200 bg-card px-4 text-sm font-semibold text-gray-800 hover:bg-gray-100"
           >
             {t('common-cancel')}
           </button>
           <button
             type="button"
             onClick={confirm}
-            className="inline-flex h-[38px] items-center rounded-[5px] bg-primary px-[18px] text-[13.5px] font-semibold text-white hover:bg-ov-blue-700"
+            className="inline-flex h-10 items-center rounded-[5px] bg-primary px-[18px] text-sm font-semibold text-white hover:bg-ov-blue-700"
           >
             {t('common-confirm')}
           </button>
