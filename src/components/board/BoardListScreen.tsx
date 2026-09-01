@@ -20,13 +20,13 @@ import { NoticeBadge } from '@/components/common/NoticeBadge'
 import { Toast } from '@/components/common/Toast'
 import {
   AlbumIcon,
+  BookmarkIcon,
   ChevronDownIcon,
   ImageIcon,
   LinkIcon,
   PaperclipIcon,
   PlusIcon,
   PreviewIcon,
-  StarIcon,
 } from '@/components/common/icons'
 import { useToast } from '@/components/common/useToast'
 import { useBoard, useBoardBookmarkMutation, useBookmarkedBoards } from '@/hooks/useBoards'
@@ -215,7 +215,7 @@ export function BoardListScreen() {
             }}
             className={`inline-flex size-[30px] flex-none items-center justify-center rounded-md hover:bg-gray-100 ${boardFav ? 'text-warning' : 'text-gray-300'}`}
           >
-            <StarIcon filled={boardFav} />
+            <BookmarkIcon filled={boardFav} />
           </button>
         )}
         <span className="flex-none text-s text-gray-400">{t('list-count', { n: totalCount })}</span>
@@ -570,7 +570,7 @@ function RowActions({ row, ctx }: { row: BoardRow; ctx: RowCtx }) {
         }}
         className={`inline-flex size-8 items-center justify-center rounded-md hover:bg-gray-100 ${marked ? 'text-warning' : 'text-gray-400'}`}
       >
-        <StarIcon filled={marked} small />
+        <BookmarkIcon filled={marked} />
       </button>
       <button
         type="button"

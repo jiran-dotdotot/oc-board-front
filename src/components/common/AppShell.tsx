@@ -176,7 +176,7 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
           {t('nav-my')}
         </Link>
         {/* 환경 설정은 전원 노출 — 권한은 화면 안에서 탭 단위로 걸린다 */}
-        <div className="mx-1.5 my-2.5 h-px bg-gray-200" />
+        <div className="mx-1.5 my-1 h-px bg-gray-200" />
         <Link to="/settings" onClick={onNavigate} className={itemClass(pathname === '/settings')}>
           <GearIcon />
           {t('nav-settings')}
@@ -297,7 +297,7 @@ function BoardNavItem({
         title={label}
         // 등록된 행은 항상 보이고(트리에서 한눈에 구분), 아닌 행은 hover/포커스에만 뜬다.
         className={[
-          'absolute top-1/2 right-2 flex size-5 -translate-y-1/2 items-center justify-center rounded-md hover:bg-gray-200',
+          'absolute top-1/2 right-2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md hover:bg-gray-200',
           bookmarked
             ? 'text-warning'
             : 'text-gray-400 opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
@@ -435,7 +435,7 @@ export function AppShell() {
         </aside>
         {/* 메인도 «면»이다 — 디자인: `background:var(--color-bg); overflow-y:auto`.
             배경을 안 깔면 캔버스(--background)를 상속받아 사이드바보다 어두워진다. */}
-        <main className="min-w-0 flex-1 bg-card p-5 pb-[76px] min-[631px]:overflow-y-auto min-[631px]:p-6 min-[631px]:pb-6">
+        <main className="min-w-0 flex-1 bg-card p-5 pb-[76px] min-[631px]:[scrollbar-gutter:stable] min-[631px]:overflow-y-auto min-[631px]:p-6 min-[631px]:pb-6">
           <Outlet />
         </main>
       </div>

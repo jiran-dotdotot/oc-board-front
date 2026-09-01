@@ -30,7 +30,7 @@
 | `--color-primary` | `#3362FF` | `#4B79FF` | 주 액션·선택·링크 (다크는 한 단계 밝게) |
 | `--color-secondary` | `#2341E2` | 동일 | 보조 브랜드 |
 | `--color-accent` → `success` | `#10BF79` | 동일 | 성공·게시글 NEW 배지 |
-| `--color-warning` | `#FF9045` | 동일 | 경고·폴더 아이콘·즐겨찾기 별 |
+| `--color-warning` | `#FF9045` | 동일 | 경고·폴더 아이콘·즐겨찾기 북마크 |
 | `--color-danger` → `destructive` | `#FD4C45` | 동일 | 삭제·에러·업로드 실패 |
 | `--color-bg` → `card` | `#FFFFFF` | `#26262A` | 카드·헤더·사이드바 표면 |
 | `--color-white` | `#FFFFFF` | 동일 | 필 버튼 위 텍스트 (다크에서도 white) |

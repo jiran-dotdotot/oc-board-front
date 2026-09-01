@@ -103,7 +103,7 @@ export function BoardIcon({ className }: IconProps) {
 export function BookmarkIcon({ filled, className }: { filled?: boolean; className?: string }) {
   return (
     <svg
-      className={className ?? 'size-3 flex-none'}
+      className={className ?? 'size-4 flex-none'}
       viewBox="0 0 24 24"
       fill={filled ? 'currentColor' : 'none'}
       stroke="currentColor"
@@ -157,7 +157,7 @@ export function CaretIcon({ open, className }: { open?: boolean; className?: str
   return (
     <svg
       className={[
-        className ?? 'size-3 flex-none text-gray-400 transition-transform duration-200',
+        className ?? 'size-4 flex-none text-gray-400 transition-transform duration-200',
         open ? 'rotate-180' : '',
       ].join(' ')}
       viewBox="0 0 24 24"
@@ -932,31 +932,6 @@ export function SearchIcon({ big, className }: { big?: boolean; className?: stri
     >
       <circle cx="11" cy="11" r="6.5" />
       <path d="M15.8 15.8L21 21" />
-    </svg>
-  )
-}
-
-// StarIcon — 원본 board/BoardListScreen.tsx
-export function StarIcon({
-  filled,
-  small,
-  className,
-}: {
-  filled?: boolean
-  small?: boolean
-  className?: string
-}) {
-  return (
-    <svg
-      className={className ?? (small ? 'size-4' : 'size-4')}
-      viewBox="0 0 24 24"
-      fill={filled ? 'currentColor' : 'none'}
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.6 1-5.8-4.3-4.1 5.9-.9z" />
     </svg>
   )
 }
