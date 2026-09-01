@@ -250,6 +250,9 @@ export function LoginScreen() {
                 </span>
               )}
             </button>
+            {/* 하단 구분선 — 디자인 A-5 확정: 선만, 문구 없음(프로토타입 문구는 아트보드 전용) */}
+            <div className="mt-auto border-t border-gray-100 pt-6" />
+
           </form>
         </div>
       </div>

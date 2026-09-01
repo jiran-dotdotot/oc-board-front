@@ -267,7 +267,7 @@ export function BoardListScreen() {
       ) : isLoading ? (
         <ListSkeleton />
       ) : isEmpty ? (
-        <EmptyState />
+        <EmptyState canWrite={!!boardDetail?.is_writable} />
       ) : (
         <>
           {view === 'BOARD' && (
@@ -410,7 +410,9 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 }
 
 /* ── 빈 목록 상태 ── */
-function EmptyState() {
+// canWrite: GET /board/{board} 의 is_writable — 「글쓰기」 CTA 는 쓸 수 있을 때만 뜬다
+// (디자인 B-7 확정. 검색·휴지통 빈 상태엔 CTA 자체가 없다)
+function EmptyState({ canWrite }: { canWrite: boolean }) {
   const { t } = useTranslation()
   return (
     <div className="flex flex-col items-center gap-3.5 rounded-lg border border-gray-200 bg-card px-5 py-16">
@@ -429,13 +431,15 @@ function EmptyState() {
         </svg>
       </span>
       <span className="text-[13.5px] text-gray-500">{t('list-empty')}</span>
-      <Link
-        to="/write"
-        className="inline-flex h-9 items-center gap-1.5 rounded-[5px] bg-primary px-4 text-[13px] font-semibold text-white hover:bg-ov-blue-700"
-      >
-        <PlusIcon />
-        {t('board-write')}
-      </Link>
+      {canWrite && (
+        <Link
+          to="/write"
+          className="inline-flex h-9 items-center gap-1.5 rounded-[5px] bg-primary px-4 text-[13px] font-semibold text-white hover:bg-ov-blue-700"
+        >
+          <PlusIcon />
+          {t('board-write')}
+        </Link>
+      )}
     </div>
   )
 }
@@ -577,13 +581,14 @@ function PreviewView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
               {!r.read && <UnreadDot />}
               {r.notice && <NoticeBadge label={t('badge-notice')} />}
               <span
-                className={`truncate text-sm ${r.read ? 'text-gray-500' : 'text-gray-900'}`}
+                className={`line-clamp-2 text-sm min-[631px]:truncate ${r.read ? 'text-gray-500' : 'text-gray-900'}`}
               >
                 {r.title}
               </span>
               {r.comments > 0 && <CommentCount n={r.comments} />}
             </span>
-            <span className="line-clamp-2 text-[12.5px] leading-[1.55] text-gray-500">
+            {/* 모바일은 스니펫을 뺀다 — 제목 2줄 + 메타 한 줄로 압축(디자인 B-4) */}
+            <span className="hidden line-clamp-2 text-[12.5px] leading-[1.55] text-gray-500 min-[631px]:block">
               {r.snippet}
             </span>
             <span className="flex items-center gap-2 text-xs text-gray-400">
@@ -602,7 +607,7 @@ function PreviewView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
           </span>
           {r.hasThumb && (
             <span
-              className={`inline-flex h-[76px] w-[120px] flex-none items-center justify-center rounded-lg text-on-pastel opacity-85 ${r.thumbBg}`}
+              className={`inline-flex h-[56px] w-[88px] min-[631px]:h-[76px] min-[631px]:w-[120px] flex-none items-center justify-center rounded-lg text-on-pastel opacity-85 ${r.thumbBg}`}
             >
               <ImageIcon />
             </span>
@@ -617,8 +622,9 @@ function PreviewView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
 /* ── 앨범형 (공지 포함 그리드) ── */
 function AlbumView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
   const { t } = useTranslation()
+  // 모바일 2열 고정(gap 10px) → 데스크톱 auto-fill (디자인 B-4)
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-3.5">
+    <div className="grid grid-cols-2 gap-2.5 min-[631px]:grid-cols-[repeat(auto-fill,minmax(230px,1fr))] min-[631px]:gap-3.5">
       {rows.map((r) => (
         <button
           key={r.id}
@@ -637,7 +643,7 @@ function AlbumView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
               {!r.read && <UnreadDot />}
               {r.notice && <NoticeBadge label={t('badge-notice')} />}
               <span
-                className={`truncate text-[13.5px] ${r.read ? 'text-gray-500' : 'text-gray-900'}`}
+                className={`line-clamp-2 text-[13.5px] min-[631px]:truncate ${r.read ? 'text-gray-500' : 'text-gray-900'}`}
               >
                 {r.title}
               </span>

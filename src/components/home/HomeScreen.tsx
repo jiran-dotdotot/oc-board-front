@@ -107,8 +107,6 @@ export function HomeScreen() {
     sort: { by: 'created_at', order: 'desc' },
   })
   const files = (fileData ?? []).slice(0, HOME_TAKE).map(toHomeFile)
-  // NEW 배지: 게시글만 안읽음 조건(화면 02 의 sc-if hasUnreadPosts). 자료는 무조건 노출.
-  const hasUnread = posts.some((p) => p.unread)
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -148,7 +146,9 @@ export function HomeScreen() {
         <section className={SECTION_CARD}>
           <div className={SECTION_HEAD}>
             <span className={SECTION_TITLE}>{t('home-recent-posts')}</span>
-            {hasUnread && <span className={`${NEW_BADGE} bg-accent`}>NEW</span>}
+            {/* 노출 기간(limit_day) 안의 글만 조회하므로 목록에 있으면 곧 기간 이내 —
+                읽음 여부와 무관하게 무조건 표시한다(디자인 A-2 확정 · 레거시 파리티) */}
+            <span className={`${NEW_BADGE} bg-accent`}>NEW</span>
             <MoreLink
               label={t('home-more')}
               onClick={() => navigate({ to: '/board/$boardId', params: { boardId: 'notice' } })}
@@ -362,7 +362,7 @@ export function HomeScreen() {
 function EmptyState({ message, children }: { message: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col items-center gap-2.5 px-5 py-10 min-[631px]:py-11">
-      <span className="inline-flex size-11 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+      <span className="inline-flex size-[52px] items-center justify-center rounded-full bg-gray-100 text-gray-400">
         {children}
       </span>
       <span className="text-[13px] text-gray-500">{message}</span>
