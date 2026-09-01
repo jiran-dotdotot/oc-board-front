@@ -63,3 +63,11 @@ export async function selectNotices(
   })
   return data
 }
+
+// 게시글 북마크 토글 (POST /post/bookmark/{post} — docs/api/06-post-write.md §9).
+// ⚠ 응답(PostBookmark)에 timestamps 가 없어 **응답만으로 현재 ON/OFF 를 알 수 없다.**
+//   문서 지침대로 목록의 is_bookmark($appends) 를 정본으로 쓴다 → 호출 후 목록을 무효화한다.
+//   (게시판 북마크 POST /board/bookmark 는 deleted_at 이 와서 판정 가능 — 규약이 다르다)
+export async function togglePostBookmark(postId: string): Promise<void> {
+  await apiClient.post(`/post/bookmark/${postId}`)
+}

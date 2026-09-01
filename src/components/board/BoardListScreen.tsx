@@ -1,14 +1,22 @@
 import { useEffect, useState } from 'react'
 
-import { Link, useNavigate, useParams } from '@tanstack/react-router'
+import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 
 import { useTranslation } from 'react-i18next'
 
-import { NOTICE_ROTATE_MS } from './constants'
+import {
+  LIMIT_DEFAULT_DESKTOP,
+  LIMIT_DEFAULT_MOBILE,
+  LIMIT_OPTIONS,
+  MOBILE_MAX_WIDTH,
+  NOTICE_TOP_CAP,
+  readStoredLimit,
+  writeStoredLimit,
+} from './constants'
 import { BOARDS, DEFAULT_BOARD } from './listData'
-import type { BoardRow, BoardView } from './listData'
+import type { BoardListSearch, BoardRow, BoardView } from './listData'
 import { useBoard, useBoardBookmarkMutation, useBookmarkedBoards } from '@/hooks/useBoards'
-import { useNotices, usePosts } from '@/hooks/usePosts'
+import { useNotices, usePostBookmarkMutation, usePosts } from '@/hooks/usePosts'
 import type { Post } from '@/types/post'
 
 // 디자인 정본: 제목 / 작성자 / 작성일 / 조회 / 공감 — '위치' 컬럼은 없다
@@ -45,6 +53,7 @@ function toRow(p: Post): BoardRow {
     comments: p.comment_count,
     notice: (p.badges ?? []).some((b) => b.type === 'NOTICE'),
     read: p.is_view ?? true, // 서버가 글마다 읽음여부 제공(없으면 읽음 취급)
+    bookmarked: !!p.is_bookmark, // raw SQL alias 가능성 → truthy 판정
     hasFile: (p.files?.length ?? 0) > 0,
     snippet: p.text_content ?? '',
     hasThumb: !!p.thumbnail,
@@ -54,91 +63,78 @@ function toRow(p: Post): BoardRow {
 
 interface RowCtx {
   open: (id: string | number) => void
-  bookmarks: Set<string | number>
-  onBm: (id: string | number) => void
+  onBm: (row: BoardRow) => void
   onCopy: () => void
 }
 
 export function BoardListScreen() {
   const { t } = useTranslation()
   const { boardId } = useParams({ from: '/board/$boardId' })
+  const search = useSearch({ from: '/board/$boardId' })
   const navigate = useNavigate()
-  const [view, setView] = useState<BoardView>('board')
-  const [listFilter, setListFilter] = useState<'all' | 'unread'>('all')
-  const [page, setPage] = useState(1)
-  const [perPage, setPerPage] = useState('20')
+  // URL 이 정본. 기본값은 URL에 쓰지 않고 여기서 채운다(레거시와 같은 규약).
+  const setSearch = (patch: Partial<BoardListSearch>) =>
+    navigate({
+      to: '/board/$boardId',
+      params: { boardId },
+      search: (prev: BoardListSearch) => ({ ...prev, ...patch }),
+    })
+  const listFilter = search.read ?? 'all'
+  const page = search.page ?? 1
+  // 개수 기본값: URL → localStorage(레거시 'postLimit') → 기기폭(모바일 20 / 데스크톱 10)
+  const [deviceLimit] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth <= MOBILE_MAX_WIDTH
+      ? LIMIT_DEFAULT_MOBILE
+      : LIMIT_DEFAULT_DESKTOP,
+  )
+  const [storedLimit] = useState(readStoredLimit)
+  const perPage = search.limit ?? storedLimit ?? deviceLimit
   const [countOpen, setCountOpen] = useState(false)
-  const [bookmarks, setBookmarks] = useState<Set<string | number>>(new Set())
   const [toast, setToast] = useState<string | null>(null)
-  // 공지 배너: 순회 인덱스 + 「전체 보기」 모달
-  const [ntIdx, setNtIdx] = useState(0)
-  const [ntAllOpen, setNtAllOpen] = useState(false)
-  // 배너에 마우스가 올라가거나 포커스가 들어오면 순환을 멈춘다 — 읽는 중에 바뀌면 안 되고,
-  // 누르려는 순간 대상이 바뀌면 엉뚱한 글이 열린다.
-  const [ntPaused, setNtPaused] = useState(false)
-  // 전환 방향 — 자동/다음은 오른쪽에서 들어오고, 이전은 왼쪽에서 들어온다(누른 버튼과 방향을 맞춘다).
-  const [ntDir, setNtDir] = useState<'next' | 'prev'>('next')
+  // 공지 6a: 상단 3건 고정 + 「숨은 공지 N건 모두 보기」 토글.
+  // 펼침 상태는 페이지를 옮겨도 유지한다(디자인 「공지 초과 표시 시안」 6a 노트).
+  const [ntExpanded, setNtExpanded] = useState(false)
 
   // 라우트 param이 실제 UUID면 board_id로 필터, 샘플 슬러그면 전체 접근 가능 글
   const boardIdParam = UUID_RE.test(boardId) ? boardId : undefined
   // 안읽음(안 본 글)=is_view 0, 전체=생략 (서버측 필터). 공지·일반 목록에 동일 적용.
-  const isView = listFilter === 'unread' ? false : undefined
+  const isView = listFilter === 'before' ? false : undefined
   // 일반 목록: 공지 제외(except_badges) + 페이지네이션. 공지는 아래 useNotices로 따로.
   const { data, isLoading, isError, refetch } = usePosts({
     board_id: boardIdParam,
     except_badges: ['NOTICE'],
-    take: Number(perPage),
+    take: perPage,
     page,
     sort: { by: 'posted_at', order: 'desc' },
     is_view: isView,
   })
-  // 공지: 유효한 NOTICE 글 전량(is_not_paging). 목록에 섞지 않고 위 배너로 순회한다(디자인 정본).
-  // ⚠ is_view를 넘기지 않는다 — 전체/안읽음 토글은 일반 목록에만 걸고, 배너는 항상 전량을 받아
-  //   읽음/안읽음 개수를 함께 표시해야 한다.
-  const { data: noticeData } = useNotices({ board_id: boardIdParam })
+  // 공지: 유효한 NOTICE 글(is_not_paging). 목록에 섞지 않고 위 배너로 순회한다(디자인 정본).
+  // 읽음 필터는 공지에도 적용한다 — 레거시 selectNoticePosts 가 is_view 를 함께 넘긴다.
+  const { data: noticeData } = useNotices({ board_id: boardIdParam, is_view: isView })
   const notices = (noticeData ?? []).map(toRow)
   const rows = (data?.data ?? []).map(toRow) // 일반 목록(공지 제외 — except_badges)
   const totalPages = data?.last_page ?? 1
-  const totalCount = (data?.total ?? 0) + notices.length // "N개의 글" = 일반글 + 공지
+  // ⚠ 공지는 페이지네이션 카운트에서 분리한다 — 디자인 「공지 초과 표시 시안」의 전제(관례).
+  const totalCount = data?.total ?? 0
   const isEmpty = !isLoading && !isError && rows.length === 0
 
-  // 배너는 안 읽은 공지를 우선 순회한다. 다 읽었으면 전체를 순회한다.
-  const unreadNotices = notices.filter((n) => !n.read)
-  const ntPool = unreadNotices.length > 0 ? unreadNotices : notices
-  const ntPos = ntPool.length > 0 ? ntIdx % ntPool.length : 0
-  const ntCur = ntPool[ntPos]
-  const ntLabel =
-    unreadNotices.length > 0
-      ? t('list-notice-index-unread', {
-          i: ntPos + 1,
-          unread: unreadNotices.length,
-          total: notices.length,
-        })
-      : t('list-notice-index-all', { i: ntPos + 1, total: notices.length })
-  const ntStep = (d: number) => {
-    setNtDir(d < 0 ? 'prev' : 'next')
-    setNtIdx((v) => (ntPool.length > 0 ? (v + d + ntPool.length) % ntPool.length : 0))
-  }
-
-  // 자동 순환. ntIdx를 deps에 두어 수동으로 넘겼을 때도 주기가 처음부터 다시 돈다.
-  // 멈추는 조건: 공지 1건 이하 · hover/포커스 · 「공지 전체」 모달 열림 · 모션 최소화 설정.
-  useEffect(() => {
-    if (ntPool.length < 2 || ntPaused || ntAllOpen) return
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
-    const id = setTimeout(() => {
-      setNtDir('next')
-      setNtIdx((v) => (v + 1) % ntPool.length)
-    }, NOTICE_ROTATE_MS)
-    return () => clearTimeout(id)
-  }, [ntIdx, ntPool.length, ntPaused, ntAllOpen])
+  // 상한 3건까지만 고정 노출, 나머지는 토글로 펼친다.
+  const shownNotices = ntExpanded ? notices : notices.slice(0, NOTICE_TOP_CAP)
+  const hiddenNoticeCount = Math.max(0, notices.length - NOTICE_TOP_CAP)
 
   // 게시판 헤더: 이름은 GET /board/{board}, 즐겨찾기는 북마크 목록 + 공용 토글 mutation.
   // 슬러그 데모 경로(/board/notice)는 UUID가 아니라 쿼리가 꺼지므로 mock 이름으로 폴백한다.
   const { data: boardDetail } = useBoard(boardIdParam)
   const boardName = boardDetail?.title ?? (BOARDS[boardId] ?? DEFAULT_BOARD).name
+  // 뷰타입: URL 지정이 없으면 게시판에 설정된 type 을 쓴다 — ALBUM 게시판은 앨범형으로 열린다.
+  // (레거시 onMounted 의 `if (!route.query.viewType) viewType = board.type` 과 같은 규약)
+  const boardType = boardDetail?.type
+  const view: BoardView =
+    search.viewType ?? (boardType === 'PREVIEW' || boardType === 'ALBUM' ? boardType : 'BOARD')
   const { data: favorites = [] } = useBookmarkedBoards()
   const boardFav = !!boardIdParam && favorites.some((b) => b.id === boardIdParam)
   const { mutate: toggleBoardBookmark } = useBoardBookmarkMutation()
+  const { mutate: togglePostBookmark } = usePostBookmarkMutation()
 
   useEffect(() => {
     if (!toast) return
@@ -148,16 +144,10 @@ export function BoardListScreen() {
 
   const ctx: RowCtx = {
     open: (id) => navigate({ to: '/post/$postId', params: { postId: String(id) } }),
-    bookmarks,
-    onBm: (id) =>
-      setBookmarks((prev) => {
-        const next = new Set(prev)
-        const has = next.has(id)
-        if (has) next.delete(id)
-        else next.add(id)
-        setToast(t(has ? 'drive-bm-remove' : 'drive-bm-add'))
-        return next
-      }),
+    onBm: (row) => {
+      togglePostBookmark(String(row.id))
+      setToast(t(row.bookmarked ? 'drive-bm-remove' : 'drive-bm-add'))
+    },
     onCopy: () => setToast(t('common-link-copied')),
   }
 
@@ -168,9 +158,9 @@ export function BoardListScreen() {
   const atLast = page >= totalPages
 
   const views: { key: BoardView; label: string; icon: React.ReactNode }[] = [
-    { key: 'board', label: t('list-view-basic'), icon: <BasicIcon /> },
-    { key: 'preview', label: t('list-view-preview'), icon: <PreviewIcon /> },
-    { key: 'album', label: t('list-view-album'), icon: <AlbumIcon /> },
+    { key: 'BOARD', label: t('list-view-basic'), icon: <BasicIcon /> },
+    { key: 'PREVIEW', label: t('list-view-preview'), icon: <PreviewIcon /> },
+    { key: 'ALBUM', label: t('list-view-album'), icon: <AlbumIcon /> },
   ]
 
   return (
@@ -202,22 +192,16 @@ export function BoardListScreen() {
             <button
               type="button"
               aria-pressed={listFilter === 'all'}
-              onClick={() => {
-                setListFilter('all')
-                setPage(1)
-              }}
-              className={`inline-flex h-[30px] items-center rounded px-3 text-[12.5px] font-semibold ${listFilter !== 'unread' ? 'bg-card text-primary shadow-[0_4px_8px_rgba(0,0,0,0.1)]' : 'text-gray-500'}`}
+              onClick={() => setSearch({ read: undefined, page: undefined })}
+              className={`inline-flex h-[30px] items-center rounded px-3 text-[12.5px] font-semibold ${listFilter !== 'before' ? 'bg-card text-primary shadow-[0_4px_8px_rgba(0,0,0,0.1)]' : 'text-gray-500'}`}
             >
               {t('list-filter-all')}
             </button>
             <button
               type="button"
-              aria-pressed={listFilter === 'unread'}
-              onClick={() => {
-                setListFilter('unread')
-                setPage(1)
-              }}
-              className={`inline-flex h-[30px] items-center rounded px-3 text-[12.5px] font-semibold ${listFilter === 'unread' ? 'bg-card text-primary shadow-[0_4px_8px_rgba(0,0,0,0.1)]' : 'text-gray-500'}`}
+              aria-pressed={listFilter === 'before'}
+              onClick={() => setSearch({ read: 'before', page: undefined })}
+              className={`inline-flex h-[30px] items-center rounded px-3 text-[12.5px] font-semibold ${listFilter === 'before' ? 'bg-card text-primary shadow-[0_4px_8px_rgba(0,0,0,0.1)]' : 'text-gray-500'}`}
             >
               {t('list-filter-unread')}
             </button>
@@ -242,13 +226,14 @@ export function BoardListScreen() {
                   onClick={() => setCountOpen(false)}
                 />
                 <div className="absolute top-[calc(100%+4px)] right-0 z-30 w-[130px] rounded-lg border border-gray-200 bg-card p-1 shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
-                  {['10', '20', '30'].map((v) => (
+                  {LIMIT_OPTIONS.map((v) => (
                     <button
                       key={v}
                       type="button"
                       onClick={() => {
-                        setPerPage(v)
-                        setPage(1)
+                        // 선택은 기기에 남는다(레거시와 같은 키) + URL 에도 실어 공유 가능하게.
+                        writeStoredLimit(v)
+                        setSearch({ limit: v, page: undefined })
                         setCountOpen(false)
                       }}
                       className={`flex h-[34px] w-full items-center rounded-md px-2.5 text-[12.5px] hover:bg-gray-100 ${v === perPage ? 'font-semibold text-primary' : 'text-gray-800'}`}
@@ -269,7 +254,7 @@ export function BoardListScreen() {
                 type="button"
                 aria-label={v.label}
                 aria-pressed={view === v.key}
-                onClick={() => setView(v.key)}
+                onClick={() => setSearch({ viewType: v.key })}
                 className={`flex h-[30px] w-8 items-center justify-center rounded ${view === v.key ? 'bg-card text-primary' : 'text-gray-400'}`}
               >
                 {v.icon}
@@ -278,60 +263,6 @@ export function BoardListScreen() {
           </div>
         </div>
       </div>
-
-      {/* 공지 배너 — 목록에 섞지 않고 한 건씩 순회한다 (디자인 정본) */}
-      {ntCur && (
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => ctx.open(ntCur.id)}
-          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && ctx.open(ntCur.id)}
-          onMouseEnter={() => setNtPaused(true)}
-          onMouseLeave={() => setNtPaused(false)}
-          onFocus={() => setNtPaused(true)}
-          onBlur={() => setNtPaused(false)}
-          className="flex h-[42px] cursor-pointer items-center gap-[9px] rounded-lg border border-ov-blue-200 bg-ov-blue-50 pr-1 pl-2.5"
-        >
-          <span className="inline-flex h-[19px] flex-none items-center rounded bg-primary px-[7px] text-[10.5px] font-bold text-white">
-            {t('badge-notice')}
-          </span>
-          {/* overflow-hidden: 가로 슬라이드(16px)가 인덱스 라벨 위로 삐져나오지 않게 제목 영역에서 자른다 */}
-          <span className="flex min-w-0 flex-1 overflow-hidden">
-            <span
-              key={ntCur.id}
-              className={`flex min-w-0 flex-1 animate-in items-center gap-1.5 fade-in duration-300 ease-out motion-reduce:animate-none ${
-                ntDir === 'prev' ? 'slide-in-from-left-4' : 'slide-in-from-right-4'
-              }`}
-            >
-              {!ntCur.read && <span className="size-1.5 flex-none rounded-full bg-primary" />}
-              <span className="truncate text-[13px] font-semibold text-gray-900">
-                {ntCur.title}
-              </span>
-            </span>
-          </span>
-          {notices.length > 1 && (
-            <span className="flex-none text-[11.5px] whitespace-nowrap text-gray-400 tabular-nums">
-              {ntLabel}
-            </span>
-          )}
-          {ntPool.length > 1 && (
-            <>
-              <NoticeNav label={t('list-notice-prev')} onClick={() => ntStep(-1)} dir="left" />
-              <NoticeNav label={t('list-notice-next')} onClick={() => ntStep(1)} dir="right" />
-            </>
-          )}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              setNtAllOpen(true)
-            }}
-            className="inline-flex h-[26px] flex-none items-center rounded-md px-2.5 text-[11.5px] font-semibold text-primary hover:bg-ov-blue-100"
-          >
-            {t('list-notice-all')}
-          </button>
-        </div>
-      )}
 
       {/* 뷰 / 로딩 / 에러 / 빈 상태 */}
       {isError ? (
@@ -342,23 +273,32 @@ export function BoardListScreen() {
         <EmptyState />
       ) : (
         <>
-          {view === 'board' && <BoardView rows={rows} ctx={ctx} />}
-          {view === 'preview' && <PreviewView rows={rows} ctx={ctx} />}
-          {view === 'album' && <AlbumView rows={rows} ctx={ctx} />}
+          {view === 'BOARD' && (
+            <BoardView
+              rows={rows}
+              ctx={ctx}
+              notices={shownNotices}
+              hiddenCount={hiddenNoticeCount}
+              expanded={ntExpanded}
+              onToggleNotices={() => setNtExpanded((v) => !v)}
+            />
+          )}
+          {view === 'PREVIEW' && <PreviewView rows={rows} ctx={ctx} />}
+          {view === 'ALBUM' && <AlbumView rows={rows} ctx={ctx} />}
 
           {/* 페이지네이션 */}
           <div className="flex items-center justify-center gap-[3px] py-1.5">
-            <PageArrow disabled={atFirst} onClick={() => setPage(1)} label="처음">
+            <PageArrow disabled={atFirst} onClick={() => setSearch({ page: undefined })} label="처음">
               <DoubleChevron dir="left" />
             </PageArrow>
-            <PageArrow disabled={atFirst} onClick={() => setPage(page - 1)} label="이전">
+            <PageArrow disabled={atFirst} onClick={() => setSearch({ page: page - 1 > 1 ? page - 1 : undefined })} label="이전">
               <Chevron dir="left" />
             </PageArrow>
             {pages.map((n) => (
               <button
                 key={n}
                 type="button"
-                onClick={() => setPage(n)}
+                onClick={() => setSearch({ page: n > 1 ? n : undefined })}
                 className={`mx-px inline-flex h-7 min-w-[28px] items-center justify-center rounded-full border px-1.5 text-[12.5px] ${
                   n === page
                     ? 'border-primary font-bold text-primary'
@@ -368,26 +308,14 @@ export function BoardListScreen() {
                 {n}
               </button>
             ))}
-            <PageArrow disabled={atLast} onClick={() => setPage(page + 1)} label="다음">
+            <PageArrow disabled={atLast} onClick={() => setSearch({ page: page + 1 })} label="다음">
               <Chevron dir="right" />
             </PageArrow>
-            <PageArrow disabled={atLast} onClick={() => setPage(totalPages)} label="마지막">
+            <PageArrow disabled={atLast} onClick={() => setSearch({ page: totalPages })} label="마지막">
               <DoubleChevron dir="right" />
             </PageArrow>
           </div>
         </>
-      )}
-
-      {/* 공지 전체 모달 */}
-      {ntAllOpen && (
-        <NoticeAllModal
-          notices={notices}
-          onClose={() => setNtAllOpen(false)}
-          onPick={(id) => {
-            setNtAllOpen(false)
-            ctx.open(id)
-          }}
-        />
       )}
 
       {/* 토스트 */}
@@ -401,102 +329,44 @@ export function BoardListScreen() {
   )
 }
 
-/* ── 공지 배너 이전/다음 ── */
-function NoticeNav({
-  label,
-  onClick,
-  dir,
-}: {
-  label: string
-  onClick: () => void
-  dir: 'left' | 'right'
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={(e) => {
-        e.stopPropagation()
-        onClick()
-      }}
-      className="inline-flex size-[26px] flex-none items-center justify-center rounded-md text-gray-500 hover:bg-ov-blue-100"
-    >
-      <Chevron dir={dir} />
-    </button>
-  )
+/* ── 안읽음 표시 ──
+   점(형태) + 색 두 축을 함께 쓴다. 색만 남기면(gray-900↔gray-500) 색 대비 하나로만
+   상태를 전달하게 되어 WCAG 1.4.1(색에만 의존하지 않기)에 걸리고, 스크린리더에는
+   안읽음 정보가 아예 전달되지 않는다. 대신 볼드는 뺐다 — 점+색이면 신호가 충분하다.
+   점 자체는 aria-hidden 이고, 상태는 행의 접근 이름(aria-label)이 전달한다. */
+function UnreadDot() {
+  return <span className="size-1.5 flex-none rounded-full bg-primary" aria-hidden="true" />
 }
 
-/* ── 공지 전체 모달 ── */
-function NoticeAllModal({
-  notices,
-  onClose,
-  onPick,
-}: {
-  notices: BoardRow[]
-  onClose: () => void
-  onPick: (id: string | number) => void
-}) {
+/* ── 공지 행 (목록 행과 같은 grid, 배경만 ov-blue-50) ── */
+function NoticeRow({ r, ctx }: { r: BoardRow; ctx: RowCtx }) {
   const { t } = useTranslation()
-  // ESC로 닫기 (디자인의 전역 _esc와 같은 규약)
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
-
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-[var(--scrim-modal)] p-4"
-      onClick={onClose}
+      role="button"
+      tabIndex={0}
+      onClick={() => ctx.open(r.id)}
+      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && ctx.open(r.id)}
+      aria-label={`${t('badge-notice')} · ${r.read ? r.title : `${t('list-filter-unread')} · ${r.title}`}`}
+      className={`group relative cursor-pointer bg-ov-blue-50 text-left hover:bg-gray-50 ${ROW}`}
+      style={{ gridTemplateColumns: COLS }}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={t('list-notice-all-title')}
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[calc(100dvh-80px)] w-[560px] max-w-[94%] flex-col overflow-hidden rounded-xl bg-card shadow-[var(--shadow-modal)]"
-      >
-        <div className="flex h-[54px] flex-none items-center gap-2 border-b border-gray-100 px-5">
-          <span className="text-[15px] font-bold">{t('list-notice-all-title')}</span>
-          <span className="text-xs text-gray-400 tabular-nums">{notices.length}</span>
-          <button
-            type="button"
-            aria-label={t('common-close')}
-            onClick={onClose}
-            className="ml-auto inline-flex size-[30px] items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100"
-          >
-            <CloseIcon />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-1.5">
-          {notices.map((n) => (
-            <button
-              key={n.id}
-              type="button"
-              onClick={() => onPick(n.id)}
-              className="flex w-full items-center gap-[9px] rounded-lg px-3 py-2.5 text-left hover:bg-gray-50"
-            >
-              <span className="inline-flex h-[19px] flex-none items-center rounded bg-l-blue px-[7px] text-[10.5px] font-bold text-primary">
-                {t('badge-notice')}
-              </span>
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="flex min-w-0 items-center gap-1.5">
-                  {!n.read && <span className="size-1.5 flex-none rounded-full bg-primary" />}
-                  <span
-                    className={`truncate text-[13px] ${n.read ? 'font-normal text-gray-500' : 'font-semibold text-gray-900'}`}
-                  >
-                    {n.title}
-                  </span>
-                </span>
-                <span className="text-[11.5px] text-gray-400">
-                  {t('list-meta', { author: n.author, date: n.date, views: n.views })}
-                </span>
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
+      <span className="flex w-full min-w-0 items-center gap-[7px] min-[631px]:w-auto min-[631px]:pr-3.5">
+        <TitleCell r={r} notice={t('badge-notice')} />
+      </span>
+      <span className="w-full truncate text-[11.5px] text-gray-400 min-[631px]:hidden">
+        {t('list-meta', { author: r.author, date: r.date, views: r.views })}
+      </span>
+      <span className="hidden min-w-0 items-center gap-1.5 pr-2 min-[631px]:flex">
+        <Avatar r={r} />
+        <span className="truncate text-[12.5px] text-gray-600">{r.author}</span>
+      </span>
+      <span className={`${CELL_DESKTOP} whitespace-nowrap text-gray-500`}>{r.date}</span>
+      <span className={`${CELL_DESKTOP} text-center text-gray-500`}>
+        {r.views.toLocaleString()}
+      </span>
+      <span className={`${CELL_DESKTOP} text-center text-gray-500`}>{r.likes}</span>
+      <RowActions row={r} ctx={ctx} />
     </div>
   )
 }
@@ -580,9 +450,9 @@ function EmptyState() {
 }
 
 /* ── 행 hover 퀵액션 (북마크 + 링크복사) ── */
-function RowActions({ id, ctx }: { id: string | number; ctx: RowCtx }) {
+function RowActions({ row, ctx }: { row: BoardRow; ctx: RowCtx }) {
   const { t } = useTranslation()
-  const marked = ctx.bookmarks.has(id)
+  const marked = row.bookmarked
   return (
     <span className="absolute top-1/2 right-2.5 hidden -translate-y-1/2 items-center gap-0.5 rounded-lg bg-card/95 opacity-0 shadow-[0_2px_8px_rgba(0,0,0,0.12)] transition-opacity group-hover:opacity-100 min-[631px]:flex">
       <button
@@ -590,7 +460,7 @@ function RowActions({ id, ctx }: { id: string | number; ctx: RowCtx }) {
         aria-label={t('nav-favorites')}
         onClick={(e) => {
           e.stopPropagation()
-          ctx.onBm(id)
+          ctx.onBm(row)
         }}
         className={`inline-flex size-8 items-center justify-center rounded-lg hover:bg-gray-100 ${marked ? 'text-warning' : 'text-gray-400'}`}
       >
@@ -612,7 +482,23 @@ function RowActions({ id, ctx }: { id: string | number; ctx: RowCtx }) {
 }
 
 /* ── 기본형 (테이블) ── */
-function BoardView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
+// 공지 6a: 목록과 «같은 표» 안에서 상단 3건을 고정하고, 초과분은 토글로 펼친다.
+// 공지 블록 전체를 gray-200 한 줄로 일반 목록과 구분한다(디자인 6a).
+function BoardView({
+  rows,
+  ctx,
+  notices,
+  hiddenCount,
+  expanded,
+  onToggleNotices,
+}: {
+  rows: BoardRow[]
+  ctx: RowCtx
+  notices: BoardRow[]
+  hiddenCount: number
+  expanded: boolean
+  onToggleNotices: () => void
+}) {
   const { t } = useTranslation()
   return (
     <div className="bg-card">
@@ -626,6 +512,26 @@ function BoardView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
         <span className="text-center">{t('col-views')}</span>
         <span className="text-center">{t('col-likes')}</span>
       </div>
+      {notices.length > 0 && (
+        <div className="border-b border-gray-200">
+          {notices.map((r) => (
+            <NoticeRow key={r.id} r={r} ctx={ctx} />
+          ))}
+          {hiddenCount > 0 && (
+            <button
+              type="button"
+              onClick={onToggleNotices}
+              aria-expanded={expanded}
+              className="flex h-[34px] w-full items-center justify-center gap-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 hover:text-primary"
+            >
+              {expanded
+                ? t('list-notice-collapse')
+                : t('list-notice-expand', { n: hiddenCount })}
+              <ChevronDownIcon className={expanded ? 'rotate-180' : ''} />
+            </button>
+          )}
+        </div>
+      )}
       {rows.map((r) => (
         <div
           key={r.id}
@@ -633,7 +539,8 @@ function BoardView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
           tabIndex={0}
           onClick={() => ctx.open(r.id)}
           onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && ctx.open(r.id)}
-          className={`group relative cursor-pointer text-left hover:bg-gray-50 ${ROW} ${r.notice ? 'bg-accent' : ''}`}
+          aria-label={r.read ? r.title : `${t('list-filter-unread')} · ${r.title}`}
+          className={`group relative cursor-pointer text-left hover:bg-gray-50 ${ROW}`}
           style={{ gridTemplateColumns: COLS }}
         >
           <span className="flex w-full min-w-0 items-center gap-[7px] min-[631px]:w-auto min-[631px]:pr-3.5">
@@ -652,7 +559,7 @@ function BoardView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
             {r.views.toLocaleString()}
           </span>
           <span className={`${CELL_DESKTOP} text-center text-gray-500`}>{r.likes}</span>
-          <RowActions id={r.id} ctx={ctx} />
+          <RowActions row={r} ctx={ctx} />
         </div>
       ))}
     </div>
@@ -671,16 +578,15 @@ function PreviewView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
           tabIndex={0}
           onClick={() => ctx.open(r.id)}
           onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && ctx.open(r.id)}
+          aria-label={r.read ? r.title : `${t('list-filter-unread')} · ${r.title}`}
           className={`group relative flex w-full cursor-pointer gap-4 border-b border-gray-100 px-1 py-5 text-left hover:bg-gray-50 ${r.notice ? 'bg-accent' : ''}`}
         >
           <span className="flex min-w-0 flex-1 flex-col gap-1.5">
             <span className="flex min-w-0 items-center gap-[7px]">
-              {!r.read && (
-                <span className="size-1.5 flex-none rounded-full bg-primary" aria-label="안 읽음" />
-              )}
+              {!r.read && <UnreadDot />}
               {r.notice && <NoticeBadge label={t('badge-notice')} />}
               <span
-                className={`truncate text-sm ${r.read ? 'font-normal text-gray-500' : 'font-semibold text-gray-900'}`}
+                className={`truncate text-sm ${r.read ? 'text-gray-500' : 'text-gray-900'}`}
               >
                 {r.title}
               </span>
@@ -710,7 +616,7 @@ function PreviewView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
               <ImageIcon />
             </span>
           )}
-          <RowActions id={r.id} ctx={ctx} />
+          <RowActions row={r} ctx={ctx} />
         </div>
       ))}
     </div>
@@ -727,6 +633,7 @@ function AlbumView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
           key={r.id}
           type="button"
           onClick={() => ctx.open(r.id)}
+          aria-label={r.read ? r.title : `${t('list-filter-unread')} · ${r.title}`}
           className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-card text-left hover:shadow-[0_4px_8px_rgba(0,0,0,0.1)]"
         >
           <span
@@ -736,12 +643,10 @@ function AlbumView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
           </span>
           <span className="flex flex-col gap-1.5 px-3.5 pt-3 pb-3.5">
             <span className="flex min-w-0 items-center gap-1.5">
-              {!r.read && (
-                <span className="size-1.5 flex-none rounded-full bg-primary" aria-label="안 읽음" />
-              )}
+              {!r.read && <UnreadDot />}
               {r.notice && <NoticeBadge label={t('badge-notice')} />}
               <span
-                className={`truncate text-[13.5px] ${r.read ? 'font-normal text-gray-500' : 'font-semibold text-gray-900'}`}
+                className={`truncate text-[13.5px] ${r.read ? 'text-gray-500' : 'text-gray-900'}`}
               >
                 {r.title}
               </span>
@@ -764,12 +669,10 @@ function AlbumView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
 function TitleCell({ r, notice }: { r: BoardRow; notice: string }) {
   return (
     <>
-      {r.read ? null : (
-        <span className="size-1.5 flex-none rounded-full bg-primary" aria-label="안 읽음" />
-      )}
+      {!r.read && <UnreadDot />}
       {r.notice && <NoticeBadge label={notice} />}
       <span
-        className={`truncate text-[13.5px] ${r.read ? 'font-normal text-gray-500' : 'font-semibold text-gray-900'}`}
+        className={`truncate text-[13.5px] ${r.read ? 'text-gray-500' : 'text-gray-900'}`}
       >
         {r.title}
       </span>
@@ -996,21 +899,6 @@ function ImageIcon({ large }: { large?: boolean }) {
       <rect x="3.5" y="5" width="17" height="14" rx="2" />
       <circle cx="9" cy="10" r="1.6" />
       <path d="M3.5 16.5l5-4.5 4 3.5 3.5-3 4.5 4" />
-    </svg>
-  )
-}
-function CloseIcon() {
-  return (
-    <svg
-      className="size-3.5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M6 6l12 12M18 6L6 18" />
     </svg>
   )
 }
