@@ -107,9 +107,8 @@ export function HomeScreen() {
     sort: { by: 'created_at', order: 'desc' },
   })
   const files = (fileData ?? []).slice(0, HOME_TAKE).map(toHomeFile)
-  // NEW 배지: 게시글은 안읽음 존재 여부. 자료는 서버 플래그가 없어 '기간 창 안에 항목 있음'으로 둔다.
+  // NEW 배지: 게시글만 안읽음 조건(화면 02 의 sc-if hasUnreadPosts). 자료는 무조건 노출.
   const hasUnread = posts.some((p) => p.unread)
-  const hasNewFiles = files.length > 0
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -199,18 +198,24 @@ export function HomeScreen() {
                     onClick={() =>
                       navigate({ to: '/post/$postId', params: { postId: String(p.id) } })
                     }
+                    aria-label={p.unread ? `${t('list-filter-unread')} · ${p.title}` : p.title}
                     className={`${ROW} text-left hover:bg-gray-50`}
                     style={{ gridTemplateColumns: COLS_POSTS }}
                   >
                     <span className="flex min-w-0 flex-1 items-center gap-2 min-[631px]:gap-[7px] min-[631px]:pr-3.5">
-                      {p.unread && <span className="size-1.5 flex-none rounded-full bg-primary" />}
+                      {p.unread && (
+                        <span
+                          className="size-1.5 flex-none rounded-full bg-primary"
+                          aria-hidden="true"
+                        />
+                      )}
                       {p.notice && (
                         <span className="inline-flex h-[19px] flex-none items-center rounded bg-l-blue px-[7px] text-[10.5px] font-bold text-primary">
                           {t('badge-notice')}
                         </span>
                       )}
                       <span
-                        className={`truncate text-[13.5px] ${p.unread ? 'font-semibold text-gray-900' : 'font-normal text-gray-800'}`}
+                        className={`truncate text-[13.5px] ${p.unread ? 'text-gray-900' : 'text-gray-500'}`}
                       >
                         {p.title}
                       </span>
@@ -245,7 +250,8 @@ export function HomeScreen() {
         <section className={SECTION_CARD}>
           <div className={SECTION_HEAD}>
             <span className={SECTION_TITLE}>{t('home-recent-files')}</span>
-            {hasNewFiles && <span className={`${NEW_BADGE} bg-primary`}>NEW</span>}
+            {/* 레거시 <ico-new type="drive" /> · 화면 02 모두 조건 없이 노출한다 */}
+            <span className={`${NEW_BADGE} bg-primary`}>NEW</span>
             <MoreLink label={t('home-more')} onClick={() => navigate({ to: '/drive' })} />
           </div>
           <div>
