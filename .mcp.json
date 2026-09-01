@@ -3,6 +3,24 @@
     "shadcn": {
       "command": "npx",
       "args": ["shadcn@latest", "mcp"]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--isolated",
+        "--viewport",
+        "1440x900",
+        "--screenshotFormat",
+        "webp",
+        "--screenshotMaxWidth",
+        "1600",
+        "--categoryPerformance",
+        "false",
+        "--usageStatistics",
+        "false"
+      ]
     }
   }
 }

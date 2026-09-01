@@ -106,6 +106,16 @@ Every code change must pass all of these before it's "done":
 - Don't change external API/routes/props contracts during a refactor.
 - Verify with build/lint; report pre-existing issues separately from your changes.
 
+## 화면 문제는 «돌아가는 페이지»를 직접 본다 — 스크린샷 추측 금지
+IMPORTANT: `chrome-devtools` MCP 가 붙어 있다(`.mcp.json`). 색·간격·크기가 어긋난다는 보고를 받으면
+**스크린샷 픽셀을 뜨지 말고** dev 서버(기본 `localhost:5173`, 사용자가 5174 를 쓰기도 한다)에 붙어
+해당 요소의 `getComputedStyle` 과 **조상들의 배경색 체인**을 확인한다.
+- 라이트/다크는 `html.dark` 클래스를 토글해 둘 다 본다. 모바일은 viewport 630px 이하로 에뮬레이트.
+- 스크린샷 비교는 «최후 수단»이다: 색 프로파일 보정이 끼어 실제 토큰값과 다르게 나온다.
+  [Why: 실측 — `<main>` 배경 누락을 찾느라 스크린샷 픽셀 추출 → 프로파일 보정 → 좌표 정렬까지
+   했다. 계산된 스타일 한 번이면 끝날 일이었고, 그전에 사용자가 세 번 지적해야 했다.]
+- MCP 는 `--isolated` 로 임시 프로필을 쓴다 — 사용자의 로그인 세션에 접근하지 않는다.
+
 ## Screen work order (design-first) — MANDATORY
 IMPORTANT: UI를 손대기 전에 이 순서를 지킨다. **스크린샷만 보고 고치지 않는다** —
 스크린샷으로는 색·간격만 보이고 필드명·기본 eager load·누락된 파라미터는 드러나지 않는다.
@@ -172,6 +182,34 @@ IMPORTANT: 이 프로젝트엔 색 이름 체계가 둘이다. **이름이 겹�
 - 색 토큰은 **라이트/다크 짝을 항상 정의**한다. 한쪽만 정의하면 나머지 모드에서 Tailwind
   기본 팔레트로 조용히 떨어진다(`.claude/hooks/theme-token-check.sh` 가 검사한다).
 - 새 색을 쓰기 전에 `src/index.css` 의 `@theme` 에 그 이름이 있는지, 값이 디자인과 같은지 본다.
+
+## 색·치수 정본은 `docs/guides/design-tokens-guide.md` 하나뿐
+IMPORTANT: 디자인 프로젝트엔 팔레트가 여러 벌 있다. **정본은 하나다.**
+
+| 소스 | 정본? |
+|---|---|
+| `디자인 토큰 정본.dc.html` → `docs/guides/design-tokens-guide.md` | ✅ **정본** — "구현은 이 표의 값만 사용하고 임의 px·hex를 만들지 않는다" |
+| `_ds/…/tokens/colors.css` (DS 원본) | ❌ 상위 DS 의 일반 팔레트. **이 제품 값과 다르다** (다크 카드 `#1F1F1F` ↔ 정본 `#26262A`, success `#58BD7D` ↔ 정본 `#10BF79`) |
+| 아트보드 인라인 `--color-*` | ❌ 정규화 대상. 정본표가 이긴다 |
+| `_ds/…/tokens/{spacing,typography}.css` | ⭕ 색이 아닌 치수·스케일은 정본표와 **일치**한다 (`--sidebar-w` 만 DS 240 → 제품 264) |
+
+- 값을 바꾸기 전에 **정본 문서를 먼저 고치고**, `node scripts/check-design-tokens.mjs` 를 통과시킨다.
+- **표면과 캔버스는 다르다.** `--background`(= gray-50 «캔버스») ≠ `--card`(= 디자인 `--color-bg`).
+  디자인에서 `--color-bg` 인 것: **헤더 · 사이드바 · `<main>` · 카드 · 드롭다운 · 모달**.
+  즉 데스크톱에서 캔버스는 사실상 보이지 않는다.
+  새 면을 만들면 **배경 클래스를 반드시 명시**한다 — 안 깔면 캔버스를 상속받아
+  ① 사이드바보다 어두워 보이고 ② 그 위에서 `hover:bg-gray-50` 이 같은 색이라 사라진다.
+  [Why: 실측 4건 — 홈 섹션 · `<aside>` · 자료실 테이블 · **`<main>`** 이 면 없이 떠 있었다.
+   `<main>` 은 사용자가 스크린샷으로 세 번째 지적한 뒤에야 잡혔다. 디자인 소스에
+   `flex:1; …; background:var(--color-bg); overflow-y:auto` 라고 명시돼 있었다.]
+- hover 는 **`gray-100`**(정본 용도: 「중립 컨트롤 hover」). 선택은 `ov-blue-50`, 선택 hover `ov-blue-100`, press `ov-blue-200`.
+- 파랑을 **램프 번호로 쓰기 전에 다크 값을 확인**한다. 정본 다크 `ov-blue-50~200` 은 **알파 틴트**다.
+- `l-*` 파스텔은 **다크 오버라이드가 없다.** 그 위 글자는 **반드시 `text-on-pastel`**.
+  「상태」 배경(에러·경고·성공·정보)엔 파스텔 대신 **`*-bg` 시맨틱 세트**를 쓴다.
+
+## 커서 — 눌리는 것은 눌리게 보여야 한다
+브라우저 기본 `<button>` 커서는 화살표다. 개별 컴포넌트에 `cursor-pointer` 를 흩뿌리지 말고
+`src/index.css` 의 `@layer base` 규칙 하나로 처리한다(이미 있다). 비활성은 제외한다.
 
 ## "구현돼 있다" 는 «연결»까지 확인하고 말한다
 IMPORTANT: 정의가 있다는 것과 **연결돼 있다**는 것은 다르다. 어떤 기능이 「있다/없다」를
