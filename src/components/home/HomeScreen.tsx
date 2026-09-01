@@ -148,7 +148,7 @@ export function HomeScreen() {
             <span className={SECTION_TITLE}>{t('home-recent-posts')}</span>
             {/* 노출 기간(limit_day) 안의 글만 조회하므로 목록에 있으면 곧 기간 이내 —
                 읽음 여부와 무관하게 무조건 표시한다(디자인 A-2 확정 · 레거시 파리티) */}
-            <span className={`${NEW_BADGE} bg-accent`}>NEW</span>
+            <span className={`${NEW_BADGE} bg-success`}>NEW</span>
             <MoreLink
               label={t('home-more')}
               onClick={() => navigate({ to: '/board/$boardId', params: { boardId: 'notice' } })}

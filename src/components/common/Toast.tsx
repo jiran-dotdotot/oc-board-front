@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { ToastState, ToastTone } from '@/components/common/useToast'
 
 const TONE_ICON: Record<ToastTone, string> = {
-  success: 'text-accent',
+  success: 'text-success',
   warning: 'text-warning',
   error: 'text-destructive',
 }

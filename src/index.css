@@ -66,6 +66,10 @@
   --color-l-lime: #fcffdd;
   --color-l-mint: #edfeff;
   --color-l-gray: #f3f4f6;
+  /* 디자인 --color-accent(#10BF79 초록 = 성공)는 shadcn --accent(연한 파랑 «배경»)와
+     이름이 겹친다. 겹치면 폴백 경고 없이 조용히 틀린 색이 나오므로 이름을 분리한다.
+     → 성공/긍정은 success, 선택 배경은 accent. */
+  --color-success: #10bf79;
   --color-warning: #ff9045;
   --color-on-pastel: #1f2937;
   --color-sidebar-ring: var(--sidebar-ring);
