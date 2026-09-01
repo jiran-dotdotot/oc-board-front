@@ -11,9 +11,11 @@
 - Typecheck: `npx tsc -b --noEmit`
 - Test: `npm run test` (Vitest, happy-dom; watch: `npm run test:watch`)
 - Single test: `npx vitest <path>`
-- E2E: `npm run test:e2e` (Playwright; specs in `tests/e2e/`)
-  - ⚠️ Playwright `baseURL` 기본값은 `http://localhost:3000`이지만 Vite dev 서버는 5173입니다.
-    E2E 실행 시 `PLAYWRIGHT_BASE_URL=http://localhost:5173`을 지정하거나 vite 포트를 3000으로 맞추세요.
+- E2E: `npm run test:e2e` (Playwright; specs in `tests/e2e/`) — **그냥 실행하면 된다.**
+  - `playwright.config.ts` 가 전용 포트 **5188** 에서 dev 서버를 자동 기동한다(`webServer`).
+  - ⚠️ **`PLAYWRIGHT_BASE_URL` 을 붙이지 마라.** 특히 5173 은 레거시 Vue 앱(`jupiter-board-web`)이
+    쓰는 포트라, 지정하면 `reuseExistingServer` 가 그쪽을 재사용해 **다른 앱을 테스트한다.**
+    [Why: 실측 — 이 오해로 E2E 가 계속 실패했고 "기존부터 깨진 이슈"로 잘못 보고됐다.]
 
 ## Deployment
 
