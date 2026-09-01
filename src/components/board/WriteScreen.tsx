@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { Toast } from '@/components/common/Toast'
 import { useToast } from '@/components/common/useToast'
 
@@ -34,6 +35,8 @@ export function WriteScreen() {
   const [cmtAllow, setCmtAllow] = useState(true)
   const [leaveOpen, setLeaveOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  // 오버레이가 떠 있는 동안 배경 스크롤 잠금(중첩은 참조 카운팅)
+  useBodyScrollLock(orgOpen || leaveOpen || saving)
   const { toast, showToast, hideToast } = useToast()
   const boardRef = useRef<HTMLDivElement>(null)
 

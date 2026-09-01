@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 
@@ -17,6 +17,7 @@ import {
 } from './constants'
 import { BOARDS, DEFAULT_BOARD } from './listData'
 import type { BoardListSearch, BoardRow, BoardView } from './listData'
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { useBoard, useBoardBookmarkMutation, useBookmarkedBoards } from '@/hooks/useBoards'
 import { Toast } from '@/components/common/Toast'
 import { useToast } from '@/components/common/useToast'
@@ -145,8 +146,16 @@ export function BoardListScreen() {
   const { data: boardDetail, error: boardError } = useBoard(boardIdParam)
   // 삭제된 게시판: 알리고 → 사이드바에서 지우고 → 홈으로. (레거시 onMounted .catch(404) 규약)
   // 자동 리다이렉트만 하면 왜 튕겼는지 알 수 없어, 확인 버튼이 있는 모달로 막고 이동한다.
-  const boardDeleted =
-    (boardError as { response?: { status?: number } } | null)?.response?.status === 404
+  const boardErrStatus = (boardError as { response?: { status?: number } } | null)?.response
+    ?.status
+  // 404=삭제됨 · 403=읽기 권한 없음. 둘 다 이 화면에 머물 이유가 없으니 알리고 홈으로.
+  // 403 이 났다는 건 사이드바 트리가 오래됐다는 뜻이기도 하다 → 캐시도 함께 갱신한다.
+  const blockedMessage =
+    boardErrStatus === 404
+      ? t('list-board-deleted')
+      : boardErrStatus === 403
+        ? t('list-board-forbidden')
+        : null
   const boardName = boardDetail?.title ?? (BOARDS[boardId] ?? DEFAULT_BOARD).name
   // 뷰타입: URL 지정이 없으면 게시판에 설정된 type 을 쓴다 — ALBUM 게시판은 앨범형으로 열린다.
   // (레거시 onMounted 의 `if (!route.query.viewType) viewType = board.type` 과 같은 규약)
@@ -345,9 +354,10 @@ export function BoardListScreen() {
         </>
       )}
 
-      {boardDeleted && (
-        <DeletedBoardModal
-          onConfirm={() => {
+      {blockedMessage && (
+        <BoardBlockedModal
+          message={blockedMessage}
+          onClose={() => {
             // 사이드바에 남아 있는 죽은 항목을 걷어낸다
             queryClient.invalidateQueries({ queryKey: ['categories'] })
             queryClient.invalidateQueries({ queryKey: ['boards', 'bookmarked'] })
@@ -361,26 +371,37 @@ export function BoardListScreen() {
   )
 }
 
-/* ── 삭제된 게시판 안내 ──
-   레거시는 alert 모달 + 카테고리/즐겨찾기 갱신 + /home 리다이렉트를 한 번에 했다.
-   토스트로 하면 리다이렉트와 함께 화면이 바뀌며 사라져 이유가 전달되지 않는다
-   → 디자인 갤러리 4 의 "확인·차단형은 모달" 규칙에 따라 확인 후 이동한다. */
-function DeletedBoardModal({ onConfirm }: { onConfirm: () => void }) {
+/* ── 접근할 수 없는 게시판 안내 (404 삭제 · 403 권한없음) ──
+   갤러리 4 구현 노트 #1: 닫기 «경로»를 하나로 모은다. 확인 버튼·스크림 클릭·ESC 중
+   어느 쪽으로 닫아도 반드시 같은 onClose 가 돈다 — 레거시는 스크림으로 닫으면
+   콜백(뒤로가기)이 누락돼 사용자가 빈 화면에 남았다.
+   토스트가 아니라 모달인 이유: 리다이렉트와 함께 화면이 바뀌면 이유가 전달되지 않는다. */
+function BoardBlockedModal({ message, onClose }: { message: string; onClose: () => void }) {
   const { t } = useTranslation()
+  useBodyScrollLock(true)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
   return (
-    <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-[var(--scrim-modal)] p-4">
+    <div
+      role="presentation"
+      onClick={onClose}
+      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-[var(--scrim-modal)] p-4"
+    >
       <div
         role="alertdialog"
         aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
         className="flex w-[320px] max-w-full flex-col items-center gap-[18px] rounded-lg bg-card px-[22px] pt-[26px] pb-[18px] shadow-[var(--shadow-modal)]"
       >
-        <span className="text-center text-[14.5px] font-semibold text-gray-900">
-          {t('list-board-deleted')}
-        </span>
+        <span className="text-center text-[14.5px] font-semibold text-gray-900">{message}</span>
         <button
           type="button"
           autoFocus
-          onClick={onConfirm}
+          onClick={onClose}
           className="h-10 w-full rounded-[5px] bg-primary text-sm font-semibold text-white hover:bg-ov-blue-700"
         >
           {t('common-confirm')}

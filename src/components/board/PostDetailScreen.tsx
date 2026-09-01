@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 
 import { ATTACHMENTS, COMMENTS, LIKERS, POST, REACTIONS } from './detailData'
 import type { DetailComment } from './detailData'
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 
 export function PostDetailScreen() {
   const { t } = useTranslation()
@@ -17,6 +18,8 @@ export function PostDetailScreen() {
   const [viewerOpen, setViewerOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [likersOpen, setLikersOpen] = useState(false)
+  // 오버레이가 떠 있는 동안 배경 스크롤 잠금(중첩은 참조 카운팅)
+  useBodyScrollLock(viewerOpen || deleteOpen || likersOpen)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

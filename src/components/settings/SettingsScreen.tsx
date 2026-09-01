@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { GeneralTab } from '@/components/settings/GeneralTab'
 import { Toast } from '@/components/common/Toast'
 import { useToast } from '@/components/common/useToast'
@@ -103,6 +104,8 @@ export function SettingsScreen() {
   const [extInput, setExtInput] = useState('')
   const { toast, showToast, hideToast } = useToast()
   const [picker, setPicker] = useState<{ mode: PickerMode; target: 'sel' | 'add' } | null>(null)
+  // 오버레이가 떠 있는 동안 배경 스크롤 잠금(중첩은 참조 카운팅)
+  useBodyScrollLock(addOpen)
 
 
   useEffect(() => {

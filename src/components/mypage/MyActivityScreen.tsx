@@ -16,6 +16,7 @@ import {
   type MyRow,
   SCHEDULED,
 } from '@/components/mypage/myData'
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { Toast } from '@/components/common/Toast'
 import { useToast } from '@/components/common/useToast'
 
@@ -52,6 +53,8 @@ export function MyActivityScreen() {
     trash: INITIAL_TRASH_CHECKS,
   })
   const [purgeOpen, setPurgeOpen] = useState(false)
+  // 오버레이가 떠 있는 동안 배경 스크롤 잠금(중첩은 참조 카운팅)
+  useBodyScrollLock(purgeOpen)
   const { toast, showToast, hideToast } = useToast()
 
   // 토스트 자동 소멸

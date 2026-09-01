@@ -13,6 +13,7 @@ import {
   fmtDate,
   fmtSize,
 } from '@/components/drive/driveData'
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { Toast } from '@/components/common/Toast'
 import { useToast } from '@/components/common/useToast'
 import { useCategories } from '@/hooks/useCategories'
@@ -57,6 +58,8 @@ export function DriveScreen() {
   const [dlOpen, setDlOpen] = useState(false)
   const [dlCancelAsk, setDlCancelAsk] = useState(false)
   const [preview, setPreview] = useState<string | null>(null)
+  // 미리보기 오버레이가 떠 있는 동안 배경 스크롤 잠금
+  useBodyScrollLock(!!preview)
   const { toast, showToast, hideToast } = useToast()
 
   const meId = getCurrentUserId()
@@ -491,6 +494,7 @@ export function DriveScreen() {
 }
 
 function Modal({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  useBodyScrollLock(true)
   return (
     <div
       className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-[var(--scrim-modal)] p-4"

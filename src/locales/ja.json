@@ -156,6 +156,7 @@
   "list-empty": "投稿がありません。",
   "list-error": "一覧を読み込めませんでした。",
   "list-board-deleted": "削除された掲示板です。",
+  "list-board-forbidden": "アクセス権限のない掲示板です。",
   "list-notice-expand": "非表示のお知らせ {{n}}件をすべて見る",
   "list-notice-collapse": "お知らせを折りたたむ",
   "list-meta": "{{author}} · {{date}} · 閲覧 {{views}}",

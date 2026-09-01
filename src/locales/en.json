@@ -156,6 +156,7 @@
   "list-empty": "No posts yet.",
   "list-error": "Couldn't load posts.",
   "list-board-deleted": "This board has been deleted.",
+  "list-board-forbidden": "You don't have access to this board.",
   "list-notice-expand": "Show all {{n}} hidden notices",
   "list-notice-collapse": "Collapse notices",
   "list-meta": "{{author}} · {{date}} · {{views}} views",

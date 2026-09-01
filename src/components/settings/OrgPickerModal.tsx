@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { ORG, countUnder, isTeam, orgById, orgKids, teamsUnder } from '@/components/settings/treeData'
 
 export type PickerMode = 'scope' | 'admin'
@@ -44,6 +45,8 @@ export function OrgPickerModal({
   onClose: () => void
   onConfirm: (r: PickerResult) => void
 }) {
+  // 이 컴포넌트는 열려 있을 때만 렌더된다 → 항상 잠금(중첩은 참조 카운팅)
+  useBodyScrollLock(true)
   const { t } = useTranslation()
   const [teamsSel, setTeamsSel] = useState<string[]>([])
   const [peopleSel, setPeopleSel] = useState<Person[]>([])

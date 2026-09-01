@@ -4,6 +4,7 @@ import { Link, Outlet, useLocation } from '@tanstack/react-router'
 
 import { useTranslation } from 'react-i18next'
 
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { useBoardBookmarkMutation, useBookmarkedBoards } from '@/hooks/useBoards'
 import { useCategories } from '@/hooks/useCategories'
@@ -345,6 +346,8 @@ export function AppShell() {
   const { pathname } = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  // 모바일 드로어가 떠 있는 동안 배경 스크롤 잠금(중첩은 참조 카운팅)
+  useBodyScrollLock(drawerOpen)
   // 로그인 후 셸 진입 시 /me 호출 → 사용자 정보(프로필 표시)
   const { data: me } = useMe()
   const meName = me?.name ?? ''
