@@ -252,7 +252,7 @@ export function OrgPickerModal({
 
   return (
     <div
-      className="fixed inset-0 z-[75] flex items-center justify-center bg-[var(--scrim-modal)] p-4"
+      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-[var(--scrim-modal)] p-4"
       role="presentation"
     >
       <div className="flex max-h-[calc(100dvh-64px)] w-[720px] max-w-full flex-col overflow-hidden rounded-lg bg-card shadow-[var(--shadow-modal)]">

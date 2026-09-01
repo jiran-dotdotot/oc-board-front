@@ -361,7 +361,7 @@ export function AppShell() {
   return (
     <div className="flex min-h-svh flex-col bg-background">
       {/* ── 톱바 ── */}
-      <header className="sticky top-0 z-40 border-b border-gray-200 bg-card">
+      <header className="sticky top-0 z-[var(--z-shell)] border-b border-gray-200 bg-card">
         {/* 모바일 */}
         <div className="flex h-[54px] items-center gap-3 px-3 min-[631px]:hidden">
           <button
@@ -422,7 +422,7 @@ export function AppShell() {
                 <ChevronDownIcon />
               </button>
               {profileOpen && (
-                <div className="absolute top-[calc(100%+4px)] right-0 z-50 w-[200px] rounded-lg border border-gray-200 bg-card p-1 shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
+                <div className="absolute top-[calc(100%+4px)] right-0 z-[var(--z-dropdown)] w-[200px] rounded-lg border border-gray-200 bg-card p-1 shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
                   <div className="flex flex-col gap-px border-b border-gray-100 px-2.5 pt-2 pb-1.5">
                     <span className="text-[13px] font-bold">{meName}</span>
                     <span className="text-[11.5px] text-gray-400">{meEmail}</span>
@@ -466,7 +466,7 @@ export function AppShell() {
       </div>
 
       {/* ── 모바일 하단 탭 ── */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex h-[58px] border-t border-gray-200 bg-card min-[631px]:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-[var(--z-shell)] flex h-[58px] border-t border-gray-200 bg-card min-[631px]:hidden">
         <BottomTab to="/" active={pathname === '/'} icon={<HomeIcon />} label={t('nav-home')} />
         <BottomTab
           to="/board/notice"
@@ -485,7 +485,7 @@ export function AppShell() {
 
       {/* ── 모바일 드로어 ── */}
       {drawerOpen && (
-        <div className="fixed inset-0 z-50 min-[631px]:hidden">
+        <div className="fixed inset-0 z-[var(--z-sheet)] min-[631px]:hidden">
           <button
             type="button"
             aria-label="close"

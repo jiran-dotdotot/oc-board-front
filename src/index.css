@@ -98,6 +98,18 @@
   --muted-foreground: #5d6c7d;
   --accent: #f0f6ff;
 
+  /* 겹침 순서 — 디자인 「컴포넌트 갤러리 4」 구현 노트가 확정한 체계.
+     [Why: 현행 앱의 z-9999 12곳을 평탄화하려는 것이 원 취지다. 임의값을 새로 만들지 말고
+      반드시 이 토큰 중 하나를 쓴다 — z-[var(--z-modal)] 형태.]
+     ⚠ --z-shell 은 디자인 목록에 없어 추가했다. 셸 크롬(sticky 헤더·모바일 하단탭)은
+       드롭다운보다 아래여야 하는데 디자인이 그 층을 명명하지 않았다. */
+  --z-shell: 900;
+  --z-dropdown: 1000;
+  --z-sheet: 1100;
+  --z-modal: 1200;
+  --z-loading: 1300;
+  --z-toast: 1400;
+
   /* 오버레이·그림자 (디자인 :root) — Tailwind 유틸이 아니라 var()로 직접 참조된다:
      bg-[var(--scrim-modal)] · shadow-[var(--shadow-modal)] */
   --scrim-modal: rgba(0, 0, 0, 0.5);

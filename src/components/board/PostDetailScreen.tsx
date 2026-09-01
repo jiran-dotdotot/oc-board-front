@@ -238,7 +238,7 @@ export function PostDetailScreen() {
       {/* 라이트박스 */}
       {viewerOpen && (
         <div
-          className="fixed inset-0 z-50 flex cursor-zoom-out items-center justify-center bg-black/[0.78]"
+          className="fixed inset-0 z-[var(--z-modal)] flex cursor-zoom-out items-center justify-center bg-black/[0.78]"
           onClick={() => setViewerOpen(false)}
           role="presentation"
         >
@@ -263,7 +263,7 @@ export function PostDetailScreen() {
 
       {/* 삭제 확인 */}
       {deleteOpen && (
-        <div className="fixed inset-0 z-[55] flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/50">
           <div className="flex w-80 flex-col items-center gap-2 rounded-lg bg-card px-[22px] pt-[26px] pb-[18px] shadow-[0_4px_18px_rgba(75,70,92,0.1)]">
             <span className="text-center text-[14.5px] font-semibold text-gray-900">
               {t('detail-delete-confirm')}
@@ -291,7 +291,7 @@ export function PostDetailScreen() {
 
       {/* 공감 내역 */}
       {likersOpen && (
-        <div className="fixed inset-0 z-[55] flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/50">
           <div className="flex max-h-[80vh] w-[340px] flex-col overflow-hidden rounded-lg bg-card shadow-[0_4px_18px_rgba(75,70,92,0.1)]">
             <div className="flex h-[52px] items-center border-b border-gray-100 px-[18px]">
               <span className="text-[14.5px] font-bold">
@@ -372,7 +372,7 @@ function CommentItem({
                   <DotsIcon />
                 </button>
                 {menuId === c.id && (
-                  <div className="absolute top-[calc(100%+4px)] right-0 z-30 w-[150px] rounded-lg border border-gray-200 bg-card p-1 shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
+                  <div className="absolute top-[calc(100%+4px)] right-0 z-[var(--z-dropdown)] w-[150px] rounded-lg border border-gray-200 bg-card p-1 shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
                     <MenuRow icon={<EditIcon />} label={t('common-edit')} />
                     <MenuRow icon={<HeartIcon />} label={t('detail-like-history')} />
                     <button

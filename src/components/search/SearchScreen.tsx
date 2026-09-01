@@ -69,7 +69,7 @@ export function SearchScreen() {
           </button>
         </div>
         {recentOpen && recents.length > 0 && (
-          <div className="absolute inset-x-0 top-[calc(100%+4px)] z-30 rounded-lg border border-gray-200 bg-card p-1.5 shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
+          <div className="absolute inset-x-0 top-[calc(100%+4px)] z-[var(--z-dropdown)] rounded-lg border border-gray-200 bg-card p-1.5 shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
             <div className="flex h-[30px] items-center px-2.5 text-[11.5px] text-gray-400">
               {t('search-recent')}
               <button
