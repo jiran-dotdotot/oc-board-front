@@ -25,6 +25,20 @@
   --color-ov-blue-700: var(--ov-blue-700);
   --color-ov-blue-800: var(--ov-blue-800);
   --color-ov-blue-900: var(--ov-blue-900);
+  /* 회색 램프 — ov-blue 와 같은 방식으로 var 참조. 값은 :root(라이트) / .dark 에 있다.
+     ⚠ 이걸 빼먹으면 라이트에서 Tailwind 기본 gray(파랑 기운)로 조용히 떨어진다 —
+     화면은 멀쩡해 보이는데 다크로 바꿀 때만 색이 튄다. 실제로 그 버그가 있었다. */
+  --color-gray-50: var(--gray-50);
+  --color-gray-100: var(--gray-100);
+  --color-gray-200: var(--gray-200);
+  --color-gray-300: var(--gray-300);
+  --color-gray-400: var(--gray-400);
+  --color-gray-500: var(--gray-500);
+  --color-gray-600: var(--gray-600);
+  --color-gray-700: var(--gray-700);
+  --color-gray-800: var(--gray-800);
+  --color-gray-900: var(--gray-900);
+
   /* 로그인 브랜드 패널 — 라이트/다크 공통 고정색이라 var 반전을 타지 않는다 */
   --color-brand-panel: var(--brand-panel);
   --color-l-red: #fae8e7;
@@ -151,6 +165,18 @@
   --ov-blue-800: #122db3;
   --ov-blue-900: #07198c;
 
+  /* 회색 램프 (라이트) — 디자인 :root 값 */
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #cbd0d8;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
   /* 스크롤바 (디자인 '스크롤바 디자인.dc' 1b/1a 토큰) */
   --scrollbar-size: 8px;
   --scrollbar-thumb: #cbd0d8;
@@ -210,17 +236,17 @@
   --ov-blue-800: #b9ccff;
   --ov-blue-900: #d6e5ff;
 
-  /* Tailwind gray 램프 반전 (per-screen .dc dark 값) */
-  --color-gray-50: #1c1c1f;
-  --color-gray-100: #303036;
-  --color-gray-200: #3c3c43;
-  --color-gray-300: #4f4f58;
-  --color-gray-400: #8e8e99;
-  --color-gray-500: #a4a4af;
-  --color-gray-600: #c7c7d0;
-  --color-gray-700: #dfdfe5;
-  --color-gray-800: #efeff2;
-  --color-gray-900: #f7f7fa;
+  /* 회색 램프 (다크) — 디자인 dark 블록 값. 라이트 짝은 :root 에 있다 */
+  --gray-50: #1c1c1f;
+  --gray-100: #303036;
+  --gray-200: #3c3c43;
+  --gray-300: #4f4f58;
+  --gray-400: #8e8e99;
+  --gray-500: #a4a4af;
+  --gray-600: #c7c7d0;
+  --gray-700: #dfdfe5;
+  --gray-800: #efeff2;
+  --gray-900: #f7f7fa;
 
   /* 스크롤바 다크 (디자인 --dk-thumb / --dk-thumb-h) */
   --scrollbar-thumb: #575a5e;
