@@ -16,6 +16,8 @@ import {
   type MyRow,
   SCHEDULED,
 } from '@/components/mypage/myData'
+import { Toast } from '@/components/common/Toast'
+import { useToast } from '@/components/common/useToast'
 
 type ImpTab = 'all' | 'post' | 'file'
 
@@ -50,14 +52,9 @@ export function MyActivityScreen() {
     trash: INITIAL_TRASH_CHECKS,
   })
   const [purgeOpen, setPurgeOpen] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
+  const { toast, showToast, hideToast } = useToast()
 
   // 토스트 자동 소멸
-  useEffect(() => {
-    if (!toast) return
-    const id = setTimeout(() => setToast(null), 3000)
-    return () => clearTimeout(id)
-  }, [toast])
 
   // ESC → 영구삭제 모달 닫기
   useEffect(() => {
@@ -105,7 +102,7 @@ export function MyActivityScreen() {
     const remain = trashRows.filter((_, i) => !checks[i])
     setTrashRows(remain)
     setChecksByChip((prev) => ({ ...prev, trash: remain.map(() => false) }))
-    setToast(t('my-toast-restore', { n }))
+    showToast(t('my-toast-restore', { n }))
   }
   const doPurge = () => {
     const n = selCount
@@ -113,12 +110,12 @@ export function MyActivityScreen() {
     setTrashRows(remain)
     setChecksByChip((prev) => ({ ...prev, trash: remain.map(() => false) }))
     setPurgeOpen(false)
-    setToast(t('my-toast-purge', { n }))
+    showToast(t('my-toast-purge', { n }))
   }
   const moveToTrash = () => {
     const n = selCount
     setChecks(rows.map(() => false))
-    setToast(t('my-toast-trash', { n }))
+    showToast(t('my-toast-trash', { n }))
   }
 
   const impCounts = {
@@ -270,7 +267,7 @@ export function MyActivityScreen() {
                       <button
                         type="button"
                         aria-label={t('my-chip-important')}
-                        onClick={() => setToast(t('drive-bm-remove'))}
+                        onClick={() => showToast(t('drive-bm-remove'))}
                         className="inline-flex size-[22px] flex-none items-center justify-center rounded text-warning hover:bg-gray-200"
                       >
                         <BookmarkIcon filled />
@@ -350,7 +347,7 @@ export function MyActivityScreen() {
       {/* 영구삭제 확인 모달 */}
       {purgeOpen && (
         <div
-          className="fixed inset-0 z-[55] flex items-center justify-center bg-[var(--scrim-modal)]"
+          className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-[var(--scrim-modal)]"
           role="presentation"
         >
           <div className="flex w-[330px] flex-col items-center gap-2 rounded-lg bg-card px-[22px] pt-[26px] pb-[18px] shadow-[var(--shadow-modal)]">
@@ -381,13 +378,7 @@ export function MyActivityScreen() {
         </div>
       )}
 
-      {/* 토스트 */}
-      {toast && (
-        <div className="fixed bottom-[18px] left-1/2 z-[56] flex h-[46px] max-w-[92%] -translate-x-1/2 items-center gap-2.5 rounded-lg bg-gray-900 px-4 text-gray-50 shadow-[var(--shadow-modal)]">
-          <CheckIcon />
-          <span className="truncate text-[13px] font-medium">{toast}</span>
-        </div>
-      )}
+      <Toast toast={toast} onClose={hideToast} />
     </div>
   )
 }
@@ -565,20 +556,3 @@ function TrashIcon({ size = 14 }: { size?: number }) {
   )
 }
 
-function CheckIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="var(--color-accent)"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="flex-none"
-    >
-      <path d="M4.5 12.5l5 5 10-11" />
-    </svg>
-  )
-}

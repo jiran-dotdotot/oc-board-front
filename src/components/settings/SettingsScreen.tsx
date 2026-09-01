@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { GeneralTab } from '@/components/settings/GeneralTab'
+import { Toast } from '@/components/common/Toast'
+import { useToast } from '@/components/common/useToast'
 import { MainScreenTab } from '@/components/settings/MainScreenTab'
 import {
   OrgPickerModal,
@@ -99,14 +101,9 @@ export function SettingsScreen() {
   const [aAdmins, setAAdmins] = useState<string[]>([])
 
   const [extInput, setExtInput] = useState('')
-  const [toast, setToast] = useState<string | null>(null)
+  const { toast, showToast, hideToast } = useToast()
   const [picker, setPicker] = useState<{ mode: PickerMode; target: 'sel' | 'add' } | null>(null)
 
-  useEffect(() => {
-    if (!toast) return
-    const id = setTimeout(() => setToast(null), 3000)
-    return () => clearTimeout(id)
-  }, [toast])
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -329,7 +326,7 @@ export function SettingsScreen() {
       setSel({ kind: addKind, id })
     }
     setAddOpen(false)
-    setToast(t('admin-toast-added', { name: nm, type: t(TYPE_KEY[addKind]) }))
+    showToast(t('admin-toast-added', { name: nm, type: t(TYPE_KEY[addKind]) }))
   }
 
   const onPickerConfirm = (r: PickerResult) => {
@@ -340,7 +337,7 @@ export function SettingsScreen() {
         setAScope('org')
         setAScopeLabel(r.label)
       }
-      setToast(t('admin-toast-scope-set'))
+      showToast(t('admin-toast-scope-set'))
     } else {
       if (picker.target === 'sel') {
         const cur = (so as Item).admins ?? []
@@ -354,7 +351,7 @@ export function SettingsScreen() {
           return m
         })
       }
-      setToast(t('admin-toast-manager-set', { n: r.names.length }))
+      showToast(t('admin-toast-manager-set', { n: r.names.length }))
     }
     setPicker(null)
   }
@@ -385,7 +382,7 @@ export function SettingsScreen() {
               <PlusIcon /> {t('admin-add')} <CaretDown />
             </button>
             {addMenuOpen && (
-              <div className="absolute top-[calc(100%+4px)] right-0 z-30 w-[180px] rounded-lg border border-gray-200 bg-card p-1 shadow-[var(--shadow-dropdown)]">
+              <div className="absolute top-[calc(100%+4px)] right-0 z-[var(--z-dropdown)] w-[180px] rounded-lg border border-gray-200 bg-card p-1 shadow-[var(--shadow-dropdown)]">
                 {isOfficeAdmin ? (
                   <>
                     <MenuItem onClick={() => openAdd('cat')}>{t('admin-add-cat')}</MenuItem>
@@ -456,8 +453,8 @@ export function SettingsScreen() {
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          {tab === 'general' && <GeneralTab onToast={setToast} />}
-          {tab === 'main' && <MainScreenTab onToast={setToast} />}
+          {tab === 'general' && <GeneralTab onToast={showToast} />}
+          {tab === 'main' && <MainScreenTab onToast={showToast} />}
           {tab === 'content' && (
             <div className="flex flex-col gap-5">
               {/* 트리 + 상세 */}
@@ -552,7 +549,7 @@ export function SettingsScreen() {
                     ) : (
                       <button
                         type="button"
-                        onClick={() => setToast(t('admin-toast-del-demo', { name: so.name }))}
+                        onClick={() => showToast(t('admin-toast-del-demo', { name: so.name }))}
                         className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 px-3 text-[12.5px] font-semibold text-destructive hover:bg-l-red"
                       >
                         <TrashIcon /> {t('common-delete')}
@@ -771,7 +768,7 @@ export function SettingsScreen() {
                   <div className="flex justify-end border-t border-gray-100 pt-3.5">
                     <button
                       type="button"
-                      onClick={() => setToast(t('admin-toast-saved'))}
+                      onClick={() => showToast(t('admin-toast-saved'))}
                       className="inline-flex h-[38px] items-center rounded-[5px] bg-primary px-[18px] text-[13.5px] font-semibold text-white hover:bg-ov-blue-700"
                     >
                       {t('common-save')}
@@ -788,7 +785,7 @@ export function SettingsScreen() {
       {/* 추가 모달 */}
       {addOpen && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-[var(--scrim-modal)] p-4"
+          className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-[var(--scrim-modal)] p-4"
           role="presentation"
         >
           <div className="flex max-h-[calc(100dvh-64px)] w-[420px] max-w-full flex-col rounded-lg bg-card shadow-[var(--shadow-modal)]">
@@ -825,7 +822,7 @@ export function SettingsScreen() {
                       />
                     </button>
                     {aLocOpen && (
-                      <span className="absolute top-[calc(100%+4px)] right-0 left-0 z-30 block rounded-lg border border-gray-200 bg-card p-1 shadow-[var(--shadow-dropdown)]">
+                      <span className="absolute top-[calc(100%+4px)] right-0 left-0 z-[var(--z-dropdown)] block rounded-lg border border-gray-200 bg-card p-1 shadow-[var(--shadow-dropdown)]">
                         {locOpts.map((o) => (
                           <span
                             key={o.v}
@@ -1058,13 +1055,7 @@ export function SettingsScreen() {
         />
       )}
 
-      {/* 토스트 */}
-      {toast && (
-        <div className="fixed bottom-[18px] left-1/2 z-[80] flex h-11 max-w-[92%] -translate-x-1/2 items-center gap-2.5 rounded-lg bg-gray-900 px-4 text-[13.5px] text-gray-50 shadow-[var(--shadow-modal)]">
-          <CheckIcon />
-          <span className="truncate">{toast}</span>
-        </div>
-      )}
+      <Toast toast={toast} onClose={hideToast} />
     </div>
   )
 }

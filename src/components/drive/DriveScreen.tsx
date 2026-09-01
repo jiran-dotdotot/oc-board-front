@@ -13,6 +13,8 @@ import {
   fmtDate,
   fmtSize,
 } from '@/components/drive/driveData'
+import { Toast } from '@/components/common/Toast'
+import { useToast } from '@/components/common/useToast'
 import { useCategories } from '@/hooks/useCategories'
 import { useDriveFiles } from '@/hooks/useDriveFiles'
 import { getCurrentUserId } from '@/lib/authStorage'
@@ -55,7 +57,7 @@ export function DriveScreen() {
   const [dlOpen, setDlOpen] = useState(false)
   const [dlCancelAsk, setDlCancelAsk] = useState(false)
   const [preview, setPreview] = useState<string | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const { toast, showToast, hideToast } = useToast()
 
   const meId = getCurrentUserId()
   const apiFiles = (data ?? []).map((f) => toFile(f, meId))
@@ -70,12 +72,6 @@ export function DriveScreen() {
   }, [uploads])
   const upRef = useRef<number>(undefined)
   useEffect(() => () => window.clearInterval(upRef.current), [])
-
-  useEffect(() => {
-    if (!toast) return
-    const id = window.setTimeout(() => setToast(null), 3000)
-    return () => window.clearTimeout(id)
-  }, [toast])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -144,7 +140,7 @@ export function DriveScreen() {
       if (pct >= 100) {
         window.clearInterval(upRef.current)
         setUpload(id, { state: 'done', pct: 100 })
-        setToast(t('drive-up-toast', { n: 1 }))
+        showToast(t('drive-up-toast', { n: 1 }))
         window.setTimeout(() => setUpload(id, { state: 'idle' }), 1600)
       } else {
         setUpload(id, { pct })
@@ -158,7 +154,7 @@ export function DriveScreen() {
     setUploads((prev) => prev.filter((f) => !ids.includes(f.id)))
     setChecked(new Set())
     setDelOpen(false)
-    setToast(t('drive-deleted'))
+    showToast(t('drive-deleted'))
   }
   const toggleBm = (f: DriveFile) => {
     setBookmarks((prev) => {
@@ -167,7 +163,7 @@ export function DriveScreen() {
       else next.add(f.id)
       return next
     })
-    setToast(t(f.bm ? 'drive-bm-remove' : 'drive-bm-add'))
+    showToast(t(f.bm ? 'drive-bm-remove' : 'drive-bm-add'))
   }
 
   return (
@@ -440,7 +436,7 @@ export function DriveScreen() {
                     onClick={() => {
                       setDlOpen(false)
                       setDlCancelAsk(false)
-                      setToast(t('drive-dl-canceled'))
+                      showToast(t('drive-dl-canceled'))
                     }}
                     className="inline-flex h-[38px] flex-1 items-center justify-center rounded-[5px] border border-gray-200 bg-card text-[13px] font-semibold text-gray-800 hover:bg-gray-100"
                   >
@@ -464,7 +460,7 @@ export function DriveScreen() {
       {preview && (
         <div
           onClick={() => setPreview(null)}
-          className="fixed inset-0 z-[60] flex cursor-zoom-out items-center justify-center bg-black/[0.78]"
+          className="fixed inset-0 z-[var(--z-modal)] flex cursor-zoom-out items-center justify-center bg-black/[0.78]"
           role="presentation"
         >
           <div className="absolute top-3.5 right-3.5 flex gap-1.5">
@@ -489,13 +485,7 @@ export function DriveScreen() {
         </div>
       )}
 
-      {/* 토스트 */}
-      {toast && (
-        <div className="fixed bottom-[18px] left-1/2 z-[80] flex h-11 max-w-[92%] -translate-x-1/2 items-center gap-2.5 rounded-lg bg-gray-900 px-4 text-[13.5px] text-gray-50 shadow-[var(--shadow-modal)]">
-          <CheckIcon accent />
-          <span className="truncate">{toast}</span>
-        </div>
-      )}
+      <Toast toast={toast} onClose={hideToast} />
     </div>
   )
 }
@@ -503,7 +493,7 @@ export function DriveScreen() {
 function Modal({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-[var(--scrim-modal)] p-4"
+      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-[var(--scrim-modal)] p-4"
       role="presentation"
       onClick={onClose}
     >

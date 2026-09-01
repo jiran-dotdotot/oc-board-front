@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 
@@ -16,6 +16,8 @@ import {
 import { BOARDS, DEFAULT_BOARD } from './listData'
 import type { BoardListSearch, BoardRow, BoardView } from './listData'
 import { useBoard, useBoardBookmarkMutation, useBookmarkedBoards } from '@/hooks/useBoards'
+import { Toast } from '@/components/common/Toast'
+import { useToast } from '@/components/common/useToast'
 import { useNotices, usePostBookmarkMutation, usePosts } from '@/hooks/usePosts'
 import type { Post } from '@/types/post'
 
@@ -90,7 +92,7 @@ export function BoardListScreen() {
   const [storedLimit] = useState(readStoredLimit)
   const perPage = search.limit ?? storedLimit ?? deviceLimit
   const [countOpen, setCountOpen] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
+  const { toast, showToast, hideToast } = useToast()
   // 공지 6a: 상단 3건 고정 + 「숨은 공지 N건 모두 보기」 토글.
   // 펼침 상태는 페이지를 옮겨도 유지한다(디자인 「공지 초과 표시 시안」 6a 노트).
   const [ntExpanded, setNtExpanded] = useState(false)
@@ -136,19 +138,14 @@ export function BoardListScreen() {
   const { mutate: toggleBoardBookmark } = useBoardBookmarkMutation()
   const { mutate: togglePostBookmark } = usePostBookmarkMutation()
 
-  useEffect(() => {
-    if (!toast) return
-    const id = setTimeout(() => setToast(null), 2500)
-    return () => clearTimeout(id)
-  }, [toast])
 
   const ctx: RowCtx = {
     open: (id) => navigate({ to: '/post/$postId', params: { postId: String(id) } }),
     onBm: (row) => {
       togglePostBookmark(String(row.id))
-      setToast(t(row.bookmarked ? 'drive-bm-remove' : 'drive-bm-add'))
+      showToast(t(row.bookmarked ? 'drive-bm-remove' : 'drive-bm-add'))
     },
-    onCopy: () => setToast(t('common-link-copied')),
+    onCopy: () => showToast(t('common-link-copied')),
   }
 
   const windowStart = Math.floor((page - 1) / 10) * 10 + 1
@@ -175,7 +172,7 @@ export function BoardListScreen() {
             aria-pressed={boardFav}
             onClick={() => {
               toggleBoardBookmark(boardIdParam)
-              setToast(t(boardFav ? 'list-fav-remove' : 'list-fav-add'))
+              showToast(t(boardFav ? 'list-fav-remove' : 'list-fav-add'))
             }}
             className={`inline-flex size-[30px] flex-none items-center justify-center rounded-lg hover:bg-gray-100 ${boardFav ? 'text-warning' : 'text-gray-300'}`}
           >
@@ -222,10 +219,10 @@ export function BoardListScreen() {
                 <button
                   type="button"
                   aria-label="close"
-                  className="fixed inset-0 z-20 cursor-default"
+                  className="fixed inset-0 z-[var(--z-dropdown)] cursor-default"
                   onClick={() => setCountOpen(false)}
                 />
-                <div className="absolute top-[calc(100%+4px)] right-0 z-30 w-[130px] rounded-lg border border-gray-200 bg-card p-1 shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
+                <div className="absolute top-[calc(100%+4px)] right-0 z-[var(--z-dropdown)] w-[130px] rounded-lg border border-gray-200 bg-card p-1 shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
                   {LIMIT_OPTIONS.map((v) => (
                     <button
                       key={v}
@@ -318,13 +315,7 @@ export function BoardListScreen() {
         </>
       )}
 
-      {/* 토스트 */}
-      {toast && (
-        <div className="fixed bottom-[18px] left-1/2 z-[80] flex h-11 max-w-[92%] -translate-x-1/2 items-center gap-2.5 rounded-lg bg-gray-900 px-4 text-[13.5px] text-gray-50 shadow-[var(--shadow-modal)]">
-          <CheckIcon />
-          <span className="truncate">{toast}</span>
-        </div>
-      )}
+      <Toast toast={toast} onClose={hideToast} />
     </div>
   )
 }
@@ -771,22 +762,6 @@ function LinkIcon() {
     >
       <path d="M10 13.5a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1.5 1.5" />
       <path d="M14 10.5a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1.5-1.5" />
-    </svg>
-  )
-}
-function CheckIcon() {
-  return (
-    <svg
-      className="size-4 flex-none"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="var(--color-accent)"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M4.5 12.5l5 5 10-11" />
     </svg>
   )
 }

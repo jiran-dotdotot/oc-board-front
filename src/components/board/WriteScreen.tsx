@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { Toast } from '@/components/common/Toast'
+import { useToast } from '@/components/common/useToast'
 
 import { useNavigate } from '@tanstack/react-router'
 
@@ -32,7 +34,7 @@ export function WriteScreen() {
   const [cmtAllow, setCmtAllow] = useState(true)
   const [leaveOpen, setLeaveOpen] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [toast, setToast] = useState(false)
+  const { toast, showToast, hideToast } = useToast()
   const boardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -66,8 +68,7 @@ export function WriteScreen() {
     setSaving(true)
     window.setTimeout(() => {
       setSaving(false)
-      setToast(true)
-      window.setTimeout(() => setToast(false), 3000)
+      showToast(t('write-saved-toast'))
     }, 1100)
   }
 
@@ -94,7 +95,7 @@ export function WriteScreen() {
               <ChevronDown open={boardOpen} />
             </button>
             {boardOpen && (
-              <div className="absolute inset-x-0 top-[calc(100%+4px)] z-30 rounded-lg border border-gray-200 bg-card p-1 shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
+              <div className="absolute inset-x-0 top-[calc(100%+4px)] z-[var(--z-dropdown)] rounded-lg border border-gray-200 bg-card p-1 shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
                 {BOARD_OPTIONS.map((o, i) => (
                   <button
                     key={o}
@@ -344,7 +345,7 @@ export function WriteScreen() {
 
       {/* 조직도 모달 */}
       {orgOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/50">
           <div className="flex max-h-[80vh] w-[420px] max-w-[92%] flex-col overflow-hidden rounded-lg bg-card shadow-[0_4px_18px_rgba(75,70,92,0.1)]">
             <div className="flex h-[54px] flex-none items-center border-b border-gray-100 px-5">
               <span className="text-[15px] font-bold">{t('write-org-modal-title')}</span>
@@ -416,7 +417,7 @@ export function WriteScreen() {
 
       {/* 나가기 확인 */}
       {leaveOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/50">
           <div className="flex w-80 flex-col items-center gap-2 rounded-lg bg-card px-[22px] pt-[26px] pb-[18px] shadow-[0_4px_18px_rgba(75,70,92,0.1)]">
             <span className="text-center text-[14.5px] font-semibold text-gray-900">
               {t('write-leave-title')}
@@ -444,7 +445,7 @@ export function WriteScreen() {
 
       {/* 저장 로딩 */}
       {saving && (
-        <div className="fixed inset-0 z-[55] flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-[var(--z-loading)] flex items-center justify-center bg-black/50">
           <div className="flex flex-col items-center gap-3.5 rounded-lg bg-card px-[34px] py-7 shadow-[0_4px_18px_rgba(75,70,92,0.1)]">
             <svg
               className="size-[30px] animate-spin text-primary [animation-duration:0.8s]"
@@ -467,13 +468,7 @@ export function WriteScreen() {
         </div>
       )}
 
-      {/* 성공 토스트 */}
-      {toast && (
-        <div className="fixed bottom-[18px] left-1/2 z-[56] flex h-[46px] max-w-[92%] -translate-x-1/2 animate-in items-center gap-2.5 rounded-lg bg-gray-900 px-4 text-gray-50 shadow-[0_4px_18px_rgba(75,70,92,0.1)] duration-200 fade-in-0 slide-in-from-bottom-2">
-          <CheckIcon className="text-[color:var(--color-accent)]" />
-          <span className="truncate text-[13px] font-medium">{t('write-saved-toast')}</span>
-        </div>
-      )}
+      <Toast toast={toast} onClose={hideToast} />
     </div>
   )
 }
