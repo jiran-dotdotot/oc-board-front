@@ -4,9 +4,27 @@ import { Link, Outlet, useLocation } from '@tanstack/react-router'
 
 import { useTranslation } from 'react-i18next'
 
-import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
+import {
+  BoardIcon,
+  BookmarkIcon,
+  CaretIcon,
+  ChevronDownIcon,
+  CloseIcon,
+  DriveIcon,
+  FolderIcon,
+  GearIcon,
+  HomeIcon,
+  LogoutIcon,
+  MenuIcon,
+  MoonIcon,
+  PencilIcon,
+  SearchIcon,
+  SunIcon,
+  UserIcon,
+} from '@/components/common/icons'
 import { useBoardBookmarkMutation, useBookmarkedBoards } from '@/hooks/useBoards'
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { useCategories } from '@/hooks/useCategories'
 import { useMe } from '@/hooks/useMe'
 import { type CategoryBoard, isDriveBoard } from '@/types/category'
@@ -14,17 +32,19 @@ import { buildNavTree } from '@/utils/category'
 
 function itemClass(active: boolean) {
   return [
-    'flex h-[38px] items-center gap-2.5 rounded-lg px-3.5 text-sm',
-    // 상태별 색 — 디자인 B-1 확정표.
-    //   비선택: transparent / hover gray-50  / active gray-100
-    //   선택  : ov-blue-50  / hover ov-blue-100 / active ov-blue-200
+    'flex h-[38px] items-center gap-2.5 rounded-md px-3.5 text-sm',
+    // 상태별 색 — docs/guides/design-tokens-guide.md (디자인 토큰 정본표).
+    //   비선택: transparent   / hover gray-100 «중립 컨트롤 hover» / active gray-200
+    //   선택  : ov-blue-50 «선택 배경» / hover ov-blue-100 / active ov-blue-200
+    // ⚠ hover 에 gray-50 을 쓰지 마라 — 그건 «캔버스»(--background)와 같은 값이라
+    //   면(bg-card) 없이 놓인 요소 위에서 통째로 사라진다.
     active
       ? 'bg-ov-blue-50 font-semibold text-primary hover:bg-ov-blue-100 active:bg-ov-blue-200'
-      : 'font-medium text-gray-700 hover:bg-gray-50 active:bg-gray-100',
+      : 'font-medium text-gray-700 hover:bg-gray-100 active:bg-gray-200',
   ].join(' ')
 }
 
-const SECTION_LABEL = 'px-3.5 pt-4 pb-1.5 text-2xs font-semibold tracking-[0.06em] text-gray-400'
+const SECTION_LABEL = 'px-3.5 pt-4 pb-1.5 text-2xs font-semibold tracking-label text-gray-400'
 
 // 공개 게시판 섹션은 카테고리 id가 없어 접힘 상태용 고정 키를 쓴다.
 const PUBLIC_KEY = '__public'
@@ -48,7 +68,7 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
       <Link
         to="/write"
         onClick={onNavigate}
-        className="mx-1 mt-0.5 mb-3.5 flex h-11 flex-none items-center justify-center gap-1.5 rounded-lg bg-primary text-sm font-bold text-white hover:bg-ov-blue-700"
+        className="mx-1 mt-0.5 mb-3.5 flex h-11 flex-none items-center justify-center gap-1.5 rounded-md bg-primary text-sm font-bold text-white hover:bg-ov-blue-700"
       >
         <PencilIcon />
         {t('board-write')}
@@ -104,11 +124,7 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
 
           {sections.map((s) => (
             <Fragment key={s.id}>
-              <SectionToggle
-                label={s.name}
-                open={!closed[s.id]}
-                onClick={() => toggle(s.id)}
-              />
+              <SectionToggle label={s.name} open={!closed[s.id]} onClick={() => toggle(s.id)} />
               <Collapse open={!closed[s.id]}>
                 {s.folders.map((f) => (
                   <Fragment key={f.id}>
@@ -116,7 +132,7 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
                       type="button"
                       onClick={() => toggle(f.id)}
                       aria-expanded={!closed[f.id]}
-                      className="flex h-9 items-center gap-2 rounded-lg pr-3 pl-[26px] text-s font-semibold text-gray-700 hover:bg-gray-50"
+                      className="flex h-9 items-center gap-2 rounded-md pr-3 pl-[26px] text-s font-semibold text-gray-700 hover:bg-gray-100"
                     >
                       <FolderIcon />
                       <span className="min-w-0 flex-1 truncate text-left">{f.name}</span>
@@ -160,7 +176,7 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
           {t('nav-my')}
         </Link>
         {/* 환경 설정은 전원 노출 — 권한은 화면 안에서 탭 단위로 걸린다 */}
-        <div className="mx-1.5 my-2.5 h-px bg-gray-100" />
+        <div className="mx-1.5 my-2.5 h-px bg-gray-200" />
         <Link to="/settings" onClick={onNavigate} className={itemClass(pathname === '/settings')}>
           <GearIcon />
           {t('nav-settings')}
@@ -185,7 +201,7 @@ function SectionToggle({
       type="button"
       onClick={onClick}
       aria-expanded={open}
-      className="flex w-full items-center gap-[7px] rounded-lg pt-3.5 pr-3 pb-1.5 pl-3 text-sm font-bold text-gray-800 hover:bg-gray-50"
+      className="flex w-full items-center gap-[7px] rounded-md pt-3.5 pr-3 pb-1.5 pl-3 text-sm font-bold text-gray-800 hover:bg-gray-100"
     >
       <span className="min-w-0 flex-1 truncate text-left">{label}</span>
       <CaretIcon open={open} />
@@ -208,9 +224,7 @@ function Collapse({ open, children }: { open: boolean; children: React.ReactNode
       ].join(' ')}
     >
       <div className="min-h-0 overflow-hidden">
-        <div className="flex flex-col gap-px pb-1">
-          {children}
-        </div>
+        <div className="flex flex-col gap-px pb-1">{children}</div>
       </div>
     </div>
   )
@@ -295,46 +309,9 @@ function BoardNavItem({
   )
 }
 
-// 트리 셰브런 — 행 «우측»에 놓이고 펼치면 180° 뒤집힌다 (디자인 B-3 확정).
-function CaretIcon({ open }: { open: boolean }) {
-  return (
-    <svg
-      className={[
-        'size-3 flex-none text-gray-400 transition-transform duration-200',
-        open ? 'rotate-180' : '',
-      ].join(' ')}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  )
-}
-
-function FolderIcon() {
-  return (
-    <svg
-      className="size-[15px] flex-none text-warning"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M3.5 7a1.5 1.5 0 0 1 1.5-1.5h4.5l2 2.5H19A1.5 1.5 0 0 1 20.5 9.5v9A1.5 1.5 0 0 1 19 20H5a1.5 1.5 0 0 1-1.5-1.5z" />
-    </svg>
-  )
-}
-
 function Logo({ className }: { className?: string }) {
   return (
-    <Link to="/" className={`tracking-[-0.01em] ${className ?? ''}`}>
+    <Link to="/" className={`tracking-title ${className ?? ''}`}>
       <span className="font-semibold text-ov-blue-400">Office</span>
       <span className="font-extrabold text-primary">NEXT</span>
     </Link>
@@ -359,12 +336,12 @@ export function AppShell() {
       {/* ── 톱바 ── */}
       <header className="sticky top-0 z-[var(--z-shell)] border-b border-gray-200 bg-card">
         {/* 모바일 */}
-        <div className="flex h-[54px] items-center gap-3 px-3 min-[631px]:hidden">
+        <div className="flex h-(--spacing-topbar) items-center gap-3 px-3 min-[631px]:hidden">
           <button
             type="button"
             aria-label={t('nav-menu')}
             onClick={() => setDrawerOpen(true)}
-            className="inline-flex size-[34px] flex-none items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100"
+            className="inline-flex size-[34px] flex-none items-center justify-center rounded-md text-gray-700 hover:bg-gray-100"
           >
             <MenuIcon />
           </button>
@@ -373,9 +350,9 @@ export function AppShell() {
             <Link
               to="/search"
               aria-label={t('common-search')}
-              className="inline-flex size-[34px] items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
+              className="inline-flex size-[34px] items-center justify-center rounded-md text-gray-600 hover:bg-gray-100"
             >
-              <SearchIcon className="size-[17px]" />
+              <SearchIcon className="size-4" />
             </Link>
             <ThemeToggle />
             <span className="ml-1 inline-flex size-[30px] items-center justify-center rounded-full bg-l-blue text-xs font-bold text-on-pastel">
@@ -387,8 +364,8 @@ export function AppShell() {
         {/* 데스크톱 */}
         <div className="hidden h-(--spacing-topbar) items-center gap-[18px] px-5 min-[631px]:flex">
           <Logo className="flex-none text-lg" />
-          <div className="flex h-10 w-[340px] items-center gap-2 rounded-[5px] bg-gray-100 py-0 pr-1.5 pl-3">
-            <SearchIcon className="size-[15px] flex-none text-gray-400" />
+          <div className="flex h-10 w-[340px] items-center gap-2 rounded-md bg-gray-100 py-0 pr-1.5 pl-3">
+            <SearchIcon className="size-4 flex-none text-gray-400" />
             <input
               placeholder={t('nav-search-placeholder')}
               className="min-w-0 flex-1 border-none bg-transparent text-sm outline-none"
@@ -406,7 +383,7 @@ export function AppShell() {
               <button
                 type="button"
                 onClick={() => setProfileOpen((v) => !v)}
-                className="flex items-center gap-2 rounded-lg py-1 pr-2 pl-1 hover:bg-gray-100 aria-expanded:bg-gray-100"
+                className="flex items-center gap-2 rounded-md py-1 pr-2 pl-1 hover:bg-gray-100 aria-expanded:bg-gray-100"
                 aria-expanded={profileOpen}
               >
                 <span className="inline-flex size-8 items-center justify-center rounded-full bg-l-blue text-s font-bold text-on-pastel">
@@ -418,8 +395,8 @@ export function AppShell() {
                 <ChevronDownIcon />
               </button>
               {profileOpen && (
-                <div className="absolute top-[calc(100%+4px)] right-0 z-[var(--z-dropdown)] w-[200px] rounded-lg border border-gray-200 bg-card p-1 shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
-                  <div className="flex flex-col gap-px border-b border-gray-100 px-2.5 pt-2 pb-1.5">
+                <div className="absolute top-[calc(100%+4px)] right-0 z-[var(--z-dropdown)] w-[200px] rounded-lg border border-gray-200 bg-card p-1 shadow-[var(--shadow-dropdown)]">
+                  <div className="flex flex-col gap-px border-b border-gray-200 px-2.5 pt-2 pb-1.5">
                     <span className="text-s font-bold">{meName}</span>
                     <span className="text-xs text-gray-400">{meEmail}</span>
                   </div>
@@ -430,7 +407,7 @@ export function AppShell() {
                     <UserIcon className="size-3.5" />
                     {t('nav-my')}
                   </button>
-                  <div className="border-t border-gray-100 px-2.5 py-1.5">
+                  <div className="border-t border-gray-200 px-2.5 py-1.5">
                     <LanguageSwitcher />
                   </div>
                   <Link
@@ -452,11 +429,13 @@ export function AppShell() {
       {/* 데스크탑은 톱바(58px + border 1px) 아래를 뷰포트 높이로 고정 — 사이드바/본문이 각자 스크롤한다.
           ⚠ flex-none 필수: 부모가 flex-col이라 flex-1(=flex-basis:0)이 height보다 우선해 높이 제약이 무시된다.
           모바일(<631px)은 기존대로 페이지 전체 스크롤. */}
-      <div className="flex flex-1 min-[631px]:h-[calc(100svh-59px)] min-[631px]:flex-none min-[631px]:overflow-hidden">
-        <aside className="hidden h-full w-(--spacing-sidebar) flex-none flex-col gap-0.5 border-r border-gray-200 px-2.5 py-3.5 min-[631px]:flex">
+      <div className="flex flex-1 min-[631px]:h-[calc(100svh-var(--spacing-topbar)-1px)] min-[631px]:flex-none min-[631px]:overflow-hidden">
+        <aside className="hidden h-full w-(--spacing-sidebar) flex-none flex-col gap-0.5 border-r border-gray-200 bg-card px-2.5 py-3.5 min-[631px]:flex">
           <SidebarNav pathname={pathname} />
         </aside>
-        <main className="min-w-0 flex-1 p-5 pb-[76px] min-[631px]:overflow-y-auto min-[631px]:p-6 min-[631px]:pb-6">
+        {/* 메인도 «면»이다 — 디자인: `background:var(--color-bg); overflow-y:auto`.
+            배경을 안 깔면 캔버스(--background)를 상속받아 사이드바보다 어두워진다. */}
+        <main className="min-w-0 flex-1 bg-card p-5 pb-[76px] min-[631px]:overflow-y-auto min-[631px]:p-6 min-[631px]:pb-6">
           <Outlet />
         </main>
       </div>
@@ -485,7 +464,7 @@ export function AppShell() {
           <button
             type="button"
             aria-label="close"
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-[var(--scrim-sheet)]"
             onClick={() => setDrawerOpen(false)}
           />
           <div className="absolute inset-y-0 left-0 flex w-[280px] flex-col bg-card">
@@ -501,7 +480,7 @@ export function AppShell() {
                 type="button"
                 aria-label="close"
                 onClick={() => setDrawerOpen(false)}
-                className="ml-auto inline-flex size-8 flex-none items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100"
+                className="ml-auto inline-flex size-8 flex-none items-center justify-center rounded-md text-gray-500 hover:bg-gray-100"
               >
                 <CloseIcon />
               </button>
@@ -527,7 +506,7 @@ function BottomTab({
   icon: React.ReactNode
   label: string
 }) {
-  const cls = `flex flex-1 flex-col items-center justify-center gap-1 text-2xs ${active ? 'font-semibold text-primary' : 'text-gray-500'}`
+  const cls = `flex flex-1 flex-col items-center justify-center gap-1 text-2xs hover:bg-gray-100 active:bg-gray-200 ${active ? 'font-semibold text-primary' : 'text-gray-500'}`
   return to ? (
     <Link to={to} className={cls}>
       {icon}
@@ -562,237 +541,9 @@ function ThemeToggle() {
           return next
         })
       }
-      className="inline-flex size-9 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
+      className="inline-flex size-9 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100"
     >
       {dark ? <SunIcon /> : <MoonIcon />}
     </button>
-  )
-}
-
-/* ── 인라인 아이콘 (디자인 그대로) ── */
-type IconProps = { className?: string }
-const base = 'size-[17px] flex-none'
-
-function PencilIcon({ className }: IconProps) {
-  return (
-    <svg
-      className={className ?? 'size-[15px] flex-none'}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M4 15.5V20h4.5L19 9.5 14.5 5z" />
-    </svg>
-  )
-}
-function HomeIcon({ className }: IconProps) {
-  return (
-    <svg
-      className={className ?? base}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M3 11l9-7 9 7" />
-      <path d="M5.5 9.5V20h13V9.5" />
-    </svg>
-  )
-}
-// 즐겨찾기 리본. filled=등록됨(채움) / 아니면 외곽선만.
-function BookmarkIcon({ filled }: { filled?: boolean }) {
-  return (
-    <svg
-      className="size-[13px] flex-none"
-      viewBox="0 0 24 24"
-      fill={filled ? 'currentColor' : 'none'}
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M6.5 3.5h11V21L12 17l-5.5 4z" />
-    </svg>
-  )
-}
-function BoardIcon({ className }: IconProps) {
-  return (
-    <svg
-      className={className ?? base}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M6 3h9l4 4v14H6z" />
-      <path d="M14 3v5h5" />
-    </svg>
-  )
-}
-function DriveIcon({ className }: IconProps) {
-  return (
-    <svg
-      className={className ?? base}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M3.5 13.5L6 5.5h12l2.5 8" />
-      <rect x="3.5" y="13.5" width="17" height="5.5" rx="1.5" />
-      <path d="M16.5 16.2h.01M13.5 16.2h.01" />
-    </svg>
-  )
-}
-function UserIcon({ className }: IconProps) {
-  return (
-    <svg
-      className={className ?? base}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="8.5" r="3.6" />
-      <path d="M4.8 20a7.2 7.2 0 0 1 14.4 0" />
-    </svg>
-  )
-}
-function GearIcon({ className }: IconProps) {
-  return (
-    <svg
-      className={className ?? base}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7" />
-    </svg>
-  )
-}
-function SearchIcon({ className }: IconProps) {
-  return (
-    <svg
-      className={className ?? base}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="M15.8 15.8L21 21" />
-    </svg>
-  )
-}
-function MenuIcon() {
-  return (
-    <svg
-      className="size-5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M4 6.5h16M4 12h16M4 17.5h16" />
-    </svg>
-  )
-}
-function CloseIcon() {
-  return (
-    <svg
-      className="size-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M6 6l12 12M18 6L6 18" />
-    </svg>
-  )
-}
-function ChevronDownIcon() {
-  return (
-    <svg
-      className="size-[13px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="var(--color-gray-400)"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  )
-}
-function LogoutIcon() {
-  return (
-    <svg
-      className="size-3.5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M9 4.5H5.5v15H9" />
-      <path d="M13 8l4 4-4 4M17 12H8.5" />
-    </svg>
-  )
-}
-function MoonIcon() {
-  return (
-    <svg
-      className="size-[17px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z" />
-    </svg>
-  )
-}
-function SunIcon() {
-  return (
-    <svg
-      className="size-[17px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5 5l1.4 1.4M17.6 17.6L19 19M19 5l-1.4 1.4M6.4 17.6L5 19" />
-    </svg>
   )
 }

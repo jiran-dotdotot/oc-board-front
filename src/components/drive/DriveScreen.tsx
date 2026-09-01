@@ -4,6 +4,18 @@ import { useSearch } from '@tanstack/react-router'
 
 import { useTranslation } from 'react-i18next'
 
+import { Toast } from '@/components/common/Toast'
+import {
+  BookmarkIcon,
+  CheckIcon,
+  DownloadIcon,
+  EyeIcon,
+  ImageIcon,
+  TrashIcon,
+  UploadIcon,
+  XIcon,
+} from '@/components/common/icons'
+import { useToast } from '@/components/common/useToast'
 import {
   type DriveFile,
   EXT_BG,
@@ -14,8 +26,6 @@ import {
   fmtSize,
 } from '@/components/drive/driveData'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
-import { Toast } from '@/components/common/Toast'
-import { useToast } from '@/components/common/useToast'
 import { useCategories } from '@/hooks/useCategories'
 import { useDriveFiles } from '@/hooks/useDriveFiles'
 import { getCurrentUserId } from '@/lib/authStorage'
@@ -173,7 +183,7 @@ export function DriveScreen() {
     <div className="mx-auto flex w-full max-w-[1040px] flex-col">
       {/* 헤더: 자료실명 + 자료 수 + 저장 용량 게이지 */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span className="text-lg font-extrabold tracking-[-0.01em]">{curName}</span>
+        <span className="text-lg font-extrabold tracking-title">{curName}</span>
         <span className="text-s text-gray-400">
           {t('drive-file-count', { n: driveFiles.length })}
         </span>
@@ -201,39 +211,37 @@ export function DriveScreen() {
             <button
               type="button"
               onClick={() => setDlOpen(true)}
-              className="inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 bg-card px-3 text-s font-semibold text-gray-700 hover:bg-gray-100"
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-200 bg-card px-3 text-s font-semibold text-gray-700 hover:bg-gray-100"
             >
-              <DownloadIcon /> {t('file-download')}
+              <DownloadIcon className="size-3" /> {t('file-download')}
             </button>
             <button
               type="button"
               disabled={selHasOthers}
               onClick={() => !selHasOthers && setDelOpen(true)}
               className={[
-                'inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 bg-card px-3 text-s font-semibold',
+                'inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-200 bg-card px-3 text-s font-semibold',
                 selHasOthers
                   ? 'cursor-not-allowed text-gray-300'
-                  : 'text-destructive hover:bg-l-red',
+                  : 'text-destructive hover:bg-destructive-bg',
               ].join(' ')}
             >
               <TrashIcon /> {t('common-delete')}
             </button>
-            {selHasOthers && (
-              <span className="text-xs text-gray-400">{t('drive-del-note')}</span>
-            )}
+            {selHasOthers && <span className="text-xs text-gray-400">{t('drive-del-note')}</span>}
           </>
         )}
         <button
           type="button"
           onClick={upStart}
-          className="ml-auto inline-flex h-8 flex-none items-center gap-1.5 rounded-[5px] bg-primary px-3.5 text-s font-semibold text-white hover:bg-ov-blue-700"
+          className="ml-auto inline-flex h-8 flex-none items-center gap-1.5 rounded-md bg-primary px-3.5 text-s font-semibold text-white hover:bg-ov-blue-700"
         >
-          <UploadIcon /> {t('drive-upload')}
+          <UploadIcon className="size-3" /> {t('drive-upload')}
         </button>
       </div>
 
       {/* 파일 테이블 */}
-      <div className="mt-3 overflow-x-auto">
+      <div className="mt-3 overflow-x-auto bg-card">
         <div className="min-w-[720px]">
           {/* 헤더 행 */}
           <div className="flex h-10 items-center gap-2.5 border-b border-gray-200 px-1 text-xs text-gray-500">
@@ -272,21 +280,19 @@ export function DriveScreen() {
               <button
                 type="button"
                 onClick={() => refetch()}
-                className="inline-flex h-9 items-center rounded-[5px] border border-gray-200 bg-card px-4 text-s font-semibold text-gray-700 hover:bg-gray-100"
+                className="inline-flex h-9 items-center rounded-md border border-gray-200 bg-card px-4 text-s font-semibold text-gray-700 hover:bg-gray-100"
               >
                 {t('common-retry')}
               </button>
             </div>
           ) : isEmpty ? (
-            <div className="px-1 py-14 text-center text-s text-gray-400">
-              {t('drive-empty')}
-            </div>
+            <div className="px-1 py-14 text-center text-s text-gray-400">{t('drive-empty')}</div>
           ) : (
             driveFiles.map((f) => (
               <div
                 key={f.id}
                 className={[
-                  'flex items-center gap-2.5 border-b border-gray-100 px-1 hover:bg-gray-50',
+                  'flex items-center gap-2.5 border-b border-gray-100 px-1 hover:bg-gray-100',
                   f.state === 'up' ? 'min-h-[52px]' : 'min-h-[46px]',
                   checked.has(f.id) ? 'bg-gray-50' : '',
                 ].join(' ')}
@@ -331,9 +337,9 @@ export function DriveScreen() {
                     type="button"
                     onClick={() => toggleBm(f)}
                     aria-label={t('nav-favorites')}
-                    className={`inline-flex size-[29px] items-center justify-center rounded-lg hover:bg-gray-100 ${f.bm ? 'text-warning' : 'text-gray-400'}`}
+                    className={`inline-flex size-[29px] items-center justify-center rounded-md hover:bg-gray-100 ${f.bm ? 'text-warning' : 'text-gray-400'}`}
                   >
-                    <BookmarkIcon filled={!!f.bm} />
+                    <BookmarkIcon className="size-3.5" filled={!!f.bm} />
                   </button>
                   {f.state === 'idle' && (
                     <>
@@ -341,17 +347,17 @@ export function DriveScreen() {
                         type="button"
                         onClick={() => setPreview(f.name)}
                         aria-label={t('file-preview')}
-                        className="inline-flex size-[27px] items-center justify-center rounded-[7px] text-gray-500 hover:bg-gray-100"
+                        className="inline-flex size-[27px] items-center justify-center rounded-md text-gray-500 hover:bg-gray-100"
                       >
-                        <EyeIcon />
+                        <EyeIcon className="size-3" />
                       </button>
                       <button
                         type="button"
                         onClick={() => setDlOpen(true)}
                         aria-label={t('file-download')}
-                        className="inline-flex size-[27px] items-center justify-center rounded-[7px] text-gray-500 hover:bg-gray-100"
+                        className="inline-flex size-[27px] items-center justify-center rounded-md text-gray-500 hover:bg-gray-100"
                       >
-                        <DownloadIcon />
+                        <DownloadIcon className="size-3" />
                       </button>
                     </>
                   )}
@@ -361,7 +367,7 @@ export function DriveScreen() {
                     </span>
                   )}
                   {f.state === 'done' && (
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-accent)]">
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-success)]">
                       <CheckIcon /> {t('drive-up-done')}
                     </span>
                   )}
@@ -377,7 +383,7 @@ export function DriveScreen() {
       {delOpen && (
         <Modal onClose={() => setDelOpen(false)}>
           <div className="flex w-[330px] flex-col items-center gap-2 rounded-lg bg-card px-[22px] pt-[26px] pb-[18px] shadow-[var(--shadow-modal)]">
-            <span className="inline-flex size-[42px] items-center justify-center rounded-full bg-l-red text-destructive">
+            <span className="inline-flex size-[42px] items-center justify-center rounded-full bg-destructive-bg text-destructive">
               <TrashIcon size={20} />
             </span>
             <span className="mt-1 text-center text-sm font-semibold">
@@ -388,14 +394,14 @@ export function DriveScreen() {
               <button
                 type="button"
                 onClick={() => setDelOpen(false)}
-                className="inline-flex h-10 flex-1 items-center justify-center rounded-[5px] border border-gray-200 bg-card text-sm font-semibold text-gray-800 hover:bg-gray-100"
+                className="inline-flex h-10 flex-1 items-center justify-center rounded-md border border-gray-200 bg-card text-sm font-semibold text-gray-800 hover:bg-gray-100"
               >
                 {t('common-cancel')}
               </button>
               <button
                 type="button"
                 onClick={doDelete}
-                className="inline-flex h-10 flex-1 items-center justify-center rounded-[5px] bg-destructive text-sm font-semibold text-white hover:opacity-90"
+                className="inline-flex h-10 flex-1 items-center justify-center rounded-md bg-destructive text-sm font-semibold text-white hover:bg-destructive-hover"
               >
                 {t('common-delete')}
               </button>
@@ -414,7 +420,7 @@ export function DriveScreen() {
                 type="button"
                 aria-label={t('common-cancel')}
                 onClick={() => setDlCancelAsk(true)}
-                className="ml-auto inline-flex size-7 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100"
+                className="ml-auto inline-flex size-7 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100"
               >
                 <XIcon />
               </button>
@@ -441,16 +447,16 @@ export function DriveScreen() {
                       setDlCancelAsk(false)
                       showToast(t('drive-dl-canceled'))
                     }}
-                    className="inline-flex h-10 flex-1 items-center justify-center rounded-[5px] border border-gray-200 bg-card text-s font-semibold text-gray-800 hover:bg-gray-100"
+                    className="inline-flex h-10 flex-1 items-center justify-center rounded-md border border-gray-200 bg-card text-s font-semibold text-gray-800 hover:bg-gray-100"
                   >
                     {t('common-cancel')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setDlCancelAsk(false)}
-                    className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-[5px] bg-primary text-s font-semibold text-white hover:bg-ov-blue-700"
+                    className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md bg-primary text-s font-semibold text-white hover:bg-ov-blue-700"
                   >
-                    <DownloadIcon /> {t('drive-dl-continue')}
+                    <DownloadIcon className="size-3" /> {t('drive-dl-continue')}
                   </button>
                 </div>
               </div>
@@ -467,20 +473,20 @@ export function DriveScreen() {
           role="presentation"
         >
           <div className="absolute top-3.5 right-3.5 flex gap-1.5">
-            <span className="inline-flex size-[34px] items-center justify-center rounded-lg bg-white/15 text-white">
-              <DownloadIcon />
+            <span className="inline-flex size-[34px] items-center justify-center rounded-md bg-white/15 text-white">
+              <DownloadIcon className="size-3" />
             </span>
             <button
               type="button"
               aria-label={t('common-cancel')}
               onClick={() => setPreview(null)}
-              className="inline-flex size-[34px] items-center justify-center rounded-lg bg-white/15 text-white"
+              className="inline-flex size-[34px] items-center justify-center rounded-md bg-white/15 text-white"
             >
               <XIcon />
             </button>
           </div>
           <div className="flex h-[62%] w-[min(58%,520px)] items-center justify-center rounded-lg bg-l-purple text-on-pastel">
-            <ImageIcon />
+            <ImageIcon size={44} className="opacity-70" />
           </div>
           <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-s text-white/85">
             {preview}
@@ -523,13 +529,15 @@ function Checkbox({
       onClick={onClick}
       className={[
         'inline-flex size-[15px] flex-none items-center justify-center rounded border-[1.5px] text-white',
-        active ? 'border-primary bg-primary' : 'border-gray-300 bg-card',
+        active
+          ? 'border-primary bg-primary'
+          : 'border-gray-300 bg-card hover:border-gray-400 hover:bg-gray-50',
       ].join(' ')}
     >
       {checked && (
         <svg
-          width="10"
-          height="10"
+          width="12"
+          height="12"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -542,8 +550,8 @@ function Checkbox({
       )}
       {!checked && mixed && (
         <svg
-          width="10"
-          height="10"
+          width="12"
+          height="12"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -554,144 +562,5 @@ function Checkbox({
         </svg>
       )}
     </button>
-  )
-}
-
-function BookmarkIcon({ filled }: { filled: boolean }) {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill={filled ? 'currentColor' : 'none'}
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-    >
-      <path d="M6.5 3.5h11V21L12 17l-5.5 4z" />
-    </svg>
-  )
-}
-
-function EyeIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-    >
-      <path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z" />
-      <circle cx="12" cy="12" r="2.8" />
-    </svg>
-  )
-}
-
-function DownloadIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 4v11M7 10.5l5 5 5-5" />
-      <path d="M4.5 19.5h15" />
-    </svg>
-  )
-}
-
-function UploadIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 16V5M7.5 9.5L12 5l4.5 4.5" />
-      <path d="M4.5 19.5h15" />
-    </svg>
-  )
-}
-
-function TrashIcon({ size = 13 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13" />
-    </svg>
-  )
-}
-
-function XIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    >
-      <path d="M6 6l12 12M18 6L6 18" />
-    </svg>
-  )
-}
-
-function CheckIcon({ accent }: { accent?: boolean }) {
-  return (
-    <svg
-      width={accent ? 16 : 12}
-      height={accent ? 16 : 12}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={accent ? 'var(--color-accent)' : 'currentColor'}
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="flex-none"
-    >
-      <path d="M4.5 12.5l5 5 10-11" />
-    </svg>
-  )
-}
-
-function ImageIcon() {
-  return (
-    <svg
-      width="44"
-      height="44"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.3"
-      strokeLinejoin="round"
-      className="opacity-70"
-    >
-      <rect x="3.5" y="5" width="17" height="14" rx="2" />
-      <circle cx="9" cy="10" r="1.6" />
-      <path d="M3.5 16.5l5-4.5 4 3.5 3.5-3 4.5 4" />
-    </svg>
   )
 }

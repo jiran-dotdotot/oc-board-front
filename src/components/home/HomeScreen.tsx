@@ -12,18 +12,31 @@ import {
   SCHED_COUNT,
   TODO_PILL,
 } from './constants'
+import { NoticeBadge } from '@/components/common/NoticeBadge'
+import {
+  CheckIcon,
+  CommentIcon,
+  DocIcon,
+  DownloadIcon,
+  DriveIcon,
+  EyeIcon,
+} from '@/components/common/icons'
 import { useDriveFiles } from '@/hooks/useDriveFiles'
 import { useMe } from '@/hooks/useMe'
 import { usePosts } from '@/hooks/usePosts'
 import type { ApiDriveFile } from '@/types/drive'
 import type { Post } from '@/types/post'
+import { fmtDate } from '@/utils/date'
 
 // 데스크톱은 테이블(웹 정본), 모바일은 테두리 카드 + 한 줄 목록(모바일 정본).
 // 가로 스크롤은 쓰지 않는다 — 디자인은 스크롤이 아니라 컬럼을 meta 한 줄로 접는다.
-const SECTION_CARD = 'overflow-hidden rounded-lg border border-gray-200 min-[631px]:rounded-none min-[631px]:border-0'
+// 면(bg-card)을 반드시 깐다 — 디자인은 섹션이 `background:var(--color-bg)`.
+// 안 깔면 다크에서 페이지 바닥이 gray-50 이라 행의 hover:bg-gray-100 이 «같은 색»이 되어 사라진다.
+const SECTION_CARD =
+  'overflow-hidden rounded-lg border border-gray-200 bg-card min-[631px]:rounded-none min-[631px]:border-0'
 const SECTION_HEAD =
   'flex h-12 items-center gap-2 border-b border-gray-100 px-[18px] min-[631px]:h-11 min-[631px]:border-b-0 min-[631px]:px-1'
-const SECTION_TITLE = 'text-lg font-extrabold tracking-[-0.01em]'
+const SECTION_TITLE = 'text-lg font-extrabold tracking-title'
 // 행: 모바일 flex 한 줄 → 데스크톱 grid 테이블
 const ROW =
   'h-[46px] w-full items-center border-b border-gray-100 px-[18px] flex gap-2 min-[631px]:grid min-[631px]:gap-0 min-[631px]:px-1'
@@ -32,10 +45,6 @@ const META_MOBILE = 'flex-none truncate text-xs text-gray-400 min-[631px]:hidden
 
 const COLS_POSTS = 'minmax(0,1fr) 130px 96px 92px 60px 60px'
 const COLS_FILES = '52px minmax(0,1fr) 120px 90px 88px 96px'
-
-function fmtDate(s?: string | null) {
-  return s ? s.slice(0, 10).replace(/-/g, '.') : ''
-}
 
 interface HomePost {
   id: string
@@ -110,11 +119,11 @@ export function HomeScreen() {
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <span className="text-lg font-extrabold tracking-[-0.01em]">{t('nav-home')}</span>
+      <span className="text-lg font-extrabold tracking-title">{t('nav-home')}</span>
 
       {/* 해야 할 일 */}
       <div className="flex flex-wrap items-center gap-3.5 rounded-lg border border-gray-200 bg-gray-50 px-[18px] py-3.5">
-        <span className="inline-flex size-[34px] flex-none items-center justify-center rounded-lg bg-ov-blue-50 text-primary">
+        <span className="inline-flex size-[34px] flex-none items-center justify-center rounded-md bg-ov-blue-100 text-primary">
           <CheckIcon />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -122,19 +131,11 @@ export function HomeScreen() {
           <span className="text-xs text-gray-500">{t('home-todo-desc')}</span>
         </div>
         <div className="ml-auto flex flex-none flex-wrap gap-1.5">
-          <button
-            type="button"
-            onClick={() => navigate({ to: '/my' })}
-            className={TODO_PILL}
-          >
+          <button type="button" onClick={() => navigate({ to: '/my' })} className={TODO_PILL}>
             {t('home-draft')}
             <span className="font-bold text-warning">{DRAFT_COUNT}</span>
           </button>
-          <button
-            type="button"
-            onClick={() => navigate({ to: '/my' })}
-            className={TODO_PILL}
-          >
+          <button type="button" onClick={() => navigate({ to: '/my' })} className={TODO_PILL}>
             {t('home-sched')}
             <span className="font-bold text-primary">{SCHED_COUNT}</span>
           </button>
@@ -169,11 +170,7 @@ export function HomeScreen() {
               </div>
               {isLoading ? (
                 Array.from({ length: HOME_TAKE }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={ROW}
-                    style={{ gridTemplateColumns: COLS_POSTS }}
-                  >
+                  <div key={i} className={ROW} style={{ gridTemplateColumns: COLS_POSTS }}>
                     <span className="h-3.5 flex-1 animate-pulse rounded bg-gray-100" />
                     <span className="hidden h-3 animate-pulse rounded bg-gray-100 min-[631px]:block" />
                     <span className="hidden h-3 animate-pulse rounded bg-gray-100 min-[631px]:block" />
@@ -183,9 +180,7 @@ export function HomeScreen() {
                   </div>
                 ))
               ) : isError ? (
-                <div className="px-1 py-10 text-center text-s text-gray-400">
-                  {t('list-error')}
-                </div>
+                <div className="px-1 py-10 text-center text-s text-gray-400">{t('list-error')}</div>
               ) : posts.length === 0 ? (
                 <EmptyState message={t('home-posts-empty')}>
                   <DocIcon />
@@ -199,7 +194,7 @@ export function HomeScreen() {
                       navigate({ to: '/post/$postId', params: { postId: String(p.id) } })
                     }
                     aria-label={p.unread ? `${t('list-filter-unread')} · ${p.title}` : p.title}
-                    className={`${ROW} text-left hover:bg-gray-50`}
+                    className={`${ROW} text-left hover:bg-gray-100`}
                     style={{ gridTemplateColumns: COLS_POSTS }}
                   >
                     <span className="flex min-w-0 flex-1 items-center gap-2 min-[631px]:gap-[7px] min-[631px]:pr-3.5">
@@ -209,11 +204,7 @@ export function HomeScreen() {
                           aria-hidden="true"
                         />
                       )}
-                      {p.notice && (
-                        <span className="inline-flex h-[19px] flex-none items-center rounded bg-l-blue px-[7px] text-2xs font-bold text-primary">
-                          {t('badge-notice')}
-                        </span>
-                      )}
+                      {p.notice && <NoticeBadge />}
                       <span
                         className={`truncate text-sm ${p.unread ? 'text-gray-900' : 'text-gray-500'}`}
                       >
@@ -269,11 +260,7 @@ export function HomeScreen() {
               </div>
               {filesLoading ? (
                 Array.from({ length: HOME_TAKE }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={ROW}
-                    style={{ gridTemplateColumns: COLS_FILES }}
-                  >
+                  <div key={i} className={ROW} style={{ gridTemplateColumns: COLS_FILES }}>
                     <span className="h-5 w-10 flex-none animate-pulse rounded bg-gray-100" />
                     <span className="h-3.5 flex-1 animate-pulse rounded bg-gray-100" />
                     <span className="hidden h-3 animate-pulse rounded bg-gray-100 min-[631px]:block" />
@@ -283,9 +270,7 @@ export function HomeScreen() {
                   </div>
                 ))
               ) : filesError ? (
-                <div className="px-1 py-10 text-center text-s text-gray-400">
-                  {t('list-error')}
-                </div>
+                <div className="px-1 py-10 text-center text-s text-gray-400">{t('list-error')}</div>
               ) : files.length === 0 ? (
                 <EmptyState message={t('home-files-empty')}>
                   <DriveIcon />
@@ -300,7 +285,7 @@ export function HomeScreen() {
                     onKeyDown={(e) =>
                       (e.key === 'Enter' || e.key === ' ') && navigate({ to: '/drive' })
                     }
-                    className={`${ROW} cursor-pointer hover:bg-gray-50`}
+                    className={`${ROW} cursor-pointer hover:bg-gray-100`}
                     style={{ gridTemplateColumns: COLS_FILES }}
                   >
                     <span
@@ -331,7 +316,7 @@ export function HomeScreen() {
                         }}
                         className="inline-flex size-7 items-center justify-center rounded-md text-gray-500 hover:bg-gray-200 hover:text-primary"
                       >
-                        <EyeIcon />
+                        <EyeIcon className="size-3.5" />
                       </button>
                       <button
                         type="button"
@@ -370,40 +355,6 @@ function EmptyState({ message, children }: { message: string; children: React.Re
   )
 }
 
-function DocIcon() {
-  return (
-    <svg
-      className="size-[19px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M6 3h9l4 4v14H6z" />
-      <path d="M14 3v5h5" />
-    </svg>
-  )
-}
-
-function DriveIcon() {
-  return (
-    <svg
-      className="size-[19px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M3.5 13.5L6 5.5h12l2.5 8" />
-      <rect x="3.5" y="13.5" width="17" height="5.5" rx="1.5" />
-    </svg>
-  )
-}
-
 function MoreLink({ label, onClick }: { label: string; onClick?: () => void }) {
   return (
     <button
@@ -413,7 +364,7 @@ function MoreLink({ label, onClick }: { label: string; onClick?: () => void }) {
     >
       {label}
       <svg
-        className="size-[11px]"
+        className="size-3"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -425,70 +376,5 @@ function MoreLink({ label, onClick }: { label: string; onClick?: () => void }) {
         <path d="M9 5l7 7-7 7" />
       </svg>
     </button>
-  )
-}
-
-function CheckIcon() {
-  return (
-    <svg
-      className="size-[17px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M4.5 12.5l5 5 10-11" />
-    </svg>
-  )
-}
-function CommentIcon() {
-  return (
-    <svg
-      className="size-3"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M20.5 12.5c0 3.9-3.8 7-8.5 7-1 0-2-.15-2.9-.42L4 20.5l1.5-3.6A6.6 6.6 0 0 1 3.5 12.5c0-3.9 3.8-7 8.5-7s8.5 3.1 8.5 7z" />
-    </svg>
-  )
-}
-function EyeIcon() {
-  return (
-    <svg
-      className="size-3.5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z" />
-      <circle cx="12" cy="12" r="2.8" />
-    </svg>
-  )
-}
-function DownloadIcon() {
-  return (
-    <svg
-      className="size-3.5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 4v11M7 10.5l5 5 5-5" />
-      <path d="M4.5 19.5h15" />
-    </svg>
   )
 }

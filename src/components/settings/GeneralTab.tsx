@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
+import { BoardIcon, DriveIcon } from '@/components/common/icons'
 import { useMemberCategories } from '@/hooks/useCategories'
 import { useMe } from '@/hooks/useMe'
 import { useBoardAlarmMutation, useUserSettingMutation } from '@/hooks/useSettings'
@@ -161,7 +162,11 @@ function BoardRow({
   return (
     <div className="grid h-11 grid-cols-[minmax(0,1fr)_56px_56px] items-center border-b border-gray-100">
       <span className="flex min-w-0 items-center gap-2.5 pl-1.5">
-        {drive ? <DriveIcon /> : <BoardIcon />}
+        {drive ? (
+          <DriveIcon className="size-3.5 flex-none text-gray-400" />
+        ) : (
+          <BoardIcon className="size-3.5 flex-none text-gray-400" />
+        )}
         <span className="truncate text-sm text-gray-800">{board.title}</span>
       </span>
       {/* 자료실은 공지 개념이 없어 체크박스를 두지 않는다 (디자인 동일) */}
@@ -253,13 +258,15 @@ function Check({ on, onClick }: { on: boolean; onClick: () => void }) {
       aria-checked={on}
       onClick={onClick}
       className={[
-        'inline-flex size-[18px] items-center justify-center rounded-[4px] border-[1.5px] text-white',
-        on ? 'border-primary bg-primary' : 'border-gray-300 bg-card',
+        'inline-flex size-[18px] items-center justify-center rounded border-[1.5px] text-white',
+        on
+          ? 'border-primary bg-primary'
+          : 'border-gray-300 bg-card hover:border-gray-400 hover:bg-gray-50',
       ].join(' ')}
     >
       {on && (
         <svg
-          className="size-2.5"
+          className="size-3"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -272,39 +279,5 @@ function Check({ on, onClick }: { on: boolean; onClick: () => void }) {
         </svg>
       )}
     </button>
-  )
-}
-
-function BoardIcon() {
-  return (
-    <svg
-      className="size-3.5 flex-none text-gray-400"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M6 3h9l4 4v14H6z" />
-      <path d="M14 3v5h5" />
-    </svg>
-  )
-}
-
-function DriveIcon() {
-  return (
-    <svg
-      className="size-3.5 flex-none text-gray-400"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M3.5 13.5L6 5.5h12l2.5 8" />
-      <rect x="3.5" y="13.5" width="17" height="5.5" rx="1.5" />
-    </svg>
   )
 }

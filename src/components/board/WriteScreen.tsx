@@ -1,7 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
-import { Toast } from '@/components/common/Toast'
-import { useToast } from '@/components/common/useToast'
 
 import { useNavigate } from '@tanstack/react-router'
 
@@ -15,6 +12,21 @@ import {
   TITLE_MAX,
   WRITE_ATTACHMENTS,
 } from './writeData'
+import { Toast } from '@/components/common/Toast'
+import {
+  AlertIcon,
+  CalendarIcon,
+  CheckIcon,
+  DashIcon,
+  ImageIcon,
+  LinkIcon,
+  ListIcon,
+  OrgIcon,
+  UploadIcon,
+  XIcon,
+} from '@/components/common/icons'
+import { useToast } from '@/components/common/useToast'
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 
 export function WriteScreen() {
   const { t } = useTranslation()
@@ -77,7 +89,7 @@ export function WriteScreen() {
 
   return (
     <div className="mx-auto flex w-full max-w-[820px] flex-col gap-4">
-      <span className="text-xl font-extrabold tracking-[-0.01em]">{t('write-page-title')}</span>
+      <span className="text-xl font-extrabold tracking-title">{t('write-page-title')}</span>
 
       {/* 본문 폼 */}
       <div className="flex flex-col gap-[18px] rounded-lg border border-gray-200 bg-card px-[26px] py-6">
@@ -88,7 +100,7 @@ export function WriteScreen() {
             <button
               type="button"
               onClick={() => setBoardOpen((v) => !v)}
-              className={`flex h-[42px] w-full items-center gap-2 rounded-[5px] border bg-card px-3 ${errBoard ? 'border-destructive' : board !== null || boardOpen ? 'border-primary' : 'border-gray-300'}`}
+              className={`flex h-[42px] w-full items-center gap-2 rounded-md border bg-card px-3 ${errBoard ? 'border-destructive' : board !== null || boardOpen ? 'border-primary' : 'border-gray-300'}`}
             >
               <span
                 className={`flex-1 truncate text-left text-sm ${board === null ? 'text-gray-400' : 'text-gray-900'}`}
@@ -98,7 +110,7 @@ export function WriteScreen() {
               <ChevronDown open={boardOpen} />
             </button>
             {boardOpen && (
-              <div className="absolute inset-x-0 top-[calc(100%+4px)] z-[var(--z-dropdown)] rounded-lg border border-gray-200 bg-card p-1 shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
+              <div className="absolute inset-x-0 top-[calc(100%+4px)] z-[var(--z-dropdown)] rounded-lg border border-gray-200 bg-card p-1 shadow-[var(--shadow-dropdown)]">
                 {BOARD_OPTIONS.map((o, i) => (
                   <button
                     key={o}
@@ -130,7 +142,7 @@ export function WriteScreen() {
                 setErrTitle(false)
               }}
               placeholder={t('write-title-ph')}
-              className={`h-[42px] w-full rounded-[5px] border bg-card pr-[74px] pl-3 text-sm outline-none focus:border-primary ${errTitle ? 'border-destructive' : title ? 'border-primary' : 'border-gray-300'}`}
+              className={`h-[42px] w-full rounded-md border bg-card pr-[74px] pl-3 text-sm outline-none focus:border-primary ${errTitle ? 'border-destructive' : title ? 'border-primary' : 'border-gray-300'}`}
             />
             <span
               className={`absolute top-[13px] right-3 text-xs ${titleLen >= TITLE_MAX ? 'text-destructive' : titleLen >= 194 ? 'text-warning' : 'text-gray-400'}`}
@@ -143,8 +155,8 @@ export function WriteScreen() {
 
         {/* 본문 에디터 */}
         <div className="flex flex-col">
-          <div className="flex flex-wrap gap-0.5 rounded-t-[5px] border border-gray-200 bg-gray-50 px-2 py-1.5">
-            <ToolBtn className="text-sm font-extrabold">B</ToolBtn>
+          <div className="flex flex-wrap gap-0.5 rounded-t-md border border-gray-200 bg-gray-50 px-2 py-1.5">
+            <ToolBtn className="text-sm font-bold">B</ToolBtn>
             <ToolBtn className="text-sm font-semibold italic">I</ToolBtn>
             <ToolBtn className="text-sm underline">U</ToolBtn>
             <span className="mx-1 my-[5px] h-5 w-px bg-gray-200" />
@@ -152,7 +164,7 @@ export function WriteScreen() {
               <LinkIcon />
             </ToolBtn>
             <ToolBtn>
-              <ImageIcon />
+              <ImageIcon className="size-4 opacity-75" />
             </ToolBtn>
             <ToolBtn>
               <ListIcon />
@@ -162,7 +174,7 @@ export function WriteScreen() {
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder={t('write-body-ph')}
-            className="min-h-[180px] w-full resize-y rounded-b-[5px] border border-t-0 border-gray-200 bg-card p-3.5 text-sm leading-[1.7] outline-none focus:border-primary"
+            className="min-h-[180px] w-full resize-y rounded-b-md border border-t-0 border-gray-200 bg-card p-3.5 text-sm leading-prose outline-none focus:border-primary"
           />
         </div>
 
@@ -171,7 +183,7 @@ export function WriteScreen() {
           <FieldLabel>{t('write-attach')}</FieldLabel>
           <button
             type="button"
-            className="flex items-center justify-center gap-2 rounded-lg border-[1.5px] border-dashed border-gray-300 p-[18px] text-s text-gray-400 hover:border-primary hover:text-primary"
+            className="flex items-center justify-center gap-2 rounded-md border-[1.5px] border-dashed border-gray-300 p-[18px] text-s text-gray-400 hover:border-primary hover:text-primary"
           >
             <UploadIcon />
             {t('write-dropzone')}
@@ -211,7 +223,7 @@ export function WriteScreen() {
                 <button
                   type="button"
                   aria-label="remove"
-                  className="inline-flex size-7 flex-none items-center justify-center rounded-[5px] text-gray-400 hover:bg-gray-100"
+                  className="inline-flex size-7 flex-none items-center justify-center rounded-md text-gray-400 hover:bg-gray-100"
                 >
                   <XIcon />
                 </button>
@@ -245,7 +257,7 @@ export function WriteScreen() {
                 <button
                   type="button"
                   onClick={() => setOrgOpen(true)}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 bg-card px-[13px] text-s font-semibold text-gray-700 hover:bg-gray-100"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-200 bg-card px-[13px] text-s font-semibold text-gray-700 hover:bg-gray-100"
                 >
                   <OrgIcon />
                   {t('write-pick-org')}
@@ -321,7 +333,7 @@ export function WriteScreen() {
       <div className="flex items-center gap-2">
         <button
           type="button"
-          className="inline-flex h-10 items-center gap-1.5 rounded-[5px] border border-gray-200 bg-card px-4 text-sm font-semibold text-gray-700 hover:bg-gray-100"
+          className="inline-flex h-10 items-center gap-1.5 rounded-md border border-gray-200 bg-card px-4 text-sm font-semibold text-gray-700 hover:bg-gray-100"
         >
           {t('write-draft-save')}
           <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-gray-100 px-1.5 text-2xs font-bold text-gray-500">
@@ -332,14 +344,14 @@ export function WriteScreen() {
           <button
             type="button"
             onClick={() => setLeaveOpen(true)}
-            className="inline-flex h-10 items-center rounded-[5px] border border-gray-200 bg-card px-[18px] text-sm font-semibold text-gray-800 hover:bg-gray-100"
+            className="inline-flex h-10 items-center rounded-md border border-gray-200 bg-card px-[18px] text-sm font-semibold text-gray-800 hover:bg-gray-100"
           >
             {t('common-cancel')}
           </button>
           <button
             type="button"
             onClick={submit}
-            className="inline-flex h-10 items-center rounded-[5px] bg-primary px-[22px] text-sm font-semibold text-white hover:bg-ov-blue-700"
+            className="inline-flex h-10 items-center rounded-md bg-primary px-[22px] text-sm font-semibold text-white hover:bg-ov-blue-700"
           >
             {t('write-submit')}
           </button>
@@ -348,21 +360,21 @@ export function WriteScreen() {
 
       {/* 조직도 모달 */}
       {orgOpen && (
-        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/50">
-          <div className="flex max-h-[80vh] w-[420px] max-w-[92%] flex-col overflow-hidden rounded-lg bg-card shadow-[0_4px_18px_rgba(75,70,92,0.1)]">
+        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-[var(--scrim-modal)]">
+          <div className="flex max-h-[80vh] w-[420px] max-w-[92%] flex-col overflow-hidden rounded-lg bg-card shadow-[var(--shadow-modal)]">
             <div className="flex h-[54px] flex-none items-center border-b border-gray-100 px-5">
               <span className="text-base font-bold">{t('write-org-modal-title')}</span>
               <button
                 type="button"
                 aria-label={t('common-cancel')}
                 onClick={() => setOrgOpen(false)}
-                className="ml-auto inline-flex size-[30px] items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100"
+                className="ml-auto inline-flex size-[30px] items-center justify-center rounded-md text-gray-500 hover:bg-gray-100"
               >
                 <XIcon />
               </button>
             </div>
             <div className="flex flex-col gap-px overflow-y-auto p-4">
-              <div className="flex h-9 items-center gap-1.5 rounded-lg px-2.5">
+              <div className="flex h-9 items-center gap-1.5 rounded-md px-2.5">
                 <ChevronDown open className="text-gray-400" />
                 <button
                   type="button"
@@ -386,7 +398,7 @@ export function WriteScreen() {
                     c[i] = !c[i]
                     setOrgChecks(c)
                   }}
-                  className="flex h-9 items-center gap-1.5 rounded-lg pr-2.5 pl-10 hover:bg-gray-100"
+                  className="flex h-9 items-center gap-1.5 rounded-md pr-2.5 pl-10 hover:bg-gray-100"
                 >
                   <span
                     className={`inline-flex size-4 flex-none items-center justify-center rounded border-[1.5px] text-white ${orgChecks[i] ? 'border-primary bg-primary' : 'border-gray-300 bg-card'}`}
@@ -402,14 +414,14 @@ export function WriteScreen() {
               <button
                 type="button"
                 onClick={() => setOrgOpen(false)}
-                className="inline-flex h-10 items-center rounded-[5px] border border-gray-200 bg-card px-4 text-sm font-semibold text-gray-800 hover:bg-gray-100"
+                className="inline-flex h-10 items-center rounded-md border border-gray-200 bg-card px-4 text-sm font-semibold text-gray-800 hover:bg-gray-100"
               >
                 {t('common-cancel')}
               </button>
               <button
                 type="button"
                 onClick={() => setOrgOpen(false)}
-                className="inline-flex h-10 items-center rounded-[5px] bg-primary px-[18px] text-sm font-semibold text-white hover:bg-ov-blue-700"
+                className="inline-flex h-10 items-center rounded-md bg-primary px-[18px] text-sm font-semibold text-white hover:bg-ov-blue-700"
               >
                 {t('write-apply')}
               </button>
@@ -420,8 +432,8 @@ export function WriteScreen() {
 
       {/* 나가기 확인 */}
       {leaveOpen && (
-        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/50">
-          <div className="flex w-80 flex-col items-center gap-2 rounded-lg bg-card px-[22px] pt-[26px] pb-[18px] shadow-[0_4px_18px_rgba(75,70,92,0.1)]">
+        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-[var(--scrim-modal)]">
+          <div className="flex w-80 flex-col items-center gap-2 rounded-lg bg-card px-[22px] pt-[26px] pb-[18px] shadow-[var(--shadow-modal)]">
             <span className="text-center text-sm font-semibold text-gray-900">
               {t('write-leave-title')}
             </span>
@@ -430,14 +442,14 @@ export function WriteScreen() {
               <button
                 type="button"
                 onClick={() => setLeaveOpen(false)}
-                className="inline-flex h-10 flex-1 items-center justify-center rounded-[5px] border border-gray-200 bg-card text-sm font-semibold text-gray-800 hover:bg-gray-100"
+                className="inline-flex h-10 flex-1 items-center justify-center rounded-md border border-gray-200 bg-card text-sm font-semibold text-gray-800 hover:bg-gray-100"
               >
                 {t('write-leave-keep')}
               </button>
               <button
                 type="button"
                 onClick={() => navigate({ to: '/board/$boardId', params: { boardId: 'notice' } })}
-                className="inline-flex h-10 flex-1 items-center justify-center rounded-[5px] bg-destructive text-sm font-semibold text-white hover:opacity-90"
+                className="inline-flex h-10 flex-1 items-center justify-center rounded-md bg-destructive text-sm font-semibold text-white hover:bg-destructive-hover"
               >
                 {t('write-leave-go')}
               </button>
@@ -448,8 +460,8 @@ export function WriteScreen() {
 
       {/* 저장 로딩 */}
       {saving && (
-        <div className="fixed inset-0 z-[var(--z-loading)] flex items-center justify-center bg-black/50">
-          <div className="flex flex-col items-center gap-3.5 rounded-lg bg-card px-[34px] py-7 shadow-[0_4px_18px_rgba(75,70,92,0.1)]">
+        <div className="fixed inset-0 z-[var(--z-loading)] flex items-center justify-center bg-[var(--scrim-modal)]">
+          <div className="flex flex-col items-center gap-3.5 rounded-lg bg-card px-[34px] py-7 shadow-[var(--shadow-modal)]">
             <svg
               className="size-[30px] animate-spin text-primary [animation-duration:0.8s]"
               viewBox="0 0 24 24"
@@ -464,9 +476,7 @@ export function WriteScreen() {
                 strokeLinecap="round"
               />
             </svg>
-            <span className="text-sm whitespace-nowrap text-gray-600">
-              {t('write-saving')}
-            </span>
+            <span className="text-sm whitespace-nowrap text-gray-600">{t('write-saving')}</span>
           </div>
         </div>
       )}
@@ -520,7 +530,7 @@ function Radio({ on, onClick, label }: { on: boolean; onClick: () => void; label
   return (
     <button type="button" onClick={onClick} className="inline-flex items-center gap-2 py-1.5">
       <span
-        className={`box-border inline-block size-[18px] flex-none rounded-full bg-card ${on ? 'border-[5px] border-primary' : 'border-[1.5px] border-gray-300'}`}
+        className={`box-border inline-block size-[18px] flex-none rounded-full bg-card ${on ? 'border-[5px] border-primary' : 'border-[1.5px] border-gray-300 hover:border-gray-400 hover:bg-gray-50'}`}
       />
       <span className="text-sm text-gray-800">{label}</span>
     </button>
@@ -544,7 +554,7 @@ function Checkbox({ on, onClick, label }: { on: boolean; onClick: () => void; la
   return (
     <button type="button" onClick={onClick} className="inline-flex items-center gap-2">
       <span
-        className={`box-border inline-flex size-[18px] flex-none items-center justify-center rounded-[5px] border-[1.5px] text-white ${on ? 'border-primary bg-primary' : 'border-gray-300 bg-card'}`}
+        className={`box-border inline-flex size-[18px] flex-none items-center justify-center rounded border-[1.5px] text-white ${on ? 'border-primary bg-primary' : 'border-gray-300 bg-card hover:border-gray-400 hover:bg-gray-50'}`}
       >
         {on && <CheckIcon />}
       </span>
@@ -554,7 +564,7 @@ function Checkbox({ on, onClick, label }: { on: boolean; onClick: () => void; la
 }
 function DateChip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex h-9 items-center gap-2 rounded-[5px] border border-gray-200 bg-card px-3 text-s text-gray-800">
+    <span className="inline-flex h-9 items-center gap-2 rounded-md border border-gray-200 bg-card px-3 text-s text-gray-800">
       <CalendarIcon />
       {children}
     </span>
@@ -564,7 +574,7 @@ function ToolBtn({ children, className }: { children: React.ReactNode; className
   return (
     <button
       type="button"
-      className={`inline-flex size-[30px] items-center justify-center rounded-[5px] text-gray-600 hover:bg-gray-200 ${className ?? ''}`}
+      className={`inline-flex size-[30px] items-center justify-center rounded-md text-gray-600 hover:bg-gray-200 ${className ?? ''}`}
     >
       {children}
     </button>
@@ -575,7 +585,7 @@ function ToolBtn({ children, className }: { children: React.ReactNode; className
 function ChevronDown({ open, className }: { open?: boolean; className?: string }) {
   return (
     <svg
-      className={`size-[15px] flex-none text-gray-400 transition-transform ${open ? 'rotate-180' : ''} ${className ?? ''}`}
+      className={`size-4 flex-none text-gray-400 transition-transform ${open ? 'rotate-180' : ''} ${className ?? ''}`}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -585,169 +595,6 @@ function ChevronDown({ open, className }: { open?: boolean; className?: string }
       aria-hidden="true"
     >
       <path d="M6 9l6 6 6-6" />
-    </svg>
-  )
-}
-function AlertIcon() {
-  return (
-    <svg
-      className="size-[13px] flex-none"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path
-        d="M12 6.5v7M12 16.4h.01"
-        stroke="var(--color-white)"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-    </svg>
-  )
-}
-function LinkIcon() {
-  return (
-    <svg
-      className="size-[15px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M10.5 13.5a4 4 0 0 0 5.7 0l3.3-3.3a4 4 0 0 0-5.7-5.7l-1.6 1.6" />
-      <path d="M13.5 10.5a4 4 0 0 0-5.7 0l-3.3 3.3a4 4 0 0 0 5.7 5.7l1.6-1.6" />
-    </svg>
-  )
-}
-function ImageIcon() {
-  return (
-    <svg
-      className="size-[15px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <rect x="3.5" y="5" width="17" height="14" rx="2" />
-      <circle cx="9" cy="10" r="1.6" />
-      <path d="M3.5 16.5l5-4.5 4 3.5 3.5-3 4.5 4" />
-    </svg>
-  )
-}
-function ListIcon() {
-  return (
-    <svg
-      className="size-[15px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M4 7h16M4 12h10M4 17h16" />
-    </svg>
-  )
-}
-function UploadIcon() {
-  return (
-    <svg
-      className="size-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 16V5M7.5 9.5L12 5l4.5 4.5" />
-      <path d="M4.5 19.5h15" />
-    </svg>
-  )
-}
-function XIcon() {
-  return (
-    <svg
-      className="size-[13px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M6 6l12 12M18 6L6 18" />
-    </svg>
-  )
-}
-function OrgIcon() {
-  return (
-    <svg
-      className="size-[14px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <circle cx="9" cy="8" r="3.2" />
-      <path d="M3.5 19c.9-2.8 3-4.2 5.5-4.2s4.6 1.4 5.5 4.2" />
-      <path d="M15.5 5.4a3.2 3.2 0 0 1 0 5.2M17.8 14.9c1.4.7 2.4 2 2.9 3.9" />
-    </svg>
-  )
-}
-function CalendarIcon() {
-  return (
-    <svg
-      className="size-[14px] flex-none text-gray-400"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <rect x="4" y="5.5" width="16" height="15" rx="2" />
-      <path d="M4 10h16M8.5 3.5v3.5M15.5 3.5v3.5" />
-    </svg>
-  )
-}
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={`size-[11px] ${className ?? ''}`}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="3.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M4.5 12.5l5 5 10-11" />
-    </svg>
-  )
-}
-function DashIcon() {
-  return (
-    <svg
-      className="size-[11px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="3.4"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M6 12h12" />
     </svg>
   )
 }

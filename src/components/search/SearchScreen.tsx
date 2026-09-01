@@ -5,6 +5,16 @@ import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 
 import { DEFAULT_QUERY, FILE_RESULTS, POST_RESULTS, RECENTS } from './searchData'
+import {
+  CalendarIcon,
+  ClockIcon,
+  CommentIcon,
+  DownloadIcon,
+  FilterIcon,
+  PaperclipIcon,
+  SearchIcon,
+  XIcon,
+} from '@/components/common/icons'
 
 export function SearchScreen() {
   const { t } = useTranslation()
@@ -38,7 +48,7 @@ export function SearchScreen() {
       {/* 검색바 */}
       <div ref={searchRef} className="relative">
         <div
-          className={`flex h-12 items-center gap-2.5 rounded-[5px] border bg-card px-3.5 ${q ? 'border-primary' : 'border-gray-300'}`}
+          className={`flex h-12 items-center gap-2.5 rounded-md border bg-card px-3.5 ${q ? 'border-primary' : 'border-gray-300'}`}
         >
           <SearchIcon />
           <input
@@ -58,18 +68,18 @@ export function SearchScreen() {
               }}
               className="inline-flex size-[22px] flex-none items-center justify-center rounded-full bg-gray-100 text-gray-500"
             >
-              <XIcon />
+              <XIcon className="size-3" />
             </button>
           )}
           <button
             type="button"
-            className="inline-flex h-8 flex-none items-center rounded-[5px] bg-primary px-[15px] text-sm font-semibold text-white hover:bg-ov-blue-700"
+            className="inline-flex h-8 flex-none items-center rounded-md bg-primary px-[15px] text-sm font-semibold text-white hover:bg-ov-blue-700"
           >
             {t('common-search')}
           </button>
         </div>
         {recentOpen && recents.length > 0 && (
-          <div className="absolute inset-x-0 top-[calc(100%+4px)] z-[var(--z-dropdown)] rounded-lg border border-gray-200 bg-card p-1.5 shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
+          <div className="absolute inset-x-0 top-[calc(100%+4px)] z-[var(--z-dropdown)] rounded-lg border border-gray-200 bg-card p-1.5 shadow-[var(--shadow-dropdown)]">
             <div className="flex h-8 items-center px-2.5 text-xs text-gray-400">
               {t('search-recent')}
               <button
@@ -83,7 +93,7 @@ export function SearchScreen() {
             {recents.map((r, i) => (
               <div
                 key={r}
-                className="flex h-9 items-center gap-2.5 rounded-[5px] px-2.5 hover:bg-gray-100"
+                className="flex h-9 items-center gap-2.5 rounded-md px-2.5 hover:bg-gray-100"
               >
                 <ClockIcon />
                 <button
@@ -100,9 +110,9 @@ export function SearchScreen() {
                   type="button"
                   aria-label={t('common-cancel')}
                   onClick={() => setRecents(recents.filter((_, idx) => idx !== i))}
-                  className="inline-flex size-[22px] flex-none items-center justify-center rounded-[5px] text-gray-300 hover:bg-gray-100 hover:text-gray-600"
+                  className="inline-flex size-[22px] flex-none items-center justify-center rounded-md text-gray-300 hover:bg-gray-100 hover:text-gray-600"
                 >
-                  <XIcon small />
+                  <XIcon className="size-3" />
                 </button>
               </div>
             ))}
@@ -115,7 +125,7 @@ export function SearchScreen() {
         <button
           type="button"
           onClick={() => setFilterOpen((v) => !v)}
-          className={`inline-flex h-8 items-center gap-1.5 rounded-[5px] border px-[13px] text-s font-semibold ${filterOpen ? 'border-primary bg-accent text-primary' : 'border-gray-200 bg-card text-gray-700'}`}
+          className={`inline-flex h-8 items-center gap-1.5 rounded-md border px-[13px] text-s font-semibold ${filterOpen ? 'border-primary bg-accent text-primary' : 'border-gray-200 bg-card text-gray-700'}`}
         >
           <FilterIcon />
           {t('search-advanced')}
@@ -157,11 +167,9 @@ export function SearchScreen() {
             </span>
             <button
               type="button"
-              className="inline-flex h-9 w-[220px] items-center gap-2 rounded-[5px] border border-gray-200 bg-card px-3"
+              className="inline-flex h-9 w-[220px] items-center gap-2 rounded-md border border-gray-200 bg-card px-3"
             >
-              <span className="flex-1 text-left text-s text-gray-400">
-                {t('search-board-all')}
-              </span>
+              <span className="flex-1 text-left text-s text-gray-400">{t('search-board-all')}</span>
               <Chevron />
             </button>
             <span className="w-14 flex-none text-s font-semibold text-gray-700">
@@ -169,7 +177,7 @@ export function SearchScreen() {
             </span>
             <input
               placeholder={t('search-author-ph')}
-              className="h-9 w-[150px] rounded-[5px] border border-gray-300 bg-card px-3 text-s outline-none focus:border-primary"
+              className="h-9 w-[150px] rounded-md border border-gray-300 bg-card px-3 text-s outline-none focus:border-primary"
             />
           </div>
         </div>
@@ -207,12 +215,12 @@ export function SearchScreen() {
               key={r.id}
               to="/post/$postId"
               params={{ postId: String(r.id) }}
-              className="flex flex-col gap-1.5 border-b border-gray-100 px-[18px] py-4 last:border-b-0 hover:bg-gray-50"
+              className="flex flex-col gap-1.5 border-b border-gray-100 px-[18px] py-4 last:border-b-0 hover:bg-gray-100"
             >
-              <span className="text-sm leading-[1.5] font-semibold text-gray-900">
+              <span className="text-sm leading-body font-semibold text-gray-900">
                 <Highlight text={r.title} q={q} />
               </span>
-              <span className="line-clamp-2 text-s leading-[1.6] [overflow-wrap:anywhere] text-gray-500">
+              <span className="line-clamp-2 text-s leading-prose [overflow-wrap:anywhere] text-gray-500">
                 <Highlight text={r.snippet} q={q} />
               </span>
               <span className="flex flex-wrap items-center gap-2 text-xs text-gray-400">
@@ -237,7 +245,7 @@ export function SearchScreen() {
           {FILE_RESULTS.map((f) => (
             <div
               key={f.name}
-              className="flex items-center gap-2.5 border-b border-gray-100 px-[18px] py-[13px] last:border-b-0 hover:bg-gray-50"
+              className="flex items-center gap-2.5 border-b border-gray-100 px-[18px] py-[13px] last:border-b-0 hover:bg-gray-100"
             >
               <span
                 className={`inline-flex h-5 w-10 flex-none items-center justify-center rounded text-2xs font-bold text-on-pastel ${f.tagBg}`}
@@ -253,7 +261,7 @@ export function SearchScreen() {
               <button
                 type="button"
                 aria-label={t('file-download')}
-                className="inline-flex size-[30px] flex-none items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100"
+                className="inline-flex size-[30px] flex-none items-center justify-center rounded-md text-gray-500 hover:bg-gray-100"
               >
                 <DownloadIcon />
               </button>
@@ -308,7 +316,7 @@ function TabButton({
 
 function DateChip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex h-9 items-center gap-2 rounded-[5px] border border-gray-200 bg-card px-3 text-s text-gray-800">
+    <span className="inline-flex h-9 items-center gap-2 rounded-md border border-gray-200 bg-card px-3 text-s text-gray-800">
       <CalendarIcon />
       {children}
     </span>
@@ -316,68 +324,6 @@ function DateChip({ children }: { children: React.ReactNode }) {
 }
 
 /* ── 아이콘 ── */
-function SearchIcon({ big }: { big?: boolean }) {
-  return (
-    <svg
-      className={big ? 'size-[23px]' : 'size-[18px] flex-none text-gray-400'}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="M15.8 15.8L21 21" />
-    </svg>
-  )
-}
-function XIcon({ small }: { small?: boolean }) {
-  return (
-    <svg
-      className={small ? 'size-2.5' : 'size-2.5'}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M6 6l12 12M18 6L6 18" />
-    </svg>
-  )
-}
-function ClockIcon() {
-  return (
-    <svg
-      className="size-[13px] flex-none text-gray-400"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M12 7.5V12l3 2" />
-    </svg>
-  )
-}
-function FilterIcon() {
-  return (
-    <svg
-      className="size-[14px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M4 6h16M7 12h10M10 18h4" />
-    </svg>
-  )
-}
 function Chevron({ open }: { open?: boolean }) {
   return (
     <svg
@@ -391,69 +337,6 @@ function Chevron({ open }: { open?: boolean }) {
       aria-hidden="true"
     >
       <path d="M6 9l6 6 6-6" />
-    </svg>
-  )
-}
-function CalendarIcon() {
-  return (
-    <svg
-      className="size-[14px] flex-none text-gray-400"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <rect x="4" y="5.5" width="16" height="15" rx="2" />
-      <path d="M4 10h16M8.5 3.5v3.5M15.5 3.5v3.5" />
-    </svg>
-  )
-}
-function PaperclipIcon() {
-  return (
-    <svg
-      className="size-3 text-gray-400"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M20 12.5l-7.6 7.6a5 5 0 0 1-7-7L13 5.5a3.3 3.3 0 0 1 4.7 4.7L10.5 17a1.7 1.7 0 0 1-2.4-2.4l6.6-6.6" />
-    </svg>
-  )
-}
-function CommentIcon() {
-  return (
-    <svg
-      className="size-3"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M20.5 12.5c0 3.9-3.8 7-8.5 7-1 0-2-.15-2.9-.42L4 20.5l1.5-3.6A6.6 6.6 0 0 1 3.5 12.5c0-3.9 3.8-7 8.5-7s8.5 3.1 8.5 7z" />
-    </svg>
-  )
-}
-function DownloadIcon() {
-  return (
-    <svg
-      className="size-[15px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 4v11M7 10.5l5 5 5-5" />
-      <path d="M4.5 19.5h15" />
     </svg>
   )
 }

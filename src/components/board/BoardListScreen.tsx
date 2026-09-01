@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 
-import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router'
-
 import { useQueryClient } from '@tanstack/react-query'
+import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 
 import { useTranslation } from 'react-i18next'
 
@@ -17,14 +16,26 @@ import {
 } from './constants'
 import { BOARDS, DEFAULT_BOARD } from './listData'
 import type { BoardListSearch, BoardRow, BoardView } from './listData'
-import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
-import { useBoard, useBoardBookmarkMutation, useBookmarkedBoards } from '@/hooks/useBoards'
+import { NoticeBadge } from '@/components/common/NoticeBadge'
 import { Toast } from '@/components/common/Toast'
+import {
+  AlbumIcon,
+  ChevronDownIcon,
+  ImageIcon,
+  LinkIcon,
+  PaperclipIcon,
+  PlusIcon,
+  PreviewIcon,
+  StarIcon,
+} from '@/components/common/icons'
 import { useToast } from '@/components/common/useToast'
+import { useBoard, useBoardBookmarkMutation, useBookmarkedBoards } from '@/hooks/useBoards'
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useNotices, usePostBookmarkMutation, usePosts } from '@/hooks/usePosts'
 import type { Post } from '@/types/post'
+import { fmtDate } from '@/utils/date'
 
 // 디자인 정본: 제목 / 작성자 / 작성일 / 조회 / 공감 — '위치' 컬럼은 없다
 // (게시판 안에 있으니 소속이 자명하다). 모바일은 이 grid를 쓰지 않고 한 줄로 접는다.
@@ -41,9 +52,6 @@ function pastel(seed: string) {
   let h = 0
   for (const c of seed) h = (h * 31 + c.charCodeAt(0)) >>> 0
   return PASTELS[h % PASTELS.length]
-}
-function fmtDate(s?: string | null) {
-  return s ? s.slice(0, 10).replace(/-/g, '.') : ''
 }
 // API Post → 목록 뷰모델(BoardRow). 읽음여부는 is_view($appends), 아바타색은 이름/id 파생.
 function toRow(p: Post): BoardRow {
@@ -146,8 +154,7 @@ export function BoardListScreen() {
   const { data: boardDetail, error: boardError } = useBoard(boardIdParam)
   // 삭제된 게시판: 알리고 → 사이드바에서 지우고 → 홈으로. (레거시 onMounted .catch(404) 규약)
   // 자동 리다이렉트만 하면 왜 튕겼는지 알 수 없어, 확인 버튼이 있는 모달로 막고 이동한다.
-  const boardErrStatus = (boardError as { response?: { status?: number } } | null)?.response
-    ?.status
+  const boardErrStatus = (boardError as { response?: { status?: number } } | null)?.response?.status
   // 404=삭제됨 · 403=읽기 권한 없음. 둘 다 이 화면에 머물 이유가 없으니 알리고 홈으로.
   // 403 이 났다는 건 사이드바 트리가 오래됐다는 뜻이기도 하다 → 캐시도 함께 갱신한다.
   const blockedMessage =
@@ -170,7 +177,6 @@ export function BoardListScreen() {
   // 모바일에서 아직 못 받은 일반글이 남았는가 (공지는 카운트에서 분리돼 있다)
   const hasMore = isMobile && rows.length < (data?.total ?? 0)
   const sentinelRef = useInfiniteScroll(loadMore, hasMore && !isLoading)
-
 
   const ctx: RowCtx = {
     open: (id) => navigate({ to: '/post/$postId', params: { postId: String(id) } }),
@@ -197,7 +203,7 @@ export function BoardListScreen() {
     <div className="flex w-full flex-col gap-3.5">
       {/* 헤더 한 줄: 게시판명 · 즐겨찾기 · 글 개수 | (우) 전체·안읽음 · 개수 · 뷰타입 */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span className="text-lg font-extrabold tracking-[-0.01em]">{boardName}</span>
+        <span className="text-lg font-extrabold tracking-title">{boardName}</span>
         {boardIdParam && (
           <button
             type="button"
@@ -207,23 +213,21 @@ export function BoardListScreen() {
               toggleBoardBookmark(boardIdParam)
               showToast(t(boardFav ? 'list-fav-remove' : 'list-fav-add'))
             }}
-            className={`inline-flex size-[30px] flex-none items-center justify-center rounded-lg hover:bg-gray-100 ${boardFav ? 'text-warning' : 'text-gray-300'}`}
+            className={`inline-flex size-[30px] flex-none items-center justify-center rounded-md hover:bg-gray-100 ${boardFav ? 'text-warning' : 'text-gray-300'}`}
           >
             <StarIcon filled={boardFav} />
           </button>
         )}
-        <span className="flex-none text-s text-gray-400">
-          {t('list-count', { n: totalCount })}
-        </span>
+        <span className="flex-none text-s text-gray-400">{t('list-count', { n: totalCount })}</span>
 
         <div className="ml-auto flex items-center gap-2">
           {/* 전체 / 안읽음 필터 */}
-          <div className="inline-flex gap-0.5 rounded-[5px] bg-gray-100 p-0.5">
+          <div className="inline-flex gap-0.5 rounded-md bg-gray-100 p-0.5">
             <button
               type="button"
               aria-pressed={listFilter === 'all'}
               onClick={() => setSearch({ read: undefined, page: undefined })}
-              className={`inline-flex h-8 items-center rounded px-3 text-s font-semibold ${listFilter !== 'before' ? 'bg-card text-primary shadow-[0_4px_8px_rgba(0,0,0,0.1)]' : 'text-gray-500'}`}
+              className={`inline-flex h-8 items-center rounded px-3 text-s font-semibold ${listFilter !== 'before' ? 'bg-card text-primary shadow-[var(--shadow-dropdown)]' : 'text-gray-500'}`}
             >
               {t('list-filter-all')}
             </button>
@@ -231,7 +235,7 @@ export function BoardListScreen() {
               type="button"
               aria-pressed={listFilter === 'before'}
               onClick={() => setSearch({ read: 'before', page: undefined })}
-              className={`inline-flex h-8 items-center rounded px-3 text-s font-semibold ${listFilter === 'before' ? 'bg-card text-primary shadow-[0_4px_8px_rgba(0,0,0,0.1)]' : 'text-gray-500'}`}
+              className={`inline-flex h-8 items-center rounded px-3 text-s font-semibold ${listFilter === 'before' ? 'bg-card text-primary shadow-[var(--shadow-dropdown)]' : 'text-gray-500'}`}
             >
               {t('list-filter-unread')}
             </button>
@@ -242,7 +246,7 @@ export function BoardListScreen() {
             <button
               type="button"
               onClick={() => setCountOpen((v) => !v)}
-              className="inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 bg-card px-3 text-s whitespace-nowrap text-gray-700 hover:bg-gray-100"
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-200 bg-card px-3 text-s whitespace-nowrap text-gray-700 hover:bg-gray-100"
             >
               {t('list-per-page', { n: perPage })}
               <ChevronDownIcon className={countOpen ? 'rotate-180' : ''} />
@@ -255,7 +259,7 @@ export function BoardListScreen() {
                   className="fixed inset-0 z-[var(--z-dropdown)] cursor-default"
                   onClick={() => setCountOpen(false)}
                 />
-                <div className="absolute top-[calc(100%+4px)] right-0 z-[var(--z-dropdown)] w-[130px] rounded-lg border border-gray-200 bg-card p-1 shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
+                <div className="absolute top-[calc(100%+4px)] right-0 z-[var(--z-dropdown)] w-[130px] rounded-lg border border-gray-200 bg-card p-1 shadow-[var(--shadow-dropdown)]">
                   {LIMIT_OPTIONS.map((v) => (
                     <button
                       key={v}
@@ -277,7 +281,7 @@ export function BoardListScreen() {
           </div>
 
           {/* 뷰 전환 */}
-          <div className="inline-flex gap-0.5 rounded-[5px] bg-gray-100 p-0.5">
+          <div className="inline-flex gap-0.5 rounded-md bg-gray-100 p-0.5">
             {views.map((v) => (
               <button
                 key={v.key}
@@ -322,34 +326,50 @@ export function BoardListScreen() {
           {/* 페이지네이션 — 데스크톱 전용. 모바일은 무한 스크롤이고,
               lastPage>1 일 때만 노출한다(디자인 갤러리 4 확정 #4). */}
           {!isMobile && totalPages > 1 && (
-          <div className="flex items-center justify-center gap-[3px] py-1.5">
-            <PageArrow disabled={atFirst} onClick={() => setSearch({ page: undefined })} label="처음">
-              <DoubleChevron dir="left" />
-            </PageArrow>
-            <PageArrow disabled={atFirst} onClick={() => setSearch({ page: page - 1 > 1 ? page - 1 : undefined })} label="이전">
-              <Chevron dir="left" />
-            </PageArrow>
-            {pages.map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setSearch({ page: n > 1 ? n : undefined })}
-                className={`mx-px inline-flex h-7 min-w-[28px] items-center justify-center rounded-full border px-1.5 text-s ${
-                  n === page
-                    ? 'border-primary font-bold text-primary'
-                    : 'border-transparent text-gray-500 hover:bg-gray-100'
-                }`}
+            <div className="flex items-center justify-center gap-[3px] py-1.5">
+              <PageArrow
+                disabled={atFirst}
+                onClick={() => setSearch({ page: undefined })}
+                label="처음"
               >
-                {n}
-              </button>
-            ))}
-            <PageArrow disabled={atLast} onClick={() => setSearch({ page: page + 1 })} label="다음">
-              <Chevron dir="right" />
-            </PageArrow>
-            <PageArrow disabled={atLast} onClick={() => setSearch({ page: totalPages })} label="마지막">
-              <DoubleChevron dir="right" />
-            </PageArrow>
-          </div>
+                <DoubleChevron dir="left" />
+              </PageArrow>
+              <PageArrow
+                disabled={atFirst}
+                onClick={() => setSearch({ page: page - 1 > 1 ? page - 1 : undefined })}
+                label="이전"
+              >
+                <Chevron dir="left" />
+              </PageArrow>
+              {pages.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setSearch({ page: n > 1 ? n : undefined })}
+                  className={`mx-px inline-flex h-7 min-w-[28px] items-center justify-center rounded-full border px-1.5 text-s ${
+                    n === page
+                      ? 'border-primary font-bold text-primary'
+                      : 'border-transparent text-gray-500 hover:bg-gray-100'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+              <PageArrow
+                disabled={atLast}
+                onClick={() => setSearch({ page: page + 1 })}
+                label="다음"
+              >
+                <Chevron dir="right" />
+              </PageArrow>
+              <PageArrow
+                disabled={atLast}
+                onClick={() => setSearch({ page: totalPages })}
+                label="마지막"
+              >
+                <DoubleChevron dir="right" />
+              </PageArrow>
+            </div>
           )}
         </>
       )}
@@ -402,7 +422,7 @@ function BoardBlockedModal({ message, onClose }: { message: string; onClose: () 
           type="button"
           autoFocus
           onClick={onClose}
-          className="h-10 w-full rounded-[5px] bg-primary text-sm font-semibold text-white hover:bg-ov-blue-700"
+          className="h-10 w-full rounded-md bg-primary text-sm font-semibold text-white hover:bg-ov-blue-700"
         >
           {t('common-confirm')}
         </button>
@@ -430,11 +450,11 @@ function NoticeRow({ r, ctx }: { r: BoardRow; ctx: RowCtx }) {
       onClick={() => ctx.open(r.id)}
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && ctx.open(r.id)}
       aria-label={`${t('badge-notice')} · ${r.read ? r.title : `${t('list-filter-unread')} · ${r.title}`}`}
-      className={`group relative cursor-pointer bg-ov-blue-50 text-left hover:bg-gray-50 ${ROW}`}
+      className={`group relative cursor-pointer bg-ov-blue-50 text-left hover:bg-gray-100 ${ROW}`}
       style={{ gridTemplateColumns: COLS }}
     >
       <span className="flex w-full min-w-0 items-center gap-[7px] min-[631px]:w-auto min-[631px]:pr-3.5">
-        <TitleCell r={r} notice={t('badge-notice')} />
+        <TitleCell r={r} />
       </span>
       <span className="w-full truncate text-xs text-gray-400 min-[631px]:hidden">
         {t('list-meta', { author: r.author, date: r.date, views: r.views })}
@@ -473,7 +493,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation()
   return (
     <div className="flex flex-col items-center gap-3.5 rounded-lg border border-gray-200 bg-card px-5 py-16">
-      <span className="inline-flex size-[52px] items-center justify-center rounded-full bg-l-red text-destructive">
+      <span className="inline-flex size-[52px] items-center justify-center rounded-full bg-destructive-bg text-destructive">
         <svg
           className="size-6"
           viewBox="0 0 24 24"
@@ -492,7 +512,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
       <button
         type="button"
         onClick={onRetry}
-        className="inline-flex h-9 items-center rounded-[5px] border border-gray-200 bg-card px-4 text-s font-semibold text-gray-700 hover:bg-gray-100"
+        className="inline-flex h-9 items-center rounded-md border border-gray-200 bg-card px-4 text-s font-semibold text-gray-700 hover:bg-gray-100"
       >
         {t('common-retry')}
       </button>
@@ -513,7 +533,7 @@ function EmptyState({ canWrite }: { canWrite: boolean }) {
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.6"
+          strokeWidth="1.7"
           strokeLinejoin="round"
           aria-hidden="true"
         >
@@ -525,7 +545,7 @@ function EmptyState({ canWrite }: { canWrite: boolean }) {
       {canWrite && (
         <Link
           to="/write"
-          className="inline-flex h-9 items-center gap-1.5 rounded-[5px] bg-primary px-4 text-s font-semibold text-white hover:bg-ov-blue-700"
+          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-4 text-s font-semibold text-white hover:bg-ov-blue-700"
         >
           <PlusIcon />
           {t('board-write')}
@@ -540,7 +560,7 @@ function RowActions({ row, ctx }: { row: BoardRow; ctx: RowCtx }) {
   const { t } = useTranslation()
   const marked = row.bookmarked
   return (
-    <span className="absolute top-1/2 right-2.5 hidden -translate-y-1/2 items-center gap-0.5 rounded-lg bg-card/95 opacity-0 shadow-[0_2px_8px_rgba(0,0,0,0.12)] transition-opacity group-hover:opacity-100 min-[631px]:flex">
+    <span className="absolute top-1/2 right-2.5 hidden -translate-y-1/2 items-center gap-0.5 rounded-lg bg-card/95 opacity-0 shadow-[var(--shadow-dropdown)] transition-opacity group-hover:opacity-100 min-[631px]:flex">
       <button
         type="button"
         aria-label={t('nav-favorites')}
@@ -548,7 +568,7 @@ function RowActions({ row, ctx }: { row: BoardRow; ctx: RowCtx }) {
           e.stopPropagation()
           ctx.onBm(row)
         }}
-        className={`inline-flex size-8 items-center justify-center rounded-lg hover:bg-gray-100 ${marked ? 'text-warning' : 'text-gray-400'}`}
+        className={`inline-flex size-8 items-center justify-center rounded-md hover:bg-gray-100 ${marked ? 'text-warning' : 'text-gray-400'}`}
       >
         <StarIcon filled={marked} small />
       </button>
@@ -559,7 +579,7 @@ function RowActions({ row, ctx }: { row: BoardRow; ctx: RowCtx }) {
           e.stopPropagation()
           ctx.onCopy()
         }}
-        className="inline-flex size-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100"
+        className="inline-flex size-8 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100"
       >
         <LinkIcon />
       </button>
@@ -608,11 +628,9 @@ function BoardView({
               type="button"
               onClick={onToggleNotices}
               aria-expanded={expanded}
-              className="flex h-8 w-full items-center justify-center gap-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 hover:text-primary"
+              className="flex h-8 w-full items-center justify-center gap-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-100 hover:text-primary"
             >
-              {expanded
-                ? t('list-notice-collapse')
-                : t('list-notice-expand', { n: hiddenCount })}
+              {expanded ? t('list-notice-collapse') : t('list-notice-expand', { n: hiddenCount })}
               <ChevronDownIcon className={expanded ? 'rotate-180' : ''} />
             </button>
           )}
@@ -626,11 +644,11 @@ function BoardView({
           onClick={() => ctx.open(r.id)}
           onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && ctx.open(r.id)}
           aria-label={r.read ? r.title : `${t('list-filter-unread')} · ${r.title}`}
-          className={`group relative cursor-pointer text-left hover:bg-gray-50 ${ROW}`}
+          className={`group relative cursor-pointer text-left hover:bg-gray-100 ${ROW}`}
           style={{ gridTemplateColumns: COLS }}
         >
           <span className="flex w-full min-w-0 items-center gap-[7px] min-[631px]:w-auto min-[631px]:pr-3.5">
-            <TitleCell r={r} notice={t('badge-notice')} />
+            <TitleCell r={r} />
           </span>
           {/* 모바일: 숨는 컬럼을 한 줄로 접는다 */}
           <span className="w-full truncate text-xs text-gray-400 min-[631px]:hidden">
@@ -656,7 +674,7 @@ function BoardView({
 function PreviewView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
   const { t } = useTranslation()
   return (
-    <div className="border-t border-gray-200">
+    <div className="border-t border-gray-200 bg-card">
       {rows.map((r) => (
         <div
           key={r.id}
@@ -665,12 +683,12 @@ function PreviewView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
           onClick={() => ctx.open(r.id)}
           onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && ctx.open(r.id)}
           aria-label={r.read ? r.title : `${t('list-filter-unread')} · ${r.title}`}
-          className={`group relative flex w-full cursor-pointer gap-4 border-b border-gray-100 px-1 py-5 text-left hover:bg-gray-50 ${r.notice ? 'bg-accent' : ''}`}
+          className={`group relative flex w-full cursor-pointer gap-4 border-b border-gray-100 px-1 py-5 text-left hover:bg-gray-100 ${r.notice ? 'bg-accent' : ''}`}
         >
           <span className="flex min-w-0 flex-1 flex-col gap-1.5">
             <span className="flex min-w-0 items-center gap-[7px]">
               {!r.read && <UnreadDot />}
-              {r.notice && <NoticeBadge label={t('badge-notice')} />}
+              {r.notice && <NoticeBadge />}
               <span
                 className={`line-clamp-2 text-sm min-[631px]:truncate ${r.read ? 'text-gray-500' : 'text-gray-900'}`}
               >
@@ -679,7 +697,7 @@ function PreviewView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
               {r.comments > 0 && <CommentCount n={r.comments} />}
             </span>
             {/* 모바일은 스니펫을 뺀다 — 제목 2줄 + 메타 한 줄로 압축(디자인 B-4) */}
-            <span className="hidden line-clamp-2 text-s leading-[1.55] text-gray-500 min-[631px]:block">
+            <span className="line-clamp-2 hidden text-s leading-body text-gray-500 min-[631px]:block">
               {r.snippet}
             </span>
             <span className="flex items-center gap-2 text-xs text-gray-400">
@@ -698,9 +716,9 @@ function PreviewView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
           </span>
           {r.hasThumb && (
             <span
-              className={`inline-flex h-[56px] w-[88px] min-[631px]:h-[76px] min-[631px]:w-[120px] flex-none items-center justify-center rounded-lg text-on-pastel opacity-85 ${r.thumbBg}`}
+              className={`inline-flex h-[56px] w-[88px] flex-none items-center justify-center rounded-md text-on-pastel opacity-85 min-[631px]:h-[76px] min-[631px]:w-[120px] ${r.thumbBg}`}
             >
-              <ImageIcon />
+              <ImageIcon className="size-6 opacity-75" />
             </span>
           )}
           <RowActions row={r} ctx={ctx} />
@@ -722,7 +740,7 @@ function AlbumView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
           type="button"
           onClick={() => ctx.open(r.id)}
           aria-label={r.read ? r.title : `${t('list-filter-unread')} · ${r.title}`}
-          className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-card text-left hover:shadow-[0_4px_8px_rgba(0,0,0,0.1)]"
+          className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-card text-left hover:shadow-[var(--shadow-dropdown)]"
         >
           <span
             className={`flex h-[120px] items-center justify-center text-on-pastel opacity-90 ${r.thumbBg}`}
@@ -732,7 +750,7 @@ function AlbumView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
           <span className="flex flex-col gap-1.5 px-3.5 pt-3 pb-3.5">
             <span className="flex min-w-0 items-center gap-1.5">
               {!r.read && <UnreadDot />}
-              {r.notice && <NoticeBadge label={t('badge-notice')} />}
+              {r.notice && <NoticeBadge />}
               <span
                 className={`line-clamp-2 text-sm min-[631px]:truncate ${r.read ? 'text-gray-500' : 'text-gray-900'}`}
               >
@@ -754,14 +772,12 @@ function AlbumView({ rows, ctx }: { rows: BoardRow[]; ctx: RowCtx }) {
   )
 }
 
-function TitleCell({ r, notice }: { r: BoardRow; notice: string }) {
+function TitleCell({ r }: { r: BoardRow }) {
   return (
     <>
       {!r.read && <UnreadDot />}
-      {r.notice && <NoticeBadge label={notice} />}
-      <span
-        className={`truncate text-sm ${r.read ? 'text-gray-500' : 'text-gray-900'}`}
-      >
+      {r.notice && <NoticeBadge />}
+      <span className={`truncate text-sm ${r.read ? 'text-gray-500' : 'text-gray-900'}`}>
         {r.title}
       </span>
       {r.hasFile && <PaperclipIcon />}
@@ -776,13 +792,6 @@ function Avatar({ r }: { r: BoardRow }) {
       className={`inline-flex size-[22px] flex-none items-center justify-center rounded-full text-2xs font-bold text-on-pastel ${r.avatarBg}`}
     >
       {r.authorInitial}
-    </span>
-  )
-}
-function NoticeBadge({ label }: { label: string }) {
-  return (
-    <span className="inline-flex h-5 flex-none items-center rounded bg-l-blue px-[7px] text-2xs font-bold text-primary">
-      {label}
     </span>
   )
 }
@@ -822,7 +831,7 @@ function PageArrow({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="inline-flex size-[30px] items-center justify-center rounded-[5px] text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-transparent"
+      className="inline-flex size-[30px] items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-transparent"
     >
       {children}
     </button>
@@ -830,38 +839,6 @@ function PageArrow({
 }
 
 /* ── 아이콘 ── */
-function StarIcon({ filled, small }: { filled: boolean; small?: boolean }) {
-  return (
-    <svg
-      className={small ? 'size-[15px]' : 'size-[17px]'}
-      viewBox="0 0 24 24"
-      fill={filled ? 'currentColor' : 'none'}
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.6 1-5.8-4.3-4.1 5.9-.9z" />
-    </svg>
-  )
-}
-function LinkIcon() {
-  return (
-    <svg
-      className="size-[15px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M10 13.5a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1.5 1.5" />
-      <path d="M14 10.5a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1.5-1.5" />
-    </svg>
-  )
-}
 function BasicIcon() {
   return (
     <svg
@@ -874,103 +851,6 @@ function BasicIcon() {
       aria-hidden="true"
     >
       <path d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-  )
-}
-function PreviewIcon() {
-  return (
-    <svg
-      className="size-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <rect x="4" y="4" width="16" height="7" rx="1.5" />
-      <rect x="4" y="14" width="16" height="7" rx="1.5" />
-    </svg>
-  )
-}
-function AlbumIcon() {
-  return (
-    <svg
-      className="size-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <rect x="4" y="4" width="7" height="7" rx="1.5" />
-      <rect x="13" y="4" width="7" height="7" rx="1.5" />
-      <rect x="4" y="13" width="7" height="7" rx="1.5" />
-      <rect x="13" y="13" width="7" height="7" rx="1.5" />
-    </svg>
-  )
-}
-function PlusIcon() {
-  return (
-    <svg
-      className="size-3.5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  )
-}
-function PaperclipIcon() {
-  return (
-    <svg
-      className="size-[13px] flex-none text-gray-400"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M20 12.5l-7.6 7.6a5 5 0 0 1-7-7L13 5.5a3.3 3.3 0 0 1 4.7 4.7L10.5 17a1.7 1.7 0 0 1-2.4-2.4l6.6-6.6" />
-    </svg>
-  )
-}
-function ChevronDownIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={`size-3.5 text-gray-400 transition-transform ${className ?? ''}`}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  )
-}
-function ImageIcon({ large }: { large?: boolean }) {
-  return (
-    <svg
-      className={large ? 'size-[26px]' : 'size-[22px]'}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <rect x="3.5" y="5" width="17" height="14" rx="2" />
-      <circle cx="9" cy="10" r="1.6" />
-      <path d="M3.5 16.5l5-4.5 4 3.5 3.5-3 4.5 4" />
     </svg>
   )
 }
@@ -993,7 +873,7 @@ function Chevron({ dir }: { dir: 'left' | 'right' }) {
 function DoubleChevron({ dir }: { dir: 'left' | 'right' }) {
   return (
     <svg
-      className="size-[15px]"
+      className="size-4"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

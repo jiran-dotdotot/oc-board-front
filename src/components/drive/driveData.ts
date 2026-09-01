@@ -49,7 +49,4 @@ export function fmtSize(bytes: number): string {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)}GB`
 }
 
-// ISO datetime → 2026.08.03
-export function fmtDate(s?: string | null): string {
-  return s ? s.slice(0, 10).replace(/-/g, '.') : ''
-}
+export { fmtDate } from '@/utils/date'

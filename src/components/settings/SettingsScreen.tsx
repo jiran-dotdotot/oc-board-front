@@ -2,10 +2,19 @@ import { useEffect, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
-import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
-import { GeneralTab } from '@/components/settings/GeneralTab'
 import { Toast } from '@/components/common/Toast'
+import {
+  CheckIcon,
+  ErrIcon,
+  PersonIcon,
+  PlusIcon,
+  PlusMini,
+  ScopedIcon,
+  TrashIcon,
+  XMini,
+} from '@/components/common/icons'
 import { useToast } from '@/components/common/useToast'
+import { GeneralTab } from '@/components/settings/GeneralTab'
 import { MainScreenTab } from '@/components/settings/MainScreenTab'
 import {
   OrgPickerModal,
@@ -26,6 +35,7 @@ import {
   type Scope,
   TOTAL_MAX_OPTS,
 } from '@/components/settings/treeData'
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { useMe } from '@/hooks/useMe'
 import { isAnyAdmin } from '@/types/user'
 
@@ -106,7 +116,6 @@ export function SettingsScreen() {
   const [picker, setPicker] = useState<{ mode: PickerMode; target: 'sel' | 'add' } | null>(null)
   // 오버레이가 떠 있는 동안 배경 스크롤 잠금(중첩은 참조 카운팅)
   useBodyScrollLock(addOpen)
-
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -372,7 +381,7 @@ export function SettingsScreen() {
     <div className="flex w-full flex-col gap-5">
       {/* 헤더 */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span className="text-lg font-extrabold tracking-[-0.01em]">{t('env-title')}</span>
+        <span className="text-lg font-extrabold tracking-title">{t('env-title')}</span>
         <span className="text-s text-gray-400">{t('env-subtitle')}</span>
         {/* 추가 드롭다운 — 게시판 관리 탭에서만 */}
         {tab === 'content' && (
@@ -380,9 +389,9 @@ export function SettingsScreen() {
             <button
               type="button"
               onClick={() => setAddMenuOpen((v) => !v)}
-              className="inline-flex h-9 items-center gap-1.5 rounded-[5px] bg-primary px-3.5 text-sm font-semibold text-white hover:bg-ov-blue-700"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3.5 text-sm font-semibold text-white hover:bg-ov-blue-700"
             >
-              <PlusIcon /> {t('admin-add')} <CaretDown />
+              <PlusIcon className="size-3" /> {t('admin-add')} <CaretDown />
             </button>
             {addMenuOpen && (
               <div className="absolute top-[calc(100%+4px)] right-0 z-[var(--z-dropdown)] w-[180px] rounded-lg border border-gray-200 bg-card p-1 shadow-[var(--shadow-dropdown)]">
@@ -413,8 +422,8 @@ export function SettingsScreen() {
               type="button"
               onClick={() => setTab(rl.id)}
               className={[
-                'flex gap-2.5 rounded-[10px] p-2.5 text-left',
-                tab === rl.id ? 'bg-accent' : 'hover:bg-gray-50',
+                'flex gap-2.5 rounded-md p-2.5 text-left',
+                tab === rl.id ? 'bg-accent font-semibold text-primary' : 'hover:bg-gray-100',
               ].join(' ')}
             >
               <span
@@ -435,17 +444,16 @@ export function SettingsScreen() {
                   {t(rl.label)}
                 </span>
                 <span
-                  className={[
-                    'text-2xs',
-                    tab === rl.id ? 'text-gray-500' : 'text-gray-400',
-                  ].join(' ')}
+                  className={['text-2xs', tab === rl.id ? 'text-gray-500' : 'text-gray-400'].join(
+                    ' ',
+                  )}
                 >
                   {t(rl.desc)}
                 </span>
               </span>
               {tab === rl.id && (
                 <span className="ml-auto flex-none self-center text-primary min-[820px]:hidden">
-                  <CheckIcon />
+                  <CheckIcon className="size-4 flex-none" />
                 </span>
               )}
             </button>
@@ -490,8 +498,8 @@ export function SettingsScreen() {
                           setDragOver(null)
                         }}
                         className={[
-                          'flex h-9 cursor-grab items-center gap-2 rounded-lg pr-2.5 text-s active:cursor-grabbing',
-                          on ? 'bg-accent' : 'hover:bg-gray-50',
+                          'flex h-9 cursor-grab items-center gap-2 rounded-md pr-2.5 text-s active:cursor-grabbing',
+                          on ? 'bg-accent font-semibold text-primary' : 'hover:bg-gray-100',
                         ].join(' ')}
                         style={{
                           paddingLeft: n.pad,
@@ -545,7 +553,7 @@ export function SettingsScreen() {
                       onChange={(e) =>
                         patchSel({ name: Array.from(e.target.value).slice(0, 60).join('') })
                       }
-                      className="h-10 w-[250px] max-w-full rounded-[5px] border border-gray-300 px-3 text-sm font-semibold focus:border-primary focus:outline-none"
+                      className="h-10 w-[250px] max-w-full rounded-md border border-gray-300 px-3 text-sm font-semibold focus:border-primary focus:outline-none"
                     />
                     {isFixed ? (
                       <span className="text-xs text-gray-400">{t('admin-fixed-note')}</span>
@@ -553,9 +561,9 @@ export function SettingsScreen() {
                       <button
                         type="button"
                         onClick={() => showToast(t('admin-toast-del-demo', { name: so.name }))}
-                        className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 px-3 text-s font-semibold text-destructive hover:bg-l-red"
+                        className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-200 px-3 text-s font-semibold text-destructive hover:bg-destructive-bg"
                       >
-                        <TrashIcon /> {t('common-delete')}
+                        <TrashIcon className="size-3" /> {t('common-delete')}
                       </button>
                     )}
                   </div>
@@ -563,9 +571,7 @@ export function SettingsScreen() {
                   {/* 공개 범위 */}
                   <Section title={t('admin-scope')}>
                     {isFixed ? (
-                      <span className="text-s text-gray-500">
-                        {t('admin-fixed-scope-note')}
-                      </span>
+                      <span className="text-s text-gray-500">{t('admin-fixed-scope-note')}</span>
                     ) : (
                       <>
                         <div className="flex flex-wrap items-center gap-[18px]">
@@ -583,7 +589,7 @@ export function SettingsScreen() {
                             <button
                               type="button"
                               onClick={() => setPicker({ mode: 'scope', target: 'sel' })}
-                              className="inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 px-3 text-s font-semibold text-gray-700 hover:bg-gray-100"
+                              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-200 px-3 text-s font-semibold text-gray-700 hover:bg-gray-100"
                             >
                               <PersonIcon /> {so.scopeLabel || t('admin-scope-default')}
                             </button>
@@ -639,7 +645,7 @@ export function SettingsScreen() {
                       <button
                         type="button"
                         onClick={() => setPicker({ mode: 'admin', target: 'sel' })}
-                        className="inline-flex h-8 items-center gap-1.5 rounded-full border border-dashed border-gray-300 px-[13px] text-s font-semibold text-gray-500 hover:bg-gray-50"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-full border border-dashed border-gray-300 px-[13px] text-s font-semibold text-gray-500 hover:bg-gray-100"
                       >
                         <PlusMini /> {t('admin-add-manager')}
                       </button>
@@ -744,12 +750,12 @@ export function SettingsScreen() {
                             }
                             onKeyDown={(e) => e.key === 'Enter' && addExt()}
                             placeholder="exe"
-                            className="h-7 w-[70px] rounded-[5px] border border-gray-300 px-2.5 text-xs focus:border-primary focus:outline-none"
+                            className="h-7 w-[70px] rounded-md border border-gray-300 px-2.5 text-xs focus:border-primary focus:outline-none"
                           />
                           <button
                             type="button"
                             onClick={addExt}
-                            className="inline-flex h-7 items-center rounded-[5px] bg-gray-100 px-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-200"
+                            className="inline-flex h-7 items-center rounded-md bg-gray-100 px-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-200"
                           >
                             {t('admin-add')}
                           </button>
@@ -772,7 +778,7 @@ export function SettingsScreen() {
                     <button
                       type="button"
                       onClick={() => showToast(t('admin-toast-saved'))}
-                      className="inline-flex h-10 items-center rounded-[5px] bg-primary px-[18px] text-sm font-semibold text-white hover:bg-ov-blue-700"
+                      className="inline-flex h-10 items-center rounded-md bg-primary px-[18px] text-sm font-semibold text-white hover:bg-ov-blue-700"
                     >
                       {t('common-save')}
                     </button>
@@ -800,7 +806,7 @@ export function SettingsScreen() {
                 type="button"
                 aria-label={t('common-cancel')}
                 onClick={() => setAddOpen(false)}
-                className="ml-auto inline-flex size-7 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100"
+                className="ml-auto inline-flex size-7 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100"
               >
                 <XMini size={14} />
               </button>
@@ -813,7 +819,7 @@ export function SettingsScreen() {
                     <button
                       type="button"
                       onClick={() => setALocOpen((v) => !v)}
-                      className="flex h-10 w-full items-center gap-2 rounded-[5px] border border-gray-300 px-3"
+                      className="flex h-10 w-full items-center gap-2 rounded-md border border-gray-300 px-3"
                     >
                       <span className="flex-1 text-left text-sm text-gray-900">
                         {curLoc?.label}
@@ -829,12 +835,21 @@ export function SettingsScreen() {
                         {locOpts.map((o) => (
                           <span
                             key={o.v}
+                            role="option"
+                            aria-selected={aLoc === o.v}
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key !== 'Enter' && e.key !== ' ') return
+                              e.preventDefault()
+                              setALoc(o.v)
+                              setALocOpen(false)
+                            }}
                             onClick={() => {
                               setALoc(o.v)
                               setALocOpen(false)
                             }}
                             className={[
-                              'flex h-8 cursor-pointer items-center rounded-[5px] px-2.5 text-s hover:bg-gray-100',
+                              'flex h-8 cursor-pointer items-center rounded-md px-2.5 text-s hover:bg-gray-100',
                               aLoc === o.v ? 'font-semibold text-primary' : 'text-gray-800',
                             ].join(' ')}
                           >
@@ -853,11 +868,11 @@ export function SettingsScreen() {
                     value={aName}
                     onChange={(e) => setAName(Array.from(e.target.value).slice(0, 60).join(''))}
                     placeholder={t('admin-name-required')}
-                    className="h-10 w-full rounded-[5px] border bg-card pr-16 pl-3 text-sm focus:outline-none"
+                    className="h-10 w-full rounded-md border bg-card pr-16 pl-3 text-sm focus:border-primary focus:outline-none"
                     style={{
                       borderColor:
                         aTried && !aName.trim()
-                          ? 'var(--color-danger)'
+                          ? 'var(--color-destructive)'
                           : aName
                             ? 'var(--color-primary)'
                             : 'var(--color-gray-300)',
@@ -890,7 +905,7 @@ export function SettingsScreen() {
                     <button
                       type="button"
                       onClick={() => setPicker({ mode: 'scope', target: 'add' })}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 px-3 text-xs font-semibold text-gray-700 hover:bg-gray-100"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-200 px-3 text-xs font-semibold text-gray-700 hover:bg-gray-100"
                     >
                       <PersonIcon /> {aScopeLabel || t('admin-scope-default')}
                     </button>
@@ -930,7 +945,7 @@ export function SettingsScreen() {
                   <button
                     type="button"
                     onClick={() => setPicker({ mode: 'admin', target: 'add' })}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-full border border-dashed border-gray-300 px-3 text-xs font-semibold text-gray-500 hover:bg-gray-50"
+                    className="inline-flex h-8 items-center gap-1.5 rounded-full border border-dashed border-gray-300 px-3 text-xs font-semibold text-gray-500 hover:bg-gray-100"
                   >
                     <PlusMini /> {t('admin-add-manager')}
                   </button>
@@ -948,7 +963,7 @@ export function SettingsScreen() {
                         }
                         placeholder={t('admin-board-desc-ph')}
                         rows={2}
-                        className="w-full resize-none rounded-[5px] border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                        className="w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
                       />
                       <span className="absolute right-3 bottom-2.5 text-xs text-gray-400">
                         {Array.from(aDesc).length}/300
@@ -974,9 +989,7 @@ export function SettingsScreen() {
                     <Toggle on={aAlarm} onClick={() => setAAlarm((v) => !v)} />
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-s font-semibold text-gray-700">
-                      {t('admin-active')}
-                    </span>
+                    <span className="text-s font-semibold text-gray-700">{t('admin-active')}</span>
                     <Toggle on={aActive} onClick={() => setAActive((v) => !v)} />
                     <span className="text-xs text-gray-400">{t('admin-active-hint')}</span>
                   </div>
@@ -1022,7 +1035,7 @@ export function SettingsScreen() {
                       value={aExt}
                       onChange={(e) => setAExt(e.target.value)}
                       placeholder={t('admin-ext-ph-modal')}
-                      className="h-10 w-full rounded-[5px] border border-gray-300 px-3 text-sm focus:border-primary focus:outline-none"
+                      className="h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus:border-primary focus:outline-none"
                     />
                   </Field>
                 </>
@@ -1032,14 +1045,14 @@ export function SettingsScreen() {
               <button
                 type="button"
                 onClick={() => setAddOpen(false)}
-                className="inline-flex h-10 items-center rounded-[5px] border border-gray-200 bg-card px-4 text-sm font-semibold text-gray-800 hover:bg-gray-100"
+                className="inline-flex h-10 items-center rounded-md border border-gray-200 bg-card px-4 text-sm font-semibold text-gray-800 hover:bg-gray-100"
               >
                 {t('common-cancel')}
               </button>
               <button
                 type="button"
                 onClick={aSave}
-                className="inline-flex h-10 items-center rounded-[5px] bg-primary px-[18px] text-sm font-semibold text-white hover:bg-ov-blue-700"
+                className="inline-flex h-10 items-center rounded-md bg-primary px-[18px] text-sm font-semibold text-white hover:bg-ov-blue-700"
               >
                 {t('admin-add')}
               </button>
@@ -1134,7 +1147,7 @@ function MenuItem({ onClick, children }: { onClick: () => void; children: React.
     <button
       type="button"
       onClick={onClick}
-      className="flex h-8 w-full items-center rounded-[5px] px-2.5 text-s text-gray-800 hover:bg-gray-100"
+      className="flex h-8 w-full items-center rounded-md px-2.5 text-s text-gray-800 hover:bg-gray-100"
     >
       {children}
     </button>
@@ -1143,12 +1156,14 @@ function MenuItem({ onClick, children }: { onClick: () => void; children: React.
 
 function RadioRow({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="inline-flex items-center gap-[7px]">
+    <button type="button" onClick={onClick} className="group inline-flex items-center gap-[7px]">
       <span
-        className="size-[17px] flex-none rounded-full"
-        style={{
-          border: on ? '5px solid var(--color-primary)' : '1.5px solid var(--color-gray-300)',
-        }}
+        className={[
+          'box-border size-[17px] flex-none rounded-full',
+          on
+            ? 'border-[5px] border-primary'
+            : 'border-[1.5px] border-gray-300 group-hover:border-gray-400 group-hover:bg-gray-50',
+        ].join(' ')}
       />
       <span className="text-s">{label}</span>
     </button>
@@ -1192,8 +1207,8 @@ function NodeIcon({ kind, active }: { kind: NodeKind; active: boolean }) {
   if (kind === 'cat')
     return (
       <svg
-        width="15"
-        height="15"
+        width="16"
+        height="16"
         viewBox="0 0 24 24"
         fill="none"
         stroke={c}
@@ -1208,8 +1223,8 @@ function NodeIcon({ kind, active }: { kind: NodeKind; active: boolean }) {
   if (kind === 'folder')
     return (
       <svg
-        width="15"
-        height="15"
+        width="16"
+        height="16"
         viewBox="0 0 24 24"
         fill="none"
         stroke="var(--color-warning)"
@@ -1223,8 +1238,8 @@ function NodeIcon({ kind, active }: { kind: NodeKind; active: boolean }) {
   if (kind === 'drive')
     return (
       <svg
-        width="15"
-        height="15"
+        width="16"
+        height="16"
         viewBox="0 0 24 24"
         fill="none"
         stroke={c}
@@ -1239,8 +1254,8 @@ function NodeIcon({ kind, active }: { kind: NodeKind; active: boolean }) {
     )
   return (
     <svg
-      width="15"
-      height="15"
+      width="16"
+      height="16"
       viewBox="0 0 24 24"
       fill="none"
       stroke={c}
@@ -1250,75 +1265,6 @@ function NodeIcon({ kind, active }: { kind: NodeKind; active: boolean }) {
     >
       <path d="M6 3h9l4 4v14H6z" />
       <path d="M14 3v5h5" />
-    </svg>
-  )
-}
-
-function ScopedIcon() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="var(--color-gray-400)"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      className="flex-none"
-    >
-      <circle cx="9" cy="8" r="3.2" />
-      <path d="M3.5 19c.9-2.8 3-4.2 5.5-4.2s4.6 1.4 5.5 4.2" />
-      <path d="M15.5 5.4a3.2 3.2 0 0 1 0 5.2M17.8 14.9c1.4.7 2.4 2 2.9 3.9" />
-    </svg>
-  )
-}
-
-function PersonIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-    >
-      <circle cx="9" cy="8" r="3.2" />
-      <path d="M3.5 19c.9-2.8 3-4.2 5.5-4.2s4.6 1.4 5.5 4.2" />
-      <path d="M15.5 5.4a3.2 3.2 0 0 1 0 5.2M17.8 14.9c1.4.7 2.4 2 2.9 3.9" />
-    </svg>
-  )
-}
-
-function PlusIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-    >
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  )
-}
-
-function PlusMini() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-    >
-      <path d="M12 5v14M5 12h14" />
     </svg>
   )
 }
@@ -1337,74 +1283,6 @@ function CaretDown({ className }: { className?: string }) {
       className={className}
     >
       <path d="M6 9l6 6 6-6" />
-    </svg>
-  )
-}
-
-function TrashIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13" />
-    </svg>
-  )
-}
-
-function XMini({ size = 9 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.6"
-      strokeLinecap="round"
-    >
-      <path d="M6 6l12 12M18 6L6 18" />
-    </svg>
-  )
-}
-
-function ErrIcon() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    >
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7.5V13M12 16.5h.01" />
-    </svg>
-  )
-}
-
-function CheckIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="var(--color-accent)"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="flex-none"
-    >
-      <path d="M4.5 12.5l5 5 10-11" />
     </svg>
   )
 }

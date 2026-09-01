@@ -27,7 +27,7 @@ export function Toast({ toast, onClose }: { toast: ToastState | null; onClose: (
         type="button"
         onClick={onClose}
         aria-label={t('common-close')}
-        className="inline-flex size-[26px] flex-none items-center justify-center rounded-[5px] opacity-70 hover:opacity-100"
+        className="inline-flex size-[26px] flex-none items-center justify-center rounded-md opacity-70 hover:opacity-100"
       >
         <svg
           className="size-3"
@@ -85,7 +85,7 @@ function ToneIcon({ tone, className }: { tone: ToastTone; className: string }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2.4"
+      strokeWidth="2.2"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"

@@ -6,6 +6,24 @@ import { useTranslation } from 'react-i18next'
 
 import { ATTACHMENTS, COMMENTS, LIKERS, POST, REACTIONS } from './detailData'
 import type { DetailComment } from './detailData'
+import { NoticeBadge } from '@/components/common/NoticeBadge'
+import {
+  ArrowIcon,
+  BookmarkIcon,
+  ChevronIcon,
+  CloseIcon,
+  DotsIcon,
+  DownloadIcon,
+  EditIcon,
+  EyeIcon,
+  HeartIcon,
+  ImageIcon,
+  LinkIcon,
+  PaperclipIcon,
+  PrintIcon,
+  TrashIcon,
+  ZoomIcon,
+} from '@/components/common/icons'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 
 export function PostDetailScreen() {
@@ -46,22 +64,22 @@ export function PostDetailScreen() {
         <Link
           to="/board/$boardId"
           params={{ boardId: 'notice' }}
-          className="inline-flex h-8 items-center gap-1.5 rounded-[5px] bg-gray-100 px-3 text-s font-semibold text-gray-700 hover:bg-gray-200"
+          className="inline-flex h-8 items-center gap-1.5 rounded-md bg-gray-100 px-3 text-s font-semibold text-gray-700 hover:bg-gray-200"
         >
-          <ChevronIcon dir="left" />
+          <ChevronIcon className="size-3.5" dir="left" />
           {t('detail-to-list')}
         </Link>
         <div className="ml-auto flex gap-1">
           <button
             type="button"
-            className="inline-flex h-8 items-center gap-1.5 rounded-[5px] px-3 text-s text-gray-600 hover:bg-gray-100"
+            className="inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-s text-gray-600 hover:bg-gray-100"
           >
             <ArrowIcon dir="up" />
             {t('detail-prev')}
           </button>
           <button
             type="button"
-            className="inline-flex h-8 items-center gap-1.5 rounded-[5px] px-3 text-s text-gray-600 hover:bg-gray-100"
+            className="inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-s text-gray-600 hover:bg-gray-100"
           >
             <ArrowIcon dir="down" />
             {t('detail-next')}
@@ -73,14 +91,10 @@ export function PostDetailScreen() {
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-card">
         <div className="px-7 pt-6">
           <div className="flex flex-wrap items-center gap-2">
-            {POST.notice && (
-              <span className="inline-flex h-[22px] flex-none items-center rounded bg-l-blue px-2 text-2xs font-bold text-primary">
-                {t('badge-notice')}
-              </span>
-            )}
+            {POST.notice && <NoticeBadge />}
             <span className="text-s text-gray-400">{POST.board}</span>
           </div>
-          <h1 className="text-wrap-pretty mt-2.5 text-2xl leading-[1.4] font-extrabold tracking-[-0.01em]">
+          <h1 className="text-wrap-pretty mt-2.5 text-2xl leading-title font-extrabold tracking-title">
             {POST.title}
           </h1>
           <div className="mt-4 flex flex-wrap items-center gap-2.5 border-b border-gray-100 pb-[18px]">
@@ -100,7 +114,7 @@ export function PostDetailScreen() {
                 onClick={() => setBookmarked((v) => !v)}
                 active={bookmarked}
               >
-                <BookmarkIcon filled={bookmarked} />
+                <BookmarkIcon className="size-4" filled={bookmarked} />
               </IconBtn>
               <IconBtn label={t('detail-print')}>
                 <PrintIcon />
@@ -116,7 +130,7 @@ export function PostDetailScreen() {
         </div>
 
         {/* 본문 */}
-        <div className="px-7 pt-6 pb-2 text-sm leading-[1.75] text-gray-800">
+        <div className="px-7 pt-6 pb-2 text-sm leading-prose text-gray-800">
           <p className="mb-4">{POST.paragraphs[0]}</p>
           <p className="mb-4">{POST.paragraphs[1]}</p>
           <button
@@ -125,7 +139,7 @@ export function PostDetailScreen() {
             className={`relative my-5 flex h-[240px] w-full max-w-[520px] cursor-zoom-in items-center justify-center rounded-lg text-on-pastel ${POST.imageBg}`}
           >
             <ImageIcon size={34} />
-            <span className="absolute right-3 bottom-2.5 inline-flex h-6 items-center gap-1.5 rounded-[5px] bg-black/45 px-2.5 text-xs text-white">
+            <span className="absolute right-3 bottom-2.5 inline-flex h-6 items-center gap-1.5 rounded-md bg-black/45 px-2.5 text-xs text-white">
               <ZoomIcon />
               {t('detail-click-zoom')}
             </span>
@@ -188,7 +202,7 @@ export function PostDetailScreen() {
             className="ml-auto inline-flex items-center gap-1 text-s text-gray-400 hover:text-primary"
           >
             {t('detail-view-likers')}
-            <ChevronIcon dir="right" small />
+            <ChevronIcon className="size-3.5" dir="right" small />
           </button>
         </div>
       </div>
@@ -207,14 +221,14 @@ export function PostDetailScreen() {
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               placeholder={t('detail-comment-ph')}
-              className={`min-h-16 w-full resize-y rounded-[5px] border bg-card px-3 py-2.5 text-sm leading-[1.6] outline-none focus:border-primary ${draft ? 'border-primary' : 'border-gray-300'}`}
+              className={`min-h-16 w-full resize-y rounded-md border bg-card px-3 py-2.5 text-sm leading-prose outline-none focus:border-primary ${draft ? 'border-primary' : 'border-gray-300'}`}
             />
             <div className="flex justify-end">
               <button
                 type="button"
                 disabled={!draft.trim()}
                 onClick={() => setDraft('')}
-                className="inline-flex h-8 items-center rounded-[5px] bg-primary px-4 text-s font-semibold text-white disabled:bg-gray-100 disabled:text-gray-300"
+                className="inline-flex h-8 items-center rounded-md bg-primary px-4 text-s font-semibold text-white disabled:bg-gray-100 disabled:text-gray-300"
               >
                 {t('detail-register')}
               </button>
@@ -246,10 +260,10 @@ export function PostDetailScreen() {
           role="presentation"
         >
           <div className="absolute top-3.5 right-3.5 flex gap-1.5">
-            <span className="inline-flex size-[34px] items-center justify-center rounded-lg bg-white/15 text-white">
+            <span className="inline-flex size-[34px] items-center justify-center rounded-md bg-white/15 text-white">
               <DownloadIcon />
             </span>
-            <span className="inline-flex size-[34px] items-center justify-center rounded-lg bg-white/15 text-white">
+            <span className="inline-flex size-[34px] items-center justify-center rounded-md bg-white/15 text-white">
               <CloseIcon />
             </span>
           </div>
@@ -266,8 +280,8 @@ export function PostDetailScreen() {
 
       {/* 삭제 확인 */}
       {deleteOpen && (
-        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/50">
-          <div className="flex w-80 flex-col items-center gap-2 rounded-lg bg-card px-[22px] pt-[26px] pb-[18px] shadow-[0_4px_18px_rgba(75,70,92,0.1)]">
+        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-[var(--scrim-modal)]">
+          <div className="flex w-80 flex-col items-center gap-2 rounded-lg bg-card px-[22px] pt-[26px] pb-[18px] shadow-[var(--shadow-modal)]">
             <span className="text-center text-sm font-semibold text-gray-900">
               {t('detail-delete-confirm')}
             </span>
@@ -276,14 +290,14 @@ export function PostDetailScreen() {
               <button
                 type="button"
                 onClick={() => setDeleteOpen(false)}
-                className="inline-flex h-10 flex-1 items-center justify-center rounded-[5px] border border-gray-200 bg-card text-sm font-semibold text-gray-800 hover:bg-gray-100"
+                className="inline-flex h-10 flex-1 items-center justify-center rounded-md border border-gray-200 bg-card text-sm font-semibold text-gray-800 hover:bg-gray-100"
               >
                 {t('common-cancel')}
               </button>
               <button
                 type="button"
                 onClick={() => setDeleteOpen(false)}
-                className="inline-flex h-10 flex-1 items-center justify-center rounded-[5px] bg-destructive text-sm font-semibold text-white hover:opacity-90"
+                className="inline-flex h-10 flex-1 items-center justify-center rounded-md bg-destructive text-sm font-semibold text-white hover:bg-destructive-hover"
               >
                 {t('common-delete')}
               </button>
@@ -294,8 +308,8 @@ export function PostDetailScreen() {
 
       {/* 공감 내역 */}
       {likersOpen && (
-        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/50">
-          <div className="flex max-h-[80vh] w-[340px] flex-col overflow-hidden rounded-lg bg-card shadow-[0_4px_18px_rgba(75,70,92,0.1)]">
+        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-[var(--scrim-modal)]">
+          <div className="flex max-h-[80vh] w-[340px] flex-col overflow-hidden rounded-lg bg-card shadow-[var(--shadow-modal)]">
             <div className="flex h-[52px] items-center border-b border-gray-100 px-[18px]">
               <span className="text-sm font-bold">
                 {t('detail-likers-title')} <span className="text-primary">{POST.likersCount}</span>
@@ -304,7 +318,7 @@ export function PostDetailScreen() {
                 type="button"
                 aria-label={t('common-cancel')}
                 onClick={() => setLikersOpen(false)}
-                className="ml-auto inline-flex size-[30px] items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100"
+                className="ml-auto inline-flex size-[30px] items-center justify-center rounded-md text-gray-500 hover:bg-gray-100"
               >
                 <CloseIcon />
               </button>
@@ -313,7 +327,7 @@ export function PostDetailScreen() {
               {LIKERS.map((u) => (
                 <div
                   key={u.name}
-                  className="flex h-12 items-center gap-2.5 rounded-lg px-2.5 hover:bg-gray-50"
+                  className="flex h-12 items-center gap-2.5 rounded-md px-2.5 hover:bg-gray-100"
                 >
                   <span
                     className={`inline-flex size-[30px] flex-none items-center justify-center rounded-full text-xs font-bold text-on-pastel ${u.bg}`}
@@ -370,18 +384,18 @@ function CommentItem({
                   type="button"
                   aria-label="⋮"
                   onClick={() => onMenu(c.id)}
-                  className={`inline-flex size-7 items-center justify-center rounded-[5px] text-gray-400 hover:bg-gray-100 ${menuId === c.id ? 'bg-gray-100' : ''}`}
+                  className={`inline-flex size-7 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 ${menuId === c.id ? 'bg-gray-100' : ''}`}
                 >
                   <DotsIcon />
                 </button>
                 {menuId === c.id && (
-                  <div className="absolute top-[calc(100%+4px)] right-0 z-[var(--z-dropdown)] w-[150px] rounded-lg border border-gray-200 bg-card p-1 shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
+                  <div className="absolute top-[calc(100%+4px)] right-0 z-[var(--z-dropdown)] w-[150px] rounded-lg border border-gray-200 bg-card p-1 shadow-[var(--shadow-dropdown)]">
                     <MenuRow icon={<EditIcon />} label={t('common-edit')} />
                     <MenuRow icon={<HeartIcon />} label={t('detail-like-history')} />
                     <button
                       type="button"
                       onClick={onDelete}
-                      className="flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-s text-destructive hover:bg-l-red"
+                      className="flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-s text-destructive hover:bg-destructive-bg"
                     >
                       <TrashIcon />
                       {t('common-delete')}
@@ -391,7 +405,7 @@ function CommentItem({
               </div>
             )}
           </div>
-          <span className="text-sm leading-[1.65] text-gray-800">{c.text}</span>
+          <span className="text-sm leading-prose text-gray-800">{c.text}</span>
           {!reply && (
             <div className="mt-0.5 flex items-center gap-3">
               <button
@@ -435,9 +449,9 @@ function IconBtn({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className={`inline-flex ${small ? 'size-[30px]' : 'size-[34px]'} flex-none items-center justify-center rounded-lg ${
+      className={`inline-flex ${small ? 'size-[30px]' : 'size-[34px]'} flex-none items-center justify-center rounded-md ${
         active ? 'text-primary' : 'text-gray-500'
-      } ${danger ? 'hover:bg-l-red hover:text-destructive' : 'hover:bg-gray-100'}`}
+      } ${danger ? 'hover:bg-destructive-bg hover:text-destructive' : 'hover:bg-gray-100'}`}
     >
       {children}
     </button>
@@ -457,249 +471,10 @@ function MenuRow({ icon, label }: { icon: React.ReactNode; label: string }) {
 }
 
 /* ── 아이콘 ── */
-function ChevronIcon({ dir, small }: { dir: 'left' | 'right'; small?: boolean }) {
-  return (
-    <svg
-      className={small ? 'size-[11px]' : 'size-3.5'}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {dir === 'left' ? <path d="M15 5l-7 7 7 7" /> : <path d="M9 5l7 7-7 7" />}
-    </svg>
-  )
-}
-function ArrowIcon({ dir }: { dir: 'up' | 'down' }) {
-  return (
-    <svg
-      className="size-[13px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {dir === 'up' ? (
-        <path d="M12 19V5M5.5 11.5L12 5l6.5 6.5" />
-      ) : (
-        <path d="M12 5v14M5.5 12.5L12 19l6.5-6.5" />
-      )}
-    </svg>
-  )
-}
-function LinkIcon() {
-  return (
-    <svg
-      className="size-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M10.5 13.5a4 4 0 0 0 5.7 0l3.3-3.3a4 4 0 0 0-5.7-5.7l-1.6 1.6" />
-      <path d="M13.5 10.5a4 4 0 0 0-5.7 0l-3.3 3.3a4 4 0 0 0 5.7 5.7l1.6-1.6" />
-    </svg>
-  )
-}
-function BookmarkIcon({ filled }: { filled?: boolean }) {
-  return (
-    <svg
-      className="size-4"
-      viewBox="0 0 24 24"
-      fill={filled ? 'currentColor' : 'none'}
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M6.5 3.5h11V21L12 17l-5.5 4z" />
-    </svg>
-  )
-}
-function PrintIcon() {
-  return (
-    <svg
-      className="size-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M7 8.5V3.5h10v5" />
-      <path d="M7 17.5H4.5v-7a1.5 1.5 0 0 1 1.5-1.5h12a1.5 1.5 0 0 1 1.5 1.5v7H17" />
-      <rect x="7" y="14.5" width="10" height="6" />
-    </svg>
-  )
-}
-function EditIcon() {
-  return (
-    <svg
-      className="size-[14px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M4 15.5V20h4.5L19 9.5 14.5 5z" />
-    </svg>
-  )
-}
-function TrashIcon() {
-  return (
-    <svg
-      className="size-[14px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13" />
-      <path d="M10 11v5M14 11v5" />
-    </svg>
-  )
-}
-function HeartIcon({ filled, small }: { filled?: boolean; small?: boolean }) {
-  return (
-    <svg
-      className={small ? 'size-3' : 'size-[15px]'}
-      viewBox="0 0 24 24"
-      fill={filled ? 'currentColor' : 'none'}
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 20.5s-7.5-4.6-7.5-10A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 7.5 3.5c0 5.4-7.5 10-7.5 10z" />
-    </svg>
-  )
-}
-function PaperclipIcon() {
-  return (
-    <svg
-      className="size-[13px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M20 12.5l-7.6 7.6a5 5 0 0 1-7-7L13 5.5a3.3 3.3 0 0 1 4.7 4.7L10.5 17a1.7 1.7 0 0 1-2.4-2.4l6.6-6.6" />
-    </svg>
-  )
-}
-function EyeIcon() {
-  return (
-    <svg
-      className="size-[15px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z" />
-      <circle cx="12" cy="12" r="2.8" />
-    </svg>
-  )
-}
-function DownloadIcon() {
-  return (
-    <svg
-      className="size-[15px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 4v11M7 10.5l5 5 5-5" />
-      <path d="M4.5 19.5h15" />
-    </svg>
-  )
-}
-function ImageIcon({ size }: { size: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinejoin="round"
-      className="opacity-75"
-      aria-hidden="true"
-    >
-      <rect x="3.5" y="5" width="17" height="14" rx="2" />
-      <circle cx="9" cy="10" r="1.6" />
-      <path d="M3.5 16.5l5-4.5 4 3.5 3.5-3 4.5 4" />
-    </svg>
-  )
-}
-function ZoomIcon() {
-  return (
-    <svg
-      className="size-3"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="M15.8 15.8L21 21M11 8.5v5M8.5 11h5" />
-    </svg>
-  )
-}
-function DotsIcon() {
-  return (
-    <svg className="size-[15px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <circle cx="12" cy="5.5" r="1.6" />
-      <circle cx="12" cy="12" r="1.6" />
-      <circle cx="12" cy="18.5" r="1.6" />
-    </svg>
-  )
-}
-function CloseIcon() {
-  return (
-    <svg
-      className="size-[15px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M6 6l12 12M18 6L6 18" />
-    </svg>
-  )
-}
 function ReplyArrow() {
   return (
     <svg
-      className="mt-2 size-[15px] flex-none text-gray-300"
+      className="mt-2 size-4 flex-none text-gray-300"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

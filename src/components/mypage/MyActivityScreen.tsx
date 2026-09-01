@@ -4,6 +4,10 @@ import { useNavigate } from '@tanstack/react-router'
 
 import { useTranslation } from 'react-i18next'
 
+import { NoticeBadge } from '@/components/common/NoticeBadge'
+import { Toast } from '@/components/common/Toast'
+import { BookmarkIcon, PaperclipIcon, RestoreIcon, TrashIcon } from '@/components/common/icons'
+import { useToast } from '@/components/common/useToast'
 import {
   COLUMN_CFG,
   type ChipKey,
@@ -17,8 +21,6 @@ import {
   SCHEDULED,
 } from '@/components/mypage/myData'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
-import { Toast } from '@/components/common/Toast'
-import { useToast } from '@/components/common/useToast'
 
 type ImpTab = 'all' | 'post' | 'file'
 
@@ -131,7 +133,7 @@ export function MyActivityScreen() {
   return (
     <div className="mx-auto flex w-full max-w-[880px] flex-col gap-5">
       {/* 프로필 요약 카드 */}
-      <div className="flex flex-wrap items-center gap-3.5 rounded-xl border border-gray-200 bg-card px-6 py-5">
+      <div className="flex flex-wrap items-center gap-3.5 rounded-lg border border-gray-200 bg-card px-6 py-5">
         <span className="inline-flex size-[52px] flex-none items-center justify-center rounded-full bg-l-blue text-xl font-bold text-on-pastel">
           {ME.initial}
         </span>
@@ -157,7 +159,7 @@ export function MyActivityScreen() {
               onClick={() => pickChip(c)}
               className={[
                 'inline-flex h-8 items-center gap-1.5 rounded-full px-[15px] text-s font-semibold whitespace-nowrap',
-                on ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:opacity-90',
+                on ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
               ].join(' ')}
             >
               {t(CHIP_KEY[c])}
@@ -254,7 +256,7 @@ export function MyActivityScreen() {
                 <div
                   key={`${chip}-${r.title}-${i}`}
                   className={[
-                    'grid min-h-[46px] items-center gap-2.5 border-b border-gray-100 px-3.5 hover:bg-gray-50',
+                    'grid min-h-[46px] items-center gap-2.5 border-b border-gray-100 px-3.5 hover:bg-gray-100',
                     checks[i] ? 'bg-gray-50' : '',
                   ].join(' ')}
                   style={{ gridTemplateColumns: cfg.cols }}
@@ -273,7 +275,7 @@ export function MyActivityScreen() {
                         onClick={() => showToast(t('drive-bm-remove'))}
                         className="inline-flex size-[22px] flex-none items-center justify-center rounded text-warning hover:bg-gray-200"
                       >
-                        <BookmarkIcon filled />
+                        <BookmarkIcon className="size-3.5 flex-none" filled />
                       </button>
                     )}
                     {r.isFile && (
@@ -283,11 +285,7 @@ export function MyActivityScreen() {
                         {r.ext}
                       </span>
                     )}
-                    {r.isNotice && (
-                      <span className="inline-flex h-[19px] flex-none items-center rounded bg-l-blue px-[7px] text-2xs font-bold text-primary">
-                        {t('badge-notice')}
-                      </span>
-                    )}
+                    {r.isNotice && <NoticeBadge />}
                     <span
                       className={[
                         'truncate text-sm',
@@ -305,9 +303,7 @@ export function MyActivityScreen() {
                   {cfg.trash && (
                     <>
                       <span className="truncate pr-2 text-s text-gray-600">{r.by}</span>
-                      <span className="text-s whitespace-nowrap text-gray-500">
-                        {r.created}
-                      </span>
+                      <span className="text-s whitespace-nowrap text-gray-500">{r.created}</span>
                     </>
                   )}
                   {/* 날짜 */}
@@ -326,7 +322,7 @@ export function MyActivityScreen() {
                         <button
                           type="button"
                           onClick={() => navigate({ to: '/write' })}
-                          className="inline-flex h-[29px] flex-none items-center rounded-[5px] border border-gray-200 bg-card px-[11px] text-xs font-semibold whitespace-nowrap text-gray-700 hover:bg-gray-100"
+                          className="inline-flex h-[29px] flex-none items-center rounded-md border border-gray-200 bg-card px-[11px] text-xs font-semibold whitespace-nowrap text-gray-700 hover:bg-gray-100"
                         >
                           {t('my-action-continue')}
                         </button>
@@ -341,7 +337,7 @@ export function MyActivityScreen() {
       ) : (
         <div className="flex flex-col items-center gap-3 rounded-lg border border-gray-200 bg-card px-5 py-16">
           <span className="inline-flex size-[52px] items-center justify-center rounded-full bg-gray-100 text-gray-400">
-            <TrashIcon size={22} />
+            <TrashIcon size={24} />
           </span>
           <span className="text-sm text-gray-500">{t('my-empty-trash')}</span>
         </div>
@@ -354,7 +350,7 @@ export function MyActivityScreen() {
           role="presentation"
         >
           <div className="flex w-[330px] flex-col items-center gap-2 rounded-lg bg-card px-[22px] pt-[26px] pb-[18px] shadow-[var(--shadow-modal)]">
-            <span className="inline-flex size-[42px] items-center justify-center rounded-full bg-l-red text-destructive">
+            <span className="inline-flex size-[42px] items-center justify-center rounded-full bg-destructive-bg text-destructive">
               <TrashIcon size={20} />
             </span>
             <span className="mt-1 text-center text-sm font-semibold">
@@ -365,14 +361,14 @@ export function MyActivityScreen() {
               <button
                 type="button"
                 onClick={() => setPurgeOpen(false)}
-                className="inline-flex h-10 flex-1 items-center justify-center rounded-[5px] border border-gray-200 bg-card text-sm font-semibold text-gray-800 hover:bg-gray-100"
+                className="inline-flex h-10 flex-1 items-center justify-center rounded-md border border-gray-200 bg-card text-sm font-semibold text-gray-800 hover:bg-gray-100"
               >
                 {t('common-cancel')}
               </button>
               <button
                 type="button"
                 onClick={doPurge}
-                className="inline-flex h-10 flex-1 items-center justify-center rounded-[5px] bg-destructive text-sm font-semibold text-white hover:opacity-90"
+                className="inline-flex h-10 flex-1 items-center justify-center rounded-md bg-destructive text-sm font-semibold text-white hover:bg-destructive-hover"
               >
                 {t('my-purge')}
               </button>
@@ -411,8 +407,8 @@ function ToolbarBtn({
       type="button"
       onClick={onClick}
       className={[
-        'inline-flex h-8 items-center gap-1.5 rounded-[5px] border border-gray-200 bg-card px-[13px] text-s font-semibold whitespace-nowrap',
-        danger ? 'text-destructive hover:bg-l-red' : 'text-gray-700 hover:bg-gray-100',
+        'inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-200 bg-card px-[13px] text-s font-semibold whitespace-nowrap',
+        danger ? 'text-destructive hover:bg-destructive-bg' : 'text-gray-700 hover:bg-gray-100',
       ].join(' ')}
     >
       {icon}
@@ -438,13 +434,15 @@ function Checkbox({
       onClick={onClick}
       className={[
         'inline-flex size-4 flex-none items-center justify-center rounded border-[1.5px] text-white',
-        active ? 'border-primary bg-primary' : 'border-gray-300 bg-card',
+        active
+          ? 'border-primary bg-primary'
+          : 'border-gray-300 bg-card hover:border-gray-400 hover:bg-gray-50',
       ].join(' ')}
     >
       {checked && (
         <svg
-          width="11"
-          height="11"
+          width="12"
+          height="12"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -457,8 +455,8 @@ function Checkbox({
       )}
       {!checked && mixed && (
         <svg
-          width="11"
-          height="11"
+          width="12"
+          height="12"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -469,40 +467,6 @@ function Checkbox({
         </svg>
       )}
     </button>
-  )
-}
-
-function BookmarkIcon({ filled }: { filled?: boolean }) {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill={filled ? 'currentColor' : 'none'}
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-      className="flex-none"
-    >
-      <path d="M6.5 3.5h11V21L12 17l-5.5 4z" />
-    </svg>
-  )
-}
-
-function PaperclipIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      className="flex-none text-gray-400"
-    >
-      <path d="M20 12.5l-7.6 7.6a5 5 0 0 1-7-7L13 5.5a3.3 3.3 0 0 1 4.7 4.7L10.5 17a1.7 1.7 0 0 1-2.4-2.4l6.6-6.6" />
-    </svg>
   )
 }
 
@@ -523,39 +487,3 @@ function CommentCount({ n }: { n: number }) {
     </span>
   )
 }
-
-function RestoreIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M20 11.5A8 8 0 1 0 18.9 16" />
-      <path d="M20 5v6.5h-6.5" />
-    </svg>
-  )
-}
-
-function TrashIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13" />
-    </svg>
-  )
-}
-

@@ -2,8 +2,16 @@ import { useEffect, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
+import { BuildingIcon, OrgIcon, SearchIcon, XIcon } from '@/components/common/icons'
+import {
+  ORG,
+  countUnder,
+  isTeam,
+  orgById,
+  orgKids,
+  teamsUnder,
+} from '@/components/settings/treeData'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
-import { ORG, countUnder, isTeam, orgById, orgKids, teamsUnder } from '@/components/settings/treeData'
 
 export type PickerMode = 'scope' | 'admin'
 
@@ -268,7 +276,7 @@ export function OrgPickerModal({
             type="button"
             aria-label={t('common-cancel')}
             onClick={onClose}
-            className="ml-auto inline-flex size-7 flex-none items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100"
+            className="ml-auto inline-flex size-7 flex-none items-center justify-center rounded-md text-gray-500 hover:bg-gray-100"
           >
             <XIcon />
           </button>
@@ -278,20 +286,27 @@ export function OrgPickerModal({
           {/* 좌: 조직 트리 */}
           <div className="flex h-[380px] flex-col border-b border-gray-100 min-[560px]:border-r min-[560px]:border-b-0">
             <div className="relative flex-none p-2.5 pb-1">
-              <SearchIcon className="pointer-events-none absolute top-[18px] left-[22px] text-gray-400" />
+              <SearchIcon className="pointer-events-none absolute top-[18px] left-[22px] size-3.5 text-gray-400" />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={t('admin-pk-search')}
-                className="h-8 w-full rounded-lg border border-gray-200 bg-gray-50 pr-2.5 pl-[34px] text-s focus:border-primary focus:bg-card focus:outline-none"
+                className="h-8 w-full rounded-md border border-gray-200 bg-gray-50 pr-2.5 pl-[34px] text-s focus:border-primary focus:bg-card focus:outline-none"
               />
             </div>
             <div className="flex flex-1 flex-col gap-px overflow-y-auto px-2 pt-1 pb-2.5">
               {rows.map((r) => (
                 <div
                   key={r.key}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter' && e.key !== ' ') return
+                    e.preventDefault()
+                    r.onToggle()
+                  }}
                   onClick={r.onToggle}
-                  className="flex min-h-[28px] cursor-pointer items-center gap-[7px] rounded-md py-px pr-2 hover:bg-gray-50"
+                  className="flex min-h-[28px] cursor-pointer items-center gap-[7px] rounded-md py-px pr-2 hover:bg-gray-100"
                   style={{ paddingLeft: 8 + r.depth * 15 }}
                 >
                   {r.hasKids ? (
@@ -337,7 +352,7 @@ export function OrgPickerModal({
                 chips.map((c) => (
                   <div
                     key={c.key}
-                    className="flex items-center gap-2.5 rounded-lg p-1.5 hover:bg-gray-50"
+                    className="flex items-center gap-2.5 rounded-md p-1.5 hover:bg-gray-100"
                   >
                     <span className="inline-flex size-[30px] flex-none items-center justify-center rounded-full bg-l-blue">
                       {c.isOrg ? (
@@ -347,9 +362,7 @@ export function OrgPickerModal({
                       )}
                     </span>
                     <div className="flex min-w-0 flex-1 flex-col gap-px">
-                      <span className="truncate text-s font-semibold text-gray-900">
-                        {c.name}
-                      </span>
+                      <span className="truncate text-s font-semibold text-gray-900">{c.name}</span>
                       <span className="truncate text-xs text-gray-400">{c.sub}</span>
                     </div>
                     <button
@@ -358,7 +371,7 @@ export function OrgPickerModal({
                       onClick={c.remove}
                       className="inline-flex size-6 flex-none items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-destructive"
                     >
-                      <XIcon size={11} />
+                      <XIcon size={12} />
                     </button>
                   </div>
                 ))
@@ -372,7 +385,7 @@ export function OrgPickerModal({
                   setTeamsSel([])
                   setPeopleSel([])
                 }}
-                className="ml-auto inline-flex h-8 items-center rounded-[5px] border border-gray-200 bg-card px-[11px] text-xs font-semibold text-gray-600 hover:bg-gray-100"
+                className="ml-auto inline-flex h-8 items-center rounded-md border border-gray-200 bg-card px-[11px] text-xs font-semibold text-gray-600 hover:bg-gray-100"
               >
                 {t('admin-pk-reset')}
               </button>
@@ -384,14 +397,14 @@ export function OrgPickerModal({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-10 items-center rounded-[5px] border border-gray-200 bg-card px-4 text-sm font-semibold text-gray-800 hover:bg-gray-100"
+            className="inline-flex h-10 items-center rounded-md border border-gray-200 bg-card px-4 text-sm font-semibold text-gray-800 hover:bg-gray-100"
           >
             {t('common-cancel')}
           </button>
           <button
             type="button"
             onClick={confirm}
-            className="inline-flex h-10 items-center rounded-[5px] bg-primary px-[18px] text-sm font-semibold text-white hover:bg-ov-blue-700"
+            className="inline-flex h-10 items-center rounded-md bg-primary px-[18px] text-sm font-semibold text-white hover:bg-ov-blue-700"
           >
             {t('common-confirm')}
           </button>
@@ -411,8 +424,8 @@ function PickCheckbox({ on, mixed }: { on: boolean; mixed: boolean }) {
     >
       {on && (
         <svg
-          width="11"
-          height="11"
+          width="12"
+          height="12"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -425,8 +438,8 @@ function PickCheckbox({ on, mixed }: { on: boolean; mixed: boolean }) {
       )}
       {!on && mixed && (
         <svg
-          width="11"
-          height="11"
+          width="12"
+          height="12"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -440,27 +453,11 @@ function PickCheckbox({ on, mixed }: { on: boolean; mixed: boolean }) {
   )
 }
 
-function XIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    >
-      <path d="M6 6l12 12M18 6L6 18" />
-    </svg>
-  )
-}
-
 function ChevronRight() {
   return (
     <svg
-      width="13"
-      height="13"
+      width="12"
+      height="12"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -470,60 +467,6 @@ function ChevronRight() {
       className="transition-transform"
     >
       <path d="M9 5l7 7-7 7" />
-    </svg>
-  )
-}
-
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      className={className}
-    >
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="M15.8 15.8L21 21" />
-    </svg>
-  )
-}
-
-function BuildingIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="var(--color-gray-500)"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-      className="flex-none"
-    >
-      <rect x="5" y="3.5" width="14" height="17" />
-      <path d="M9 7.5h2M13 7.5h2M9 11h2M13 11h2M9 14.5h2M13 14.5h2M10.5 20.5v-3h3v3" />
-    </svg>
-  )
-}
-
-function OrgIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="var(--color-primary)"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-    >
-      <circle cx="9" cy="8" r="3.2" />
-      <path d="M3.5 19c.9-2.8 3-4.2 5.5-4.2s4.6 1.4 5.5 4.2" />
-      <path d="M15.5 5.4a3.2 3.2 0 0 1 0 5.2M17.8 14.9c1.4.7 2.4 2 2.9 3.9" />
     </svg>
   )
 }

@@ -5,6 +5,14 @@ import { useNavigate } from '@tanstack/react-router'
 
 import { useTranslation } from 'react-i18next'
 
+import {
+  CheckIcon,
+  ClearIcon,
+  ErrorIcon,
+  EyeIcon,
+  LockIcon,
+  MailIcon,
+} from '@/components/common/icons'
 import { useLogin } from '@/hooks/useLogin'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch } from 'react-hook-form'
@@ -68,19 +76,19 @@ export function LoginScreen() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 min-[631px]:p-6">
-      <div className="flex w-full max-w-[420px] flex-col overflow-hidden rounded-2xl bg-card shadow-[0_4px_18px_rgba(75,70,92,0.1)] min-[631px]:max-w-[860px] min-[631px]:flex-row">
+      <div className="flex w-full max-w-[420px] flex-col overflow-hidden rounded-xl bg-card shadow-[var(--shadow-modal)] min-[631px]:max-w-[860px] min-[631px]:flex-row">
         {/* ── 브랜드 패널 (좌 / 모바일은 상단 배너) ── */}
         <div className="relative overflow-hidden bg-brand-panel px-5 pt-[34px] pb-[30px] text-white min-[631px]:w-[344px] min-[631px]:flex-none min-[631px]:px-[34px] min-[631px]:py-[42px]">
           <div className="relative z-[1] flex items-center gap-2.5">
-            <span className="inline-flex size-[34px] flex-none items-center justify-center rounded-[10px] bg-white/15">
+            <span className="inline-flex size-[34px] flex-none items-center justify-center rounded-md bg-white/15">
               <WaveMark />
             </span>
-            <span className="text-xl tracking-[-0.01em]">
+            <span className="text-xl tracking-title">
               <span className="font-medium opacity-80">Office</span>
               <span className="font-extrabold">NEXT</span>
             </span>
           </div>
-          <div className="relative z-[1] mt-3 flex flex-col text-lg leading-[1.44] font-extrabold tracking-[-0.02em] min-[631px]:mt-[30px] min-[631px]:text-2xl min-[631px]:leading-[1.42]">
+          <div className="relative z-[1] mt-3 flex flex-col text-lg leading-title font-extrabold tracking-display min-[631px]:mt-[30px] min-[631px]:text-2xl min-[631px]:leading-title">
             {BRAND_LINES.map((k) => (
               <span key={k}>{t(k)}</span>
             ))}
@@ -88,7 +96,7 @@ export function LoginScreen() {
           <div className="relative z-[1] mt-[26px] hidden flex-col gap-3 min-[631px]:flex">
             {BRAND_BULLETS.map((k) => (
               <span key={k} className="flex items-center gap-2.5 text-sm text-white/90">
-                <CheckIcon className="size-[15px] flex-none opacity-85" />
+                <CheckIcon className="size-4 flex-none opacity-85" />
                 {t(k)}
               </span>
             ))}
@@ -97,8 +105,8 @@ export function LoginScreen() {
         </div>
 
         {/* ── 폼 패널 (우 / 모바일은 겹치는 하단 카드) ── */}
-        <div className="relative z-[1] -mt-4 flex flex-1 flex-col rounded-t-2xl bg-card px-5 pt-6 pb-[30px] min-[631px]:mt-0 min-[631px]:rounded-none min-[631px]:px-[42px] min-[631px]:pt-[44px] min-[631px]:pb-[30px]">
-          <span className="text-lg font-extrabold tracking-[-0.02em] text-gray-900 min-[631px]:text-2xl">
+        <div className="relative z-[1] -mt-4 flex flex-1 flex-col rounded-t-xl bg-card px-5 pt-6 pb-[30px] min-[631px]:mt-0 min-[631px]:rounded-none min-[631px]:px-[42px] min-[631px]:pt-[44px] min-[631px]:pb-[30px]">
+          <span className="text-lg font-extrabold tracking-display text-gray-900 min-[631px]:text-2xl">
             {t('login-title')}
           </span>
           <span className="mt-[7px] hidden text-sm text-gray-500 min-[631px]:block">
@@ -113,14 +121,11 @@ export function LoginScreen() {
             <div className="flex flex-col gap-4">
               {/* 이메일 */}
               <div className="flex flex-col gap-[7px]">
-                <label
-                  htmlFor="login-email"
-                  className="text-s font-semibold text-gray-600"
-                >
+                <label htmlFor="login-email" className="text-s font-semibold text-gray-600">
                   {t('login-email-label')}
                 </label>
                 <div
-                  className={`flex h-12 items-center gap-2.5 rounded-[10px] border bg-card px-3.5 transition-colors ${fieldBorder(email, !!errors.email)}`}
+                  className={`flex h-12 items-center gap-2.5 rounded-md border bg-card px-3.5 transition-colors ${fieldBorder(email, !!errors.email)}`}
                 >
                   <MailIcon />
                   <input
@@ -148,14 +153,11 @@ export function LoginScreen() {
 
               {/* 비밀번호 */}
               <div className="flex flex-col gap-[7px]">
-                <label
-                  htmlFor="login-password"
-                  className="text-s font-semibold text-gray-600"
-                >
+                <label htmlFor="login-password" className="text-s font-semibold text-gray-600">
                   {t('login-password-label')}
                 </label>
                 <div
-                  className={`flex h-12 items-center gap-2.5 rounded-[10px] border bg-card px-3.5 transition-colors ${fieldBorder(password, !!errors.password)}`}
+                  className={`flex h-12 items-center gap-2.5 rounded-md border bg-card px-3.5 transition-colors ${fieldBorder(password, !!errors.password)}`}
                 >
                   <LockIcon />
                   <input
@@ -171,7 +173,7 @@ export function LoginScreen() {
                     type="button"
                     aria-label={t('login-toggle-password')}
                     onClick={() => setShowPw((v) => !v)}
-                    className="inline-flex size-8 flex-none items-center justify-center rounded-lg text-gray-400 hover:text-gray-600"
+                    className="inline-flex size-8 flex-none items-center justify-center rounded-md text-gray-400 hover:text-gray-600"
                   >
                     <EyeIcon off={showPw} />
                   </button>
@@ -188,22 +190,19 @@ export function LoginScreen() {
                 className="inline-flex items-center gap-2"
               >
                 <span
-                  className={`inline-flex size-[17px] flex-none items-center justify-center rounded-[5px] border-[1.5px] text-white ${remember ? 'border-primary bg-primary' : 'border-gray-300 bg-card'}`}
+                  className={`inline-flex size-[17px] flex-none items-center justify-center rounded border-[1.5px] text-white ${remember ? 'border-primary bg-primary' : 'border-gray-300 bg-card'}`}
                 >
-                  {remember && <CheckIcon className="size-[11px]" strokeWidth={3.4} />}
+                  {remember && <CheckIcon className="size-3" strokeWidth={3.4} />}
                 </span>
                 <span className="text-s text-gray-600">{t('login-remember')}</span>
               </button>
-              <button
-                type="button"
-                className="ml-auto text-s text-gray-500 hover:text-primary"
-              >
+              <button type="button" className="ml-auto text-s text-gray-500 hover:text-primary">
                 {t('login-forgot')}
               </button>
             </div>
 
             {loginMutation.isError && (
-              <p className="mt-4 rounded-[8px] bg-l-red px-3 py-2.5 text-s font-medium text-destructive">
+              <p className="mt-4 rounded-md bg-destructive-bg px-3 py-2.5 text-s font-medium text-destructive">
                 {t('login-error')}
               </p>
             )}
@@ -211,7 +210,7 @@ export function LoginScreen() {
             <button
               type="submit"
               disabled={loginMutation.isPending}
-              className="relative mt-5 flex h-12 w-full items-center justify-center rounded-[10px] bg-primary text-base font-bold text-white transition-colors hover:bg-ov-blue-700"
+              className="relative mt-5 flex h-12 w-full items-center justify-center rounded-md bg-primary text-base font-bold text-white transition-colors hover:bg-ov-blue-700"
             >
               {/* 빠른 응답이면 텍스트 유지, 250ms 넘어가면 CSS로 스피너 전환 (state 없이 깜빡임 방지) */}
               <span
@@ -227,7 +226,7 @@ export function LoginScreen() {
                   aria-label={t('login-loading')}
                 >
                   <svg
-                    className="size-[22px] animate-spin [animation-duration:0.7s]"
+                    className="size-6 animate-spin [animation-duration:0.7s]"
                     viewBox="0 0 24 24"
                     fill="none"
                     aria-hidden="true"
@@ -252,7 +251,6 @@ export function LoginScreen() {
             </button>
             {/* 하단 구분선 — 디자인 A-5 확정: 선만, 문구 없음(프로토타입 문구는 아트보드 전용) */}
             <div className="mt-auto border-t border-gray-100 pt-6" />
-
           </form>
         </div>
       </div>
@@ -278,135 +276,16 @@ function FieldError({ show, children }: { show: boolean; children: React.ReactNo
 function WaveMark() {
   return (
     <svg
-      width="19"
-      height="19"
+      width="20"
+      height="20"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2.4"
+      strokeWidth="2.2"
       strokeLinecap="round"
       aria-hidden="true"
     >
       <path d="M3 14c2-4 4-4 6 0s4 4 6 0 4-4 6 0" />
-    </svg>
-  )
-}
-
-// 이메일 필드 봉투 아이콘 (디자인 17px). 사람 아이콘이 아니다 — 입력값이 계정 이메일이라 봉투가 정본.
-function MailIcon() {
-  return (
-    <svg
-      className="size-[17px] flex-none text-gray-400"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <rect x="3.5" y="5.5" width="17" height="13" rx="2.5" />
-      <path d="M4.5 7.5l7.5 6 7.5-6" />
-    </svg>
-  )
-}
-
-function LockIcon() {
-  return (
-    <svg
-      className="size-[17px] flex-none text-gray-400"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <rect x="5" y="10.5" width="14" height="9.5" rx="2.5" />
-      <path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" />
-    </svg>
-  )
-}
-
-function EyeIcon({ off }: { off: boolean }) {
-  return off ? (
-    <svg
-      className="size-[17px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M9.9 5.2A9.6 9.6 0 0 1 12 5c6 0 9.5 7 9.5 7a15 15 0 0 1-3.3 3.9M6.2 6.2A15 15 0 0 0 2.5 12s3.5 7 9.5 7a9.4 9.4 0 0 0 4-.9" />
-      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18" />
-    </svg>
-  ) : (
-    <svg
-      className="size-[17px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z" />
-      <circle cx="12" cy="12" r="2.8" />
-    </svg>
-  )
-}
-
-function ClearIcon() {
-  return (
-    <svg
-      className="size-2.5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M6 6l12 12M18 6L6 18" />
-    </svg>
-  )
-}
-
-function CheckIcon({ className, strokeWidth = 2.6 }: { className?: string; strokeWidth?: number }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={strokeWidth}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M4.5 12.5l5 5 10-11" />
-    </svg>
-  )
-}
-
-function ErrorIcon() {
-  return (
-    <svg
-      className="size-[13px] flex-none"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path
-        d="M12 6.5v7M12 16.4h.01"
-        stroke="var(--color-white)"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
     </svg>
   )
 }

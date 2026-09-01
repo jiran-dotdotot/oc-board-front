@@ -67,7 +67,7 @@ export function MainScreenTab({ onToast }: { onToast: (msg: string) => void }) {
           type="button"
           onClick={save}
           disabled={!canSave || mut.isPending}
-          className="ml-auto inline-flex h-10 items-center rounded-lg bg-primary px-5 text-sm font-semibold text-white hover:bg-ov-blue-700 disabled:opacity-40"
+          className="ml-auto inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-semibold text-white hover:bg-ov-blue-700 disabled:opacity-40"
         >
           {t('common-save')}
         </button>
