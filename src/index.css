@@ -69,9 +69,18 @@
   /* 디자인 --color-accent(#10BF79 초록 = 성공)는 shadcn --accent(연한 파랑 «배경»)와
      이름이 겹친다. 겹치면 폴백 경고 없이 조용히 틀린 색이 나오므로 이름을 분리한다.
      → 성공/긍정은 success, 선택 배경은 accent. */
-  --color-success: #10bf79;
-  --color-warning: #ff9045;
+  --color-success: var(--success);
+  --color-success-hover: var(--success-hover);
+  --color-success-bg: var(--success-bg);
+  --color-warning: var(--warning);
+  --color-warning-hover: var(--warning-hover);
+  --color-warning-bg: var(--warning-bg);
+  --color-destructive-hover: var(--destructive-hover);
+  --color-destructive-bg: var(--destructive-bg);
+  --color-info-bg: var(--info-bg);
+  /* 파스텔 위 텍스트 — 테마 무관 고정 (정본: l-* 는 다크 오버라이드가 없다) */
   --color-on-pastel: #1f2937;
+  --color-primary-pastel: #2145d9;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -103,13 +112,28 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  /* ── radius 램프 (정본 확정 2026-09-01) ──
+     shadcn 기본은 --radius(0.5rem)의 calc 배수라 4.8 / 6.4 / 11.2 / 14.4 px 같은
+     스케일 밖 값을 만든다. 정본 값으로 덮어쓴다.
+     역할: 뱃지 4(rounded) · 컨트롤 8(md) · 카드 12(lg) · 모달 12~16(lg/xl) · 필 20(2xl)/full.
+     ⚠ 3xl · 4xl 은 사용 금지 — 정의하지 않는다. */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+
+  /* ── 자간 (정본 확정) — 제목 18~20 / 24px+ / 본문 3단 ──
+     tracking-label 은 정본 3단 밖이다: 사이드바 섹션 라벨(11px)의 기존 값을 이름만 붙였다. */
+  --tracking-title: -0.01em;
+  --tracking-display: -0.02em;
+  --tracking-body: 0;
+  --tracking-label: 0.06em;
+
+  /* ── 행간 (정본 확정) — 제목 / 본문·컨트롤 / 장문 3단 ── */
+  --leading-title: 1.3;
+  --leading-body: 1.5;
+  --leading-prose: 1.7;
 }
 
 /* ============================================================
@@ -117,25 +141,37 @@
    출처: OfficeWave Design System (Claude Design "전체 페이지 리뉴얼 계획")
    ============================================================ */
 :root {
-  --background: #ffffff;
-  --foreground: #21242b;
-  --card: #ffffff;
-  --card-foreground: #21242b;
+  /* ── 브랜드·시맨틱 (정본표) ── */
+  --background: #f9fafb; /* = gray-50 «캔버스» — 표면(card)과 다르다 */
+  --foreground: #111827; /* gray-900 */
+  --card: #ffffff; /* = --color-bg : 카드·헤더·사이드바 표면 */
+  --card-foreground: #111827;
   --popover: #ffffff;
-  --popover-foreground: #21242b;
+  --popover-foreground: #111827;
   --primary: #3362ff;
   --primary-foreground: #ffffff;
   --secondary: #f3f4f6;
-  --secondary-foreground: #21242b;
-  --muted: #f3f4f6;
-  --muted-foreground: #5d6c7d;
-  --accent: #f0f6ff;
+  --secondary-foreground: #111827;
+  --muted: #f3f4f6; /* gray-100 = 중립 컨트롤 hover */
+  --muted-foreground: #6b7280; /* gray-500 = 보조 텍스트 */
+  --accent: #f7faff; /* shadcn 「연한 배경」 = ov-blue-50 «선택 배경» */
+  --accent-foreground: #122db3;
 
-  /* 겹침 순서 — 디자인 「컴포넌트 갤러리 4」 구현 노트가 확정한 체계.
-     [Why: 현행 앱의 z-9999 12곳을 평탄화하려는 것이 원 취지다. 임의값을 새로 만들지 말고
-      반드시 이 토큰 중 하나를 쓴다 — z-[var(--z-modal)] 형태.]
-     ⚠ --z-shell 은 디자인 목록에 없어 추가했다. 셸 크롬(sticky 헤더·모바일 하단탭)은
-       드롭다운보다 아래여야 하는데 디자인이 그 층을 명명하지 않았다. */
+  /* 시맨틱 상태 세트 (정본 2026-09-01 신규) — 램프 대신 기본·hover·배경 3단.
+     ⚠ l-* 파스텔은 다크 오버라이드가 없다. «상태» 배경엔 반드시 이쪽을 쓴다. */
+  --destructive: #fd4c45;
+  --destructive-hover: #e23b35;
+  --destructive-bg: #fae8e7;
+  --warning: #ff9045;
+  --warning-hover: #f07e33;
+  --warning-bg: #ffecdd;
+  --success: #10bf79;
+  --success-hover: #0ea96b;
+  --success-bg: #e5f8f1;
+  --info-bg: #f7faff;
+
+  /* 겹침 순서 (정본표 z-index). ⚠ --z-shell 은 정본 목록에 «없다» — 셸 크롬(sticky 헤더·
+     모바일 하단탭)이 드롭다운보다 아래여야 해서 우리가 추가한 층이다. 디자인 확인 필요. */
   --z-shell: 900;
   --z-dropdown: 1000;
   --z-sheet: 1100;
@@ -143,15 +179,17 @@
   --z-loading: 1300;
   --z-toast: 1400;
 
-  /* 오버레이·그림자 (디자인 :root) — Tailwind 유틸이 아니라 var()로 직접 참조된다:
+  /* 오버레이·그림자 (정본표) — Tailwind 유틸이 아니라 var() 로 직접 참조된다:
      bg-[var(--scrim-modal)] · shadow-[var(--shadow-modal)] */
   --scrim-modal: rgba(0, 0, 0, 0.5);
   --scrim-sheet: rgba(0, 0, 0, 0.1);
   --shadow-dropdown: 0 4px 8px rgba(0, 0, 0, 0.1);
   --shadow-modal: 0 4px 18px rgba(75, 70, 92, 0.1);
-  --accent-foreground: #122db3;
-  --destructive: #fd4c45;
-  --border: #e5e7eb;
+
+  /* 로그인 좌측 브랜드 패널 — 라이트/다크 공통 고정 (정본: 「고정」) */
+  --brand-panel: #1b3aa8;
+
+  --border: #e5e7eb; /* gray-200 = 경계선·구분선 */
   --input: #e5e7eb;
   --ring: #3362ff;
   --chart-1: #3362ff;
@@ -160,7 +198,7 @@
   --chart-4: #7543ff;
   --chart-5: #ff50b9;
   --radius: 0.5rem;
-  --sidebar: #f9fafb;
+  --sidebar: #ffffff;
   --sidebar-foreground: #21242b;
   --sidebar-primary: #3362ff;
   --sidebar-primary-foreground: #ffffff;
@@ -178,9 +216,6 @@
   --ov-blue-500: #5c87ff;
   --ov-blue-600: #3362ff;
   --ov-blue-700: #2145d9;
-
-  /* 브랜드 패널(로그인 좌측). 디자인 :root 의 --brand-panel — 다크에서 재정의 안 함(의도) */
-  --brand-panel: #1b3aa8;
   --ov-blue-800: #122db3;
   --ov-blue-900: #07198c;
 
@@ -205,36 +240,48 @@
 /* 다크 테마 — 화면별 .dc(예: 화면 07 자료실) per-screen dark 토큰 반영.
    페이지 배경 = gray-50(#1C1C1F), 카드/표면 = --color-bg(#26262A) → 페이지·카드 톤 분리. */
 .dark {
-  --background: #1c1c1f;
-  --foreground: #f7f7fa;
-  --card: #26262a;
+  /* ── 브랜드·시맨틱 (정본표 다크) ── */
+  --background: #1c1c1f; /* gray-50 «캔버스» */
+  --foreground: #f7f7fa; /* gray-900 */
+  --card: #26262a; /* --color-bg : 카드·헤더·사이드바 표면 */
   --card-foreground: #f7f7fa;
-  --popover: #2e2e33;
+  --popover: #26262a;
   --popover-foreground: #f7f7fa;
-  --primary: #4b79ff;
+  --primary: #4b79ff; /* 다크는 한 단계 밝게 */
   --primary-foreground: #ffffff;
   --secondary: #303036;
   --secondary-foreground: #f7f7fa;
-  --muted: #303036;
-  --muted-foreground: #a4a4af;
-  --accent: rgba(75, 121, 255, 0.16);
+  --muted: #303036; /* gray-100 */
+  --muted-foreground: #a4a4af; /* gray-500 */
+  --accent: rgba(75, 121, 255, 0.16); /* ov-blue-50 (다크는 알파 틴트) */
+  --accent-foreground: #93aeff;
 
-  /* 오버레이·그림자 (다크는 더 짙게 — 디자인 dark 블록) */
+  --destructive: #fd4c45;
+  --destructive-hover: #ff6b65;
+  --destructive-bg: rgba(253, 76, 69, 0.16);
+  --warning: #ff9045;
+  --warning-hover: #ffa666;
+  --warning-bg: rgba(255, 144, 69, 0.16);
+  --success: #10bf79;
+  --success-hover: #3bd495;
+  --success-bg: rgba(16, 191, 121, 0.16);
+  --info-bg: rgba(75, 121, 255, 0.16);
+
+  /* 오버레이·그림자 (정본표 다크) */
   --scrim-modal: rgba(0, 0, 0, 0.62);
   --scrim-sheet: rgba(0, 0, 0, 0.4);
   --shadow-dropdown: 0 6px 16px rgba(0, 0, 0, 0.45);
   --shadow-modal: 0 10px 30px rgba(0, 0, 0, 0.55);
-  --accent-foreground: #93aeff;
-  --destructive: #fd4c45;
-  --border: #3c3c43;
-  --input: #4f4f58;
+
+  --border: #3c3c43; /* gray-200 */
+  --input: #4f4f58; /* gray-300 */
   --ring: #4b79ff;
   --chart-1: #4b79ff;
   --chart-2: #5ee4af;
   --chart-3: #ffb17c;
   --chart-4: #956ffe;
   --chart-5: #ff50b9;
-  --sidebar: #1c1c1f;
+  --sidebar: #26262a;
   --sidebar-foreground: #f7f7fa;
   --sidebar-primary: #4b79ff;
   --sidebar-primary-foreground: #ffffff;
@@ -244,7 +291,7 @@
   --sidebar-ring: #4b79ff;
 
   /* ov-blue 램프 (다크) — 50~200 은 블루 틴트, 300+ 는 밝은 블루 */
-  --ov-blue-50: rgba(75, 121, 255, 0.16);
+--ov-blue-50: rgba(75, 121, 255, 0.16);
   --ov-blue-100: rgba(75, 121, 255, 0.24);
   --ov-blue-200: rgba(124, 158, 255, 0.38);
   --ov-blue-300: #4a72ff;
@@ -256,7 +303,7 @@
   --ov-blue-900: #d6e5ff;
 
   /* 회색 램프 (다크) — 디자인 dark 블록 값. 라이트 짝은 :root 에 있다 */
-  --gray-50: #1c1c1f;
+--gray-50: #1c1c1f;
   --gray-100: #303036;
   --gray-200: #3c3c43;
   --gray-300: #4f4f58;
@@ -268,8 +315,8 @@
   --gray-900: #f7f7fa;
 
   /* 스크롤바 다크 (디자인 --dk-thumb / --dk-thumb-h) */
-  --scrollbar-thumb: #575a5e;
-  --scrollbar-thumb-hover: #6b7280;
+  --scrollbar-thumb: #4f4f58;
+  --scrollbar-thumb-hover: #8e8e99;
 }
 
 @layer base {
@@ -283,6 +330,12 @@
   }
   html {
     @apply font-sans;
+  }
+  /* 브라우저 기본 <button> 커서는 화살표다. 눌리는 것은 눌리게 보여야 한다
+     — 220곳에 cursor-pointer 를 흩뿌리는 대신 여기서 한 번에 정한다. */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
   }
 }
 

@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "check:tokens": "node scripts/check-design-tokens.mjs",
+    "check:scale": "node scripts/check-scale.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
