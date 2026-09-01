@@ -20,6 +20,8 @@ import type { BoardListSearch, BoardRow, BoardView } from './listData'
 import { useBoard, useBoardBookmarkMutation, useBookmarkedBoards } from '@/hooks/useBoards'
 import { Toast } from '@/components/common/Toast'
 import { useToast } from '@/components/common/useToast'
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { useNotices, usePostBookmarkMutation, usePosts } from '@/hooks/usePosts'
 import type { Post } from '@/types/post'
 
@@ -103,12 +105,24 @@ export function BoardListScreen() {
   const boardIdParam = UUID_RE.test(boardId) ? boardId : undefined
   // 안읽음(안 본 글)=is_view 0, 전체=생략 (서버측 필터). 공지·일반 목록에 동일 적용.
   const isView = listFilter === 'before' ? false : undefined
+  // 모바일은 페이지네이션 대신 무한 스크롤(레거시 · 디자인 갤러리 4 「모바일 = 무한스크롤」).
+  // 페이지를 «이어 붙이는» 대신 take 를 키워 1페이지로 다시 받는다 — 누적 배열·중복 제거가
+  // 필요 없고, 사이에 새 글이 끼어들어 행이 밀리거나 빠지는 오프셋 페이지네이션 문제도 없다.
+  const isMobile = useIsMobile()
+  // 게시판·필터·개수가 바뀌면 처음부터 다시 쌓는다.
+  // effect 로 setState 하면 리셋 전 «옛 묶음»이 한 프레임 그려진다 → 렌더 중 파생으로 처리
+  // (React 공식 「props 가 바뀔 때 state 조정」 패턴).
+  const scope = `${boardIdParam ?? ''}|${listFilter}|${perPage}`
+  const [loaded, setLoaded] = useState({ scope, pages: 1 })
+  const loadedPages = loaded.scope === scope ? loaded.pages : 1
+  if (loaded.scope !== scope) setLoaded({ scope, pages: 1 })
+  const loadMore = () => setLoaded({ scope, pages: loadedPages + 1 })
   // 일반 목록: 공지 제외(except_badges) + 페이지네이션. 공지는 아래 useNotices로 따로.
   const { data, isLoading, isError, refetch } = usePosts({
     board_id: boardIdParam,
     except_badges: ['NOTICE'],
-    take: perPage,
-    page,
+    take: isMobile ? perPage * loadedPages : perPage,
+    page: isMobile ? 1 : page,
     sort: { by: 'posted_at', order: 'desc' },
     is_view: isView,
   })
@@ -144,6 +158,9 @@ export function BoardListScreen() {
   const { mutate: toggleBoardBookmark } = useBoardBookmarkMutation()
   const { mutate: togglePostBookmark } = usePostBookmarkMutation()
   const queryClient = useQueryClient()
+  // 모바일에서 아직 못 받은 일반글이 남았는가 (공지는 카운트에서 분리돼 있다)
+  const hasMore = isMobile && rows.length < (data?.total ?? 0)
+  const sentinelRef = useInfiniteScroll(loadMore, hasMore && !isLoading)
 
 
   const ctx: RowCtx = {
@@ -290,7 +307,12 @@ export function BoardListScreen() {
           {view === 'PREVIEW' && <PreviewView rows={rows} ctx={ctx} />}
           {view === 'ALBUM' && <AlbumView rows={rows} ctx={ctx} />}
 
-          {/* 페이지네이션 */}
+          {/* 모바일 무한 스크롤 센티널 — 바닥 100px 전에 다음 묶음을 불러온다 */}
+          {hasMore && <div ref={sentinelRef} aria-hidden="true" className="h-px w-full" />}
+
+          {/* 페이지네이션 — 데스크톱 전용. 모바일은 무한 스크롤이고,
+              lastPage>1 일 때만 노출한다(디자인 갤러리 4 확정 #4). */}
+          {!isMobile && totalPages > 1 && (
           <div className="flex items-center justify-center gap-[3px] py-1.5">
             <PageArrow disabled={atFirst} onClick={() => setSearch({ page: undefined })} label="처음">
               <DoubleChevron dir="left" />
@@ -319,6 +341,7 @@ export function BoardListScreen() {
               <DoubleChevron dir="right" />
             </PageArrow>
           </div>
+          )}
         </>
       )}
 
