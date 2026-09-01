@@ -14,9 +14,12 @@ import { buildNavTree } from '@/utils/category'
 function itemClass(active: boolean) {
   return [
     'flex h-[38px] items-center gap-2.5 rounded-lg px-3.5 text-[13.5px]',
+    // 상태별 색 — 디자인 B-1 확정표.
+    //   비선택: transparent / hover gray-50  / active gray-100
+    //   선택  : ov-blue-50  / hover ov-blue-100 / active ov-blue-200
     active
-      ? 'bg-accent font-semibold text-primary hover:bg-ov-blue-200'
-      : 'font-medium text-gray-700 hover:bg-gray-50',
+      ? 'bg-ov-blue-50 font-semibold text-primary hover:bg-ov-blue-100 active:bg-ov-blue-200'
+      : 'font-medium text-gray-700 hover:bg-gray-50 active:bg-gray-100',
   ].join(' ')
 }
 
@@ -83,7 +86,7 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
                 open={!closed[PUBLIC_KEY]}
                 onClick={() => toggle(PUBLIC_KEY)}
               />
-              <Collapse open={!closed[PUBLIC_KEY]} rail>
+              <Collapse open={!closed[PUBLIC_KEY]}>
                 {publicBoards.map((b) => (
                   <BoardNavItem
                     key={b.id}
@@ -105,18 +108,18 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
                 open={!closed[s.id]}
                 onClick={() => toggle(s.id)}
               />
-              <Collapse open={!closed[s.id]} rail>
+              <Collapse open={!closed[s.id]}>
                 {s.folders.map((f) => (
                   <Fragment key={f.id}>
                     <button
                       type="button"
                       onClick={() => toggle(f.id)}
                       aria-expanded={!closed[f.id]}
-                      className="flex h-9 items-center gap-2 rounded-lg px-3.5 text-[13px] font-semibold text-gray-700 hover:bg-gray-50"
+                      className="flex h-9 items-center gap-2 rounded-lg pr-3 pl-[26px] text-[13px] font-semibold text-gray-700 hover:bg-gray-50"
                     >
-                      <CaretIcon open={!closed[f.id]} />
                       <FolderIcon />
                       <span className="min-w-0 flex-1 truncate text-left">{f.name}</span>
+                      <CaretIcon open={!closed[f.id]} />
                     </button>
                     <Collapse open={!closed[f.id]}>
                       {f.boards.map((b) => (
@@ -181,10 +184,10 @@ function SectionToggle({
       type="button"
       onClick={onClick}
       aria-expanded={open}
-      className="flex w-full items-center gap-[7px] rounded-lg px-3 pt-3.5 pb-1.5 text-[13.5px] font-bold text-gray-800 hover:bg-gray-50"
+      className="flex w-full items-center gap-[7px] rounded-lg pt-3.5 pr-3 pb-1.5 pl-3 text-[13.5px] font-bold text-gray-800 hover:bg-gray-50"
     >
+      <span className="min-w-0 flex-1 truncate text-left">{label}</span>
       <CaretIcon open={open} />
-      <span className="min-w-0 truncate text-left">{label}</span>
     </button>
   )
 }
@@ -192,18 +195,10 @@ function SectionToggle({
 // 높이를 재지 않는 접기 애니메이션 — grid-template-rows 0fr↔1fr 전환(네이티브 CSS).
 // ⚠ 클리핑 박스(overflow-hidden)와 flex 컬럼은 반드시 분리한다. 한 요소로 합치면
 // 자식들이 flex-shrink로 눌렸다 펴져서, 위에서 밀려나오는 대신 크기가 배분되는 느낌이 난다.
-// rail: 카테고리 묶음을 왼쪽 세로선으로 표시 — 한 단계 들여쓰기(~34px)보다 훨씬 싸게
-// '이 아래는 같은 카테고리' 를 전달한다. 세로선은 카테고리 한 겹뿐이다 — 폴더 안 게시판은
-// rail을 중첩하지 않고 폴더 아이콘 열에 맞춰 들여써서 소속을 표시한다(BoardNavItem indent).
-function Collapse({
-  open,
-  rail,
-  children,
-}: {
-  open: boolean
-  rail?: boolean
-  children: React.ReactNode
-}) {
+// ⚠ 세로선(rail)은 폐기했다 — 디자인 B-3 확정: «들여쓰기만»으로 계층을 표시한다.
+//   카테고리 12 › 폴더 26 › 폴더 안 항목 42px (카테고리 직속 항목은 26px).
+//   폴더 안 폴더는 IA 상 없으므로 3단 초과 규칙은 두지 않는다.
+function Collapse({ open, children }: { open: boolean; children: React.ReactNode }) {
   return (
     <div
       className={[
@@ -212,12 +207,7 @@ function Collapse({
       ].join(' ')}
     >
       <div className="min-h-0 overflow-hidden">
-        <div
-          className={[
-            'flex flex-col gap-px',
-            rail ? 'mr-1 mb-1 ml-[17px] border-l border-gray-200 pl-[5px]' : '',
-          ].join(' ')}
-        >
+        <div className="flex flex-col gap-px pb-1">
           {children}
         </div>
       </div>
@@ -251,7 +241,9 @@ function BoardNavItem({
   const active = drive
     ? pathname === '/drive' && new URLSearchParams(searchStr).get('b') === board.id
     : pathname === `/board/${board.id}`
-  const pad = indent ? ' pl-[34px]' : ''
+  // 디자인 B-3 들여쓰기 단계: 카테고리 12 › 폴더 26 › 폴더 안 항목 42.
+  // 카테고리 직속 항목은 26px(폴더와 같은 단), 폴더 안 항목만 42px.
+  const pad = indent ? ' pl-[42px]' : ' pl-[26px]'
   // ★ 링크가 «칠해지는 영역 그 자체»여야 한다. 배경만 있는 래퍼 안에 링크를 넣으면
   //   좌우 패딩(14px)과 위아래 여백이 클릭·hover 불가 사각지대가 된다.
   //   즐겨찾기 버튼은 a > button 중첩을 피하려고 형제로 겹쳐 올린다(아래 relative).
@@ -302,12 +294,13 @@ function BoardNavItem({
   )
 }
 
+// 트리 셰브런 — 행 «우측»에 놓이고 펼치면 180° 뒤집힌다 (디자인 B-3 확정).
 function CaretIcon({ open }: { open: boolean }) {
   return (
     <svg
       className={[
         'size-3 flex-none text-gray-400 transition-transform duration-200',
-        open ? 'rotate-90' : '',
+        open ? 'rotate-180' : '',
       ].join(' ')}
       viewBox="0 0 24 24"
       fill="none"
@@ -317,7 +310,7 @@ function CaretIcon({ open }: { open: boolean }) {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M9 5l7 7-7 7" />
+      <path d="M6 9l6 6 6-6" />
     </svg>
   )
 }
