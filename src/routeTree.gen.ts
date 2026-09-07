@@ -17,6 +17,7 @@ import { Route as SearchRouteImport } from './routes/search'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as WriteRouteImport } from './routes/write'
 import { Route as BoardBoardIdRouteImport } from './routes/board.$boardId'
+import { Route as DriveRecentRouteImport } from './routes/drive_.recent'
 import { Route as PostPostIdRouteImport } from './routes/post.$postId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -59,6 +60,11 @@ const BoardBoardIdRoute = BoardBoardIdRouteImport.update({
   path: '/board/$boardId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DriveRecentRoute = DriveRecentRouteImport.update({
+  id: '/drive_/recent',
+  path: '/drive/recent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PostPostIdRoute = PostPostIdRouteImport.update({
   id: '/post/$postId',
   path: '/post/$postId',
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/write': typeof WriteRoute
   '/board/$boardId': typeof BoardBoardIdRoute
+  '/drive/recent': typeof DriveRecentRoute
   '/post/$postId': typeof PostPostIdRoute
 }
 export interface FileRoutesByTo {
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/write': typeof WriteRoute
   '/board/$boardId': typeof BoardBoardIdRoute
+  '/drive/recent': typeof DriveRecentRoute
   '/post/$postId': typeof PostPostIdRoute
 }
 export interface FileRoutesById {
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/write': typeof WriteRoute
   '/board/$boardId': typeof BoardBoardIdRoute
+  '/drive_/recent': typeof DriveRecentRoute
   '/post/$postId': typeof PostPostIdRoute
 }
 export interface FileRouteTypes {
@@ -110,6 +119,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/write'
     | '/board/$boardId'
+    | '/drive/recent'
     | '/post/$postId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/write'
     | '/board/$boardId'
+    | '/drive/recent'
     | '/post/$postId'
   id:
     | '__root__'
@@ -132,6 +143,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/write'
     | '/board/$boardId'
+    | '/drive_/recent'
     | '/post/$postId'
   fileRoutesById: FileRoutesById
 }
@@ -144,6 +156,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   WriteRoute: typeof WriteRoute
   BoardBoardIdRoute: typeof BoardBoardIdRoute
+  DriveRecentRoute: typeof DriveRecentRoute
   PostPostIdRoute: typeof PostPostIdRoute
 }
 
@@ -205,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BoardBoardIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/drive_/recent': {
+      id: '/drive_/recent'
+      path: '/drive/recent'
+      fullPath: '/drive/recent'
+      preLoaderRoute: typeof DriveRecentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/post/$postId': {
       id: '/post/$postId'
       path: '/post/$postId'
@@ -224,6 +244,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   WriteRoute: WriteRoute,
   BoardBoardIdRoute: BoardBoardIdRoute,
+  DriveRecentRoute: DriveRecentRoute,
   PostPostIdRoute: PostPostIdRoute,
 }
 export const routeTree = rootRouteImport
