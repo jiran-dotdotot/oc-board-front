@@ -4,6 +4,7 @@ import { useNavigate } from '@tanstack/react-router'
 
 import { useTranslation } from 'react-i18next'
 
+import { Checkbox } from '@/components/common/Checkbox'
 import { NoticeBadge } from '@/components/common/NoticeBadge'
 import { Toast } from '@/components/common/Toast'
 import { BookmarkIcon, PaperclipIcon, RestoreIcon, TrashIcon } from '@/components/common/icons'
@@ -232,7 +233,7 @@ export function MyActivityScreen() {
                   checked={allChecked}
                   mixed={allMixed}
                   onClick={toggleAll}
-                  active={selCount > 0}
+                  label={t('drive-select-all')}
                 />
                 <span>{t('col-title')}</span>
                 <span>{t('col-location')}</span>
@@ -261,11 +262,7 @@ export function MyActivityScreen() {
                   ].join(' ')}
                   style={{ gridTemplateColumns: cfg.cols }}
                 >
-                  <Checkbox
-                    checked={!!checks[i]}
-                    onClick={() => toggleRow(i)}
-                    active={!!checks[i]}
-                  />
+                  <Checkbox checked={!!checks[i]} onClick={() => toggleRow(i)} label={r.title} />
                   {/* 제목 셀 */}
                   <span className="flex min-w-0 items-center gap-[7px] pr-3.5">
                     {r.isBookmark && (
@@ -413,59 +410,6 @@ function ToolbarBtn({
     >
       {icon}
       {children}
-    </button>
-  )
-}
-
-function Checkbox({
-  checked,
-  mixed,
-  onClick,
-  active,
-}: {
-  checked: boolean
-  mixed?: boolean
-  onClick: () => void
-  active: boolean
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        'inline-flex size-4 flex-none items-center justify-center rounded border-[1.5px] text-white',
-        active
-          ? 'border-primary bg-primary'
-          : 'border-gray-300 bg-card hover:border-gray-400 hover:bg-gray-50',
-      ].join(' ')}
-    >
-      {checked && (
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="3.4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M4.5 12.5l5 5 10-11" />
-        </svg>
-      )}
-      {!checked && mixed && (
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="3.4"
-          strokeLinecap="round"
-        >
-          <path d="M6 12h12" />
-        </svg>
-      )}
     </button>
   )
 }

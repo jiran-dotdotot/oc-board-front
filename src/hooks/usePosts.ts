@@ -18,13 +18,18 @@ export function usePosts(params: PostListParams) {
 }
 
 // 게시판 공지 목록(상단 고정용). is_not_paging → 배열 반환. 안읽음 필터면 is_view 전달.
-export function useNotices(params: { board_id?: string; is_view?: boolean }) {
+// enabled=false 면 아예 호출하지 않는다 — board_id 없이 부르면 전 게시판 공지를 긁어온다.
+//
+// ⚠ keepPreviousData 를 쓰지 않는다. enabled=false 여도 placeholderData 는 «이전 쿼리의 data»
+// 를 내려주고 status 를 success 로 승격시켜(queryObserver), 가드가 막으려던 오염이
+// 캐시 경로로 되살아난다 — /board/recent 가 직전 게시판의 공지를 상단 고정으로 띄웠다.
+// 공지는 is_not_paging 짧은 배열이라 잠깐 비는 편이 «다른 게시판 공지»보다 낫다.
+export function useNotices(params: { board_id?: string; is_view?: boolean }, enabled = true) {
   const { i18n } = useTranslation()
   return useQuery({
     queryKey: ['notices', params, i18n.language],
     queryFn: () => selectNotices(params, i18n.language),
-    placeholderData: keepPreviousData,
-    enabled: isAuthenticated(),
+    enabled: enabled && isAuthenticated(),
   })
 }
 

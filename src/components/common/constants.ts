@@ -7,3 +7,9 @@ export const TOAST_MS: Record<ToastTone, number> = {
   warning: 3000,
   error: 5000,
 }
+
+// 섹션/화면 제목 옆 NEW 배지. 색은 호출부가 정한다 —
+// 게시글=bg-success(디자인 accent 초록), 자료=bg-primary.
+// ⚠ shadcn 의 `accent` 는 «연한 배경» 이라 초록이 아니다. success 를 쓴다.
+export const NEW_BADGE =
+  'inline-flex h-[22px] flex-none items-center justify-center rounded-md px-[9px] text-[11px] font-extrabold tracking-[0.02em] text-white'

@@ -1,23 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 
 import { useTranslation } from 'react-i18next'
 
-import {
-  LIMIT_DEFAULT_DESKTOP,
-  LIMIT_DEFAULT_MOBILE,
-  LIMIT_OPTIONS,
-  MOBILE_MAX_WIDTH,
-  NOTICE_TOP_CAP,
-  readStoredLimit,
-  writeStoredLimit,
-} from './constants'
+import { NOTICE_TOP_CAP } from './constants'
 import { BOARDS, DEFAULT_BOARD } from './listData'
 import type { BoardListSearch, BoardRow, BoardView } from './listData'
+import { BlockedModal } from '@/components/common/BlockedModal'
+import { Dropdown } from '@/components/common/Dropdown'
 import { NoticeBadge } from '@/components/common/NoticeBadge'
+import { Pagination } from '@/components/common/Pagination'
 import { Toast } from '@/components/common/Toast'
+import { NEW_BADGE } from '@/components/common/constants'
 import {
   AlbumIcon,
   BookmarkIcon,
@@ -29,17 +25,28 @@ import {
   PreviewIcon,
 } from '@/components/common/icons'
 import { useToast } from '@/components/common/useToast'
+import { DEFAULT_LIMIT_DAY } from '@/constants/post'
 import { useBoard, useBoardBookmarkMutation, useBookmarkedBoards } from '@/hooks/useBoards'
-import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useMe } from '@/hooks/useMe'
 import { useNotices, usePostBookmarkMutation, usePosts } from '@/hooks/usePosts'
 import type { Post } from '@/types/post'
 import { fmtDate } from '@/utils/date'
+import {
+  LIMIT_OPTIONS,
+  deviceDefaultLimit,
+  readStoredLimit,
+  writeStoredLimit,
+} from '@/utils/listLimit'
 
 // 디자인 정본: 제목 / 작성자 / 작성일 / 조회 / 공감 — '위치' 컬럼은 없다
 // (게시판 안에 있으니 소속이 자명하다). 모바일은 이 grid를 쓰지 않고 한 줄로 접는다.
 const COLS = 'minmax(300px,1fr) 130px 96px 60px 60px'
+// 전체 목록(/board/recent)은 게시판이 섞이므로 '위치'가 붙는다(홈 위젯·화면 02 와 같은 6컬럼).
+const COLS_RECENT = 'minmax(300px,1fr) 110px 130px 96px 60px 60px'
+// 전체 목록을 여는 boardId 슬러그. 실제 게시판 id 는 UUID 라 충돌하지 않는다.
+const RECENT_BOARD_ID = 'recent'
 
 // 데스크톱 테이블 ↔ 모바일 한 줄. HomeScreen과 같은 패턴.
 const ROW =
@@ -59,6 +66,7 @@ function toRow(p: Post): BoardRow {
   return {
     id: p.id,
     title: p.title,
+    board: p.board?.title ?? '', // 전체 목록의 '위치' 컬럼 (홈 위젯 toHomePost 와 같은 매핑)
     author,
     authorInitial: author ? author[0] : '?',
     avatarBg: pastel(author || String(p.user_id)),
@@ -97,11 +105,7 @@ export function BoardListScreen() {
   const listFilter = search.read ?? 'all'
   const page = search.page ?? 1
   // 개수 기본값: URL → localStorage(레거시 'postLimit') → 기기폭(모바일 20 / 데스크톱 10)
-  const [deviceLimit] = useState(() =>
-    typeof window !== 'undefined' && window.innerWidth <= MOBILE_MAX_WIDTH
-      ? LIMIT_DEFAULT_MOBILE
-      : LIMIT_DEFAULT_DESKTOP,
-  )
+  const [deviceLimit] = useState(deviceDefaultLimit)
   const [storedLimit] = useState(readStoredLimit)
   const perPage = search.limit ?? storedLimit ?? deviceLimit
   const [countOpen, setCountOpen] = useState(false)
@@ -112,6 +116,12 @@ export function BoardListScreen() {
 
   // 라우트 param이 실제 UUID면 board_id로 필터, 샘플 슬러그면 전체 접근 가능 글
   const boardIdParam = UUID_RE.test(boardId) ? boardId : undefined
+  // /board/recent = 홈 「최근 게시글 · 더보기」가 여는 «전체» 목록(정본 isAllList).
+  // 게시판이 섞이므로 위치 컬럼을 달고, 공지 상단 고정 대신 최신순 목록에 그대로 섞는다.
+  const isRecent = boardId === RECENT_BOARD_ID
+  // 노출 기간은 회사 설정(latest_post_day) — 홈 위젯이 쓰는 값과 같다.
+  const { data: me } = useMe()
+  const limitDay = me?.company_setting?.latest_post_day ?? DEFAULT_LIMIT_DAY
   // 안읽음(안 본 글)=is_view 0, 전체=생략 (서버측 필터). 공지·일반 목록에 동일 적용.
   const isView = listFilter === 'before' ? false : undefined
   // 모바일은 페이지네이션 대신 무한 스크롤(레거시 · 디자인 갤러리 4 「모바일 = 무한스크롤」).
@@ -127,9 +137,11 @@ export function BoardListScreen() {
   if (loaded.scope !== scope) setLoaded({ scope, pages: 1 })
   const loadMore = () => setLoaded({ scope, pages: loadedPages + 1 })
   // 일반 목록: 공지 제외(except_badges) + 페이지네이션. 공지는 아래 useNotices로 따로.
+  // 전체 목록(recent)은 공지를 빼지 않는다 — 상단 고정 없이 최신순에 섞인다(레거시 selectRecentPost 동일).
   const { data, isLoading, isError, refetch } = usePosts({
     board_id: boardIdParam,
-    except_badges: ['NOTICE'],
+    except_badges: isRecent ? undefined : ['NOTICE'],
+    limit_day: isRecent ? limitDay : undefined,
     take: isMobile ? perPage * loadedPages : perPage,
     page: isMobile ? 1 : page,
     sort: { by: 'posted_at', order: 'desc' },
@@ -137,7 +149,8 @@ export function BoardListScreen() {
   })
   // 공지: 유효한 NOTICE 글(is_not_paging). 목록에 섞지 않고 위 배너로 순회한다(디자인 정본).
   // 읽음 필터는 공지에도 적용한다 — 레거시 selectNoticePosts 가 is_view 를 함께 넘긴다.
-  const { data: noticeData } = useNotices({ board_id: boardIdParam, is_view: isView })
+  // ⚠ board_id 없이 부르면 전 게시판 공지를 긁어온다 → 전체 목록에선 아예 호출하지 않는다.
+  const { data: noticeData } = useNotices({ board_id: boardIdParam, is_view: isView }, !isRecent)
   const notices = (noticeData ?? []).map(toRow)
   const rows = (data?.data ?? []).map(toRow) // 일반 목록(공지 제외 — except_badges)
   const totalPages = data?.last_page ?? 1
@@ -163,7 +176,9 @@ export function BoardListScreen() {
       : boardErrStatus === 403
         ? t('list-board-forbidden')
         : null
-  const boardName = boardDetail?.title ?? (BOARDS[boardId] ?? DEFAULT_BOARD).name
+  const boardName = isRecent
+    ? t('home-recent-posts')
+    : (boardDetail?.title ?? (BOARDS[boardId] ?? DEFAULT_BOARD).name)
   // 뷰타입: URL 지정이 없으면 게시판에 설정된 type 을 쓴다 — ALBUM 게시판은 앨범형으로 열린다.
   // (레거시 onMounted 의 `if (!route.query.viewType) viewType = board.type` 과 같은 규약)
   const boardType = boardDetail?.type
@@ -187,12 +202,6 @@ export function BoardListScreen() {
     onCopy: () => showToast(t('common-link-copied')),
   }
 
-  const windowStart = Math.floor((page - 1) / 10) * 10 + 1
-  const pages: number[] = []
-  for (let i = 0; i < 10 && windowStart + i <= totalPages; i++) pages.push(windowStart + i)
-  const atFirst = page === 1
-  const atLast = page >= totalPages
-
   const views: { key: BoardView; label: string; icon: React.ReactNode }[] = [
     { key: 'BOARD', label: t('list-view-basic'), icon: <BasicIcon /> },
     { key: 'PREVIEW', label: t('list-view-preview'), icon: <PreviewIcon /> },
@@ -204,6 +213,8 @@ export function BoardListScreen() {
       {/* 헤더 한 줄: 게시판명 · 즐겨찾기 · 글 개수 | (우) 전체·안읽음 · 개수 · 뷰타입 */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <span className="text-lg font-extrabold tracking-title">{boardName}</span>
+        {/* 정본: 전체 목록 제목 옆 NEW 배지(조건 없이 노출 — 홈 섹션과 같은 규약) */}
+        {isRecent && <span className={`${NEW_BADGE} bg-success`}>NEW</span>}
         {boardIdParam && (
           <button
             type="button"
@@ -241,44 +252,24 @@ export function BoardListScreen() {
             </button>
           </div>
 
-          {/* 개수 드롭다운 */}
-          <div className="relative flex-none">
-            <button
-              type="button"
-              onClick={() => setCountOpen((v) => !v)}
-              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-200 bg-card px-3 text-s whitespace-nowrap text-gray-700 hover:bg-gray-100"
-            >
-              {t('list-per-page', { n: perPage })}
-              <ChevronDownIcon className={countOpen ? 'rotate-180' : ''} />
-            </button>
-            {countOpen && (
-              <>
-                <button
-                  type="button"
-                  aria-label="close"
-                  className="fixed inset-0 z-[var(--z-dropdown)] cursor-default"
-                  onClick={() => setCountOpen(false)}
-                />
-                <div className="absolute top-[calc(100%+4px)] right-0 z-[var(--z-dropdown)] w-[130px] rounded-lg border border-gray-200 bg-card p-1 shadow-[var(--shadow-dropdown)]">
-                  {LIMIT_OPTIONS.map((v) => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => {
-                        // 선택은 기기에 남는다(레거시와 같은 키) + URL 에도 실어 공유 가능하게.
-                        writeStoredLimit(v)
-                        setSearch({ limit: v, page: undefined })
-                        setCountOpen(false)
-                      }}
-                      className={`flex h-8 w-full items-center rounded-md px-2.5 text-s hover:bg-gray-100 ${v === perPage ? 'font-semibold text-primary' : 'text-gray-800'}`}
-                    >
-                      {t('list-per-page', { n: v })}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+          {/* 개수 드롭다운 — 공용 Dropdown (자료실과 같은 컴포넌트) */}
+          <Dropdown
+            label={t('list-per-page', { n: perPage })}
+            open={countOpen}
+            onToggle={() => setCountOpen((v) => !v)}
+            onClose={() => setCountOpen(false)}
+            width="w-[130px]"
+            options={LIMIT_OPTIONS.map((v) => ({
+              key: String(v),
+              label: t('list-per-page', { n: v }),
+              selected: v === perPage,
+              onPick: () => {
+                // 선택은 기기에 남는다(레거시와 같은 키) + URL 에도 실어 공유 가능하게.
+                writeStoredLimit(v)
+                setSearch({ limit: v, page: undefined })
+              },
+            }))}
+          />
 
           {/* 뷰 전환 */}
           <div className="inline-flex gap-0.5 rounded-md bg-gray-100 p-0.5">
@@ -298,6 +289,13 @@ export function BoardListScreen() {
         </div>
       </div>
 
+      {/* 전체 목록 안내문 — 노출 기간은 회사 설정(환경 설정 · 메인화면)이 정한다(정본 문구) */}
+      {isRecent && (
+        <span className="-mt-1.5 text-xs text-gray-400">
+          {t('recent-posts-desc', { n: limitDay })}
+        </span>
+      )}
+
       {/* 뷰 / 로딩 / 에러 / 빈 상태 */}
       {isError ? (
         <ErrorState onRetry={() => refetch()} />
@@ -311,6 +309,7 @@ export function BoardListScreen() {
             <BoardView
               rows={rows}
               ctx={ctx}
+              showBoard={isRecent}
               notices={shownNotices}
               hiddenCount={hiddenNoticeCount}
               expanded={ntExpanded}
@@ -326,56 +325,17 @@ export function BoardListScreen() {
           {/* 페이지네이션 — 데스크톱 전용. 모바일은 무한 스크롤이고,
               lastPage>1 일 때만 노출한다(디자인 갤러리 4 확정 #4). */}
           {!isMobile && totalPages > 1 && (
-            <div className="flex items-center justify-center gap-[3px] py-1.5">
-              <PageArrow
-                disabled={atFirst}
-                onClick={() => setSearch({ page: undefined })}
-                label="처음"
-              >
-                <DoubleChevron dir="left" />
-              </PageArrow>
-              <PageArrow
-                disabled={atFirst}
-                onClick={() => setSearch({ page: page - 1 > 1 ? page - 1 : undefined })}
-                label="이전"
-              >
-                <Chevron dir="left" />
-              </PageArrow>
-              {pages.map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setSearch({ page: n > 1 ? n : undefined })}
-                  className={`mx-px inline-flex h-7 min-w-[28px] items-center justify-center rounded-full border px-1.5 text-s ${
-                    n === page
-                      ? 'border-primary font-bold text-primary'
-                      : 'border-transparent text-gray-500 hover:bg-gray-100'
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-              <PageArrow
-                disabled={atLast}
-                onClick={() => setSearch({ page: page + 1 })}
-                label="다음"
-              >
-                <Chevron dir="right" />
-              </PageArrow>
-              <PageArrow
-                disabled={atLast}
-                onClick={() => setSearch({ page: totalPages })}
-                label="마지막"
-              >
-                <DoubleChevron dir="right" />
-              </PageArrow>
-            </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              onPick={(n) => setSearch({ page: n > 1 ? n : undefined })}
+            />
           )}
         </>
       )}
 
       {blockedMessage && (
-        <BoardBlockedModal
+        <BlockedModal
           message={blockedMessage}
           onClose={() => {
             // 사이드바에 남아 있는 죽은 항목을 걷어낸다
@@ -396,40 +356,6 @@ export function BoardListScreen() {
    어느 쪽으로 닫아도 반드시 같은 onClose 가 돈다 — 레거시는 스크림으로 닫으면
    콜백(뒤로가기)이 누락돼 사용자가 빈 화면에 남았다.
    토스트가 아니라 모달인 이유: 리다이렉트와 함께 화면이 바뀌면 이유가 전달되지 않는다. */
-function BoardBlockedModal({ message, onClose }: { message: string; onClose: () => void }) {
-  const { t } = useTranslation()
-  useBodyScrollLock(true)
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
-
-  return (
-    <div
-      role="presentation"
-      onClick={onClose}
-      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-[var(--scrim-modal)] p-4"
-    >
-      <div
-        role="alertdialog"
-        aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-        className="flex w-[320px] max-w-full flex-col items-center gap-[18px] rounded-lg bg-card px-[22px] pt-[26px] pb-[18px] shadow-[var(--shadow-modal)]"
-      >
-        <span className="text-center text-sm font-semibold text-gray-900">{message}</span>
-        <button
-          type="button"
-          autoFocus
-          onClick={onClose}
-          className="h-10 w-full rounded-md bg-primary text-sm font-semibold text-white hover:bg-ov-blue-700"
-        >
-          {t('common-confirm')}
-        </button>
-      </div>
-    </div>
-  )
-}
 
 /* ── 안읽음 표시 ──
    점(형태) + 색 두 축을 함께 쓴다. 색만 남기면(gray-900↔gray-500) 색 대비 하나로만
@@ -590,9 +516,10 @@ function RowActions({ row, ctx }: { row: BoardRow; ctx: RowCtx }) {
 /* ── 기본형 (테이블) ── */
 // 공지 6a: 목록과 «같은 표» 안에서 상단 3건을 고정하고, 초과분은 토글로 펼친다.
 // 공지 블록 전체를 gray-200 한 줄로 일반 목록과 구분한다(디자인 6a).
-function BoardView({
+export function BoardView({
   rows,
   ctx,
+  showBoard,
   notices,
   hiddenCount,
   expanded,
@@ -600,19 +527,22 @@ function BoardView({
 }: {
   rows: BoardRow[]
   ctx: RowCtx
+  showBoard: boolean
   notices: BoardRow[]
   hiddenCount: number
   expanded: boolean
   onToggleNotices: () => void
 }) {
   const { t } = useTranslation()
+  const cols = showBoard ? COLS_RECENT : COLS
   return (
     <div className="bg-card">
       <div
         className="hidden h-[42px] items-center border-b border-gray-200 px-[18px] text-xs text-gray-500 min-[631px]:grid"
-        style={{ gridTemplateColumns: COLS }}
+        style={{ gridTemplateColumns: cols }}
       >
         <span>{t('col-title')}</span>
+        {showBoard && <span>{t('col-location')}</span>}
         <span>{t('col-author')}</span>
         <span>{t('col-date')}</span>
         <span className="text-center">{t('col-views')}</span>
@@ -645,15 +575,23 @@ function BoardView({
           onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && ctx.open(r.id)}
           aria-label={r.read ? r.title : `${t('list-filter-unread')} · ${r.title}`}
           className={`group relative cursor-pointer text-left hover:bg-gray-100 ${ROW}`}
-          style={{ gridTemplateColumns: COLS }}
+          style={{ gridTemplateColumns: cols }}
         >
           <span className="flex w-full min-w-0 items-center gap-[7px] min-[631px]:w-auto min-[631px]:pr-3.5">
             <TitleCell r={r} />
           </span>
-          {/* 모바일: 숨는 컬럼을 한 줄로 접는다 */}
+          {/* 모바일: 숨는 컬럼을 한 줄로 접는다 (전체 목록은 '위치'도 함께 접는다) */}
           <span className="w-full truncate text-xs text-gray-400 min-[631px]:hidden">
-            {t('list-meta', { author: r.author, date: r.date, views: r.views })}
+            {showBoard
+              ? t('list-meta-recent', {
+                  board: r.board,
+                  author: r.author,
+                  date: r.date,
+                  views: r.views,
+                })
+              : t('list-meta', { author: r.author, date: r.date, views: r.views })}
           </span>
+          {showBoard && <span className={`${CELL_DESKTOP} pr-2 text-gray-500`}>{r.board}</span>}
           <span className="hidden min-w-0 items-center gap-1.5 pr-2 min-[631px]:flex">
             <Avatar r={r} />
             <span className="truncate text-s text-gray-600">{r.author}</span>
@@ -814,30 +752,6 @@ function CommentCount({ n }: { n: number }) {
   )
 }
 
-function PageArrow({
-  disabled,
-  onClick,
-  label,
-  children,
-}: {
-  disabled: boolean
-  onClick: () => void
-  label: string
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      disabled={disabled}
-      onClick={onClick}
-      className="inline-flex size-[30px] items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-transparent"
-    >
-      {children}
-    </button>
-  )
-}
-
 /* ── 아이콘 ── */
 function BasicIcon() {
   return (
@@ -851,42 +765,6 @@ function BasicIcon() {
       aria-hidden="true"
     >
       <path d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-  )
-}
-function Chevron({ dir }: { dir: 'left' | 'right' }) {
-  return (
-    <svg
-      className="size-3.5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {dir === 'left' ? <path d="M15 5l-7 7 7 7" /> : <path d="M9 5l7 7-7 7" />}
-    </svg>
-  )
-}
-function DoubleChevron({ dir }: { dir: 'left' | 'right' }) {
-  return (
-    <svg
-      className="size-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {dir === 'left' ? (
-        <path d="M17.5 5l-7 7 7 7M10.5 5l-7 7 7 7" />
-      ) : (
-        <path d="M6.5 5l7 7-7 7M13.5 5l7 7-7 7" />
-      )}
     </svg>
   )
 }
