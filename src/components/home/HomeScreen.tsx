@@ -2,17 +2,9 @@ import { useNavigate } from '@tanstack/react-router'
 
 import { useTranslation } from 'react-i18next'
 
-import {
-  DEFAULT_LIMIT_DAY,
-  DRAFT_COUNT,
-  EXT_BG,
-  EXT_BG_DEFAULT,
-  HOME_TAKE,
-  NEW_BADGE,
-  SCHED_COUNT,
-  TODO_PILL,
-} from './constants'
+import { DRAFT_COUNT, EXT_BG, EXT_BG_DEFAULT, HOME_TAKE, SCHED_COUNT, TODO_PILL } from './constants'
 import { NoticeBadge } from '@/components/common/NoticeBadge'
+import { NEW_BADGE } from '@/components/common/constants'
 import {
   CheckIcon,
   CommentIcon,
@@ -21,6 +13,7 @@ import {
   DriveIcon,
   EyeIcon,
 } from '@/components/common/icons'
+import { DEFAULT_LIMIT_DAY } from '@/constants/post'
 import { useDriveFiles } from '@/hooks/useDriveFiles'
 import { useMe } from '@/hooks/useMe'
 import { usePosts } from '@/hooks/usePosts'
@@ -123,8 +116,8 @@ export function HomeScreen() {
 
       {/* 해야 할 일 */}
       <div className="flex flex-wrap items-center gap-3.5 rounded-lg border border-gray-200 bg-gray-50 px-[18px] py-3.5">
-        <span className="inline-flex size-[34px] flex-none items-center justify-center rounded-md bg-ov-blue-100 text-primary">
-          <CheckIcon />
+        <span className="inline-flex size-[34px] flex-none items-center justify-center rounded-md bg-primary text-white">
+          <CheckIcon className="size-4 flex-none" />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="text-sm font-bold">{t('home-todo-title')}</span>
@@ -152,7 +145,7 @@ export function HomeScreen() {
             <span className={`${NEW_BADGE} bg-success`}>NEW</span>
             <MoreLink
               label={t('home-more')}
-              onClick={() => navigate({ to: '/board/$boardId', params: { boardId: 'notice' } })}
+              onClick={() => navigate({ to: '/board/$boardId', params: { boardId: 'recent' } })}
             />
           </div>
           <div>
@@ -243,7 +236,7 @@ export function HomeScreen() {
             <span className={SECTION_TITLE}>{t('home-recent-files')}</span>
             {/* 레거시 <ico-new type="drive" /> · 화면 02 모두 조건 없이 노출한다 */}
             <span className={`${NEW_BADGE} bg-primary`}>NEW</span>
-            <MoreLink label={t('home-more')} onClick={() => navigate({ to: '/drive' })} />
+            <MoreLink label={t('home-more')} onClick={() => navigate({ to: '/drive/recent' })} />
           </div>
           <div>
             <div>

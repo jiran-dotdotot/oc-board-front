@@ -18,6 +18,7 @@ export interface BoardListSearch {
 export interface BoardRow {
   id: string | number
   title: string
+  board: string // 게시판명 — 전체 목록(/board/recent)의 '위치' 컬럼에서만 쓴다
   author: string
   authorInitial: string
   avatarBg: string // bg-l-* 파스텔

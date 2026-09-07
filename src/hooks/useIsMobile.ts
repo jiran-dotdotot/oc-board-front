@@ -1,6 +1,6 @@
 import { useCallback, useSyncExternalStore } from 'react'
 
-import { MOBILE_MAX_WIDTH } from '@/components/board/constants'
+import { MOBILE_MAX_WIDTH } from '@/utils/listLimit'
 
 const QUERY = `(max-width: ${MOBILE_MAX_WIDTH}px)`
 

@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { BoardListScreen } from '@/components/board/BoardListScreen'
-import { LIMIT_OPTIONS } from '@/components/board/constants'
 import { BOARD_VIEWS, type BoardListSearch, type BoardView } from '@/components/board/listData'
+import { LIMIT_OPTIONS } from '@/utils/listLimit'
 
 export const Route = createFileRoute('/board/$boardId')({
   // 목록 상태(읽음 필터·페이지·개수·뷰타입)의 정본은 URL이다 — 공유·뒤로가기·새로고침이 살아난다.
