@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
@@ -6,187 +6,262 @@ import { AddNodeModal } from './AddNodeModal'
 import { ContentTree } from './ContentTree'
 import { NodeDetailPanel } from './NodeDetailPanel'
 import { TYPE_KEY, emptyDraft } from './constants'
-import type { AddDraft, Cat, DropPos, Folder, Item, NodeKind, TreeNode } from './types'
-import {
-  OrgPickerModal,
-  type PickerMode,
-  type PickerResult,
-} from '@/components/settings/OrgPickerModal'
-import { INITIAL_CATS, INITIAL_FOLDERS, INITIAL_ITEMS } from '@/components/settings/treeData'
+import type { AddDraft, DropPos, NodeDraft, NodeKind, SettingsNode } from './types'
+import { Modal } from '@/components/common/Modal'
+import { fmtSize } from '@/components/drive/driveData'
 import { useMe } from '@/hooks/useMe'
-import { flattenTree, reorder } from '@/utils/settingsTree'
-
-const DEFAULT_CAT = 'shared'
+import {
+  useBoardDetail,
+  useCategoryDetail,
+  useSettingsTree,
+  useSettingsTreeMutations,
+} from '@/hooks/useSettingsTree'
+import type { BoardCreatePayload } from '@/types/board'
+import type { CategoryUpdatePayload } from '@/types/category'
+import {
+  boardUpdatePatch,
+  categoryUpdatePatch,
+  draftOf,
+  isEmptyPatch,
+} from '@/utils/settingsPayload'
+import {
+  dndSame,
+  flattenSettingsTree,
+  labelToBytes,
+  positionPatch,
+  reorder,
+} from '@/utils/settingsTree'
 
 /**
  * 「게시판 관리」 탭 — 좌측 트리 + 우측 상세 패널 + 추가 모달.
- * ⚠️ 트리는 아직 `treeData.ts` 데모 데이터이고 저장·삭제·정렬이 토스트에서 끝난다.
- * Go 배선(카테고리·게시판 CRUD, `PUT category-tree`)은 다음 단계에서 이 파일에 들어온다.
+ * 트리는 `GET {S}/categories/admin|management`, 쓰기는 게시판·카테고리 CRUD 와
+ * `PUT {S}/category-tree`(순서) 다 — 전부 board 토큰으로 호출된다.
  */
 export function ContentTab({
   addKind,
   onAddClose,
   onToast,
 }: {
-  /** 헤더 「추가」 메뉴가 고른 종류. null 이면 모달을 닫는다. */
   addKind: NodeKind | null
   onAddClose: () => void
-  onToast: (msg: string) => void
+  onToast: (msg: string, tone?: 'success' | 'error') => void
 }) {
   const { t } = useTranslation()
   const { data: me } = useMe()
+  const isOfficeAdmin = !!me?.is_admin
 
-  const [cats, setCats] = useState<Cat[]>(INITIAL_CATS)
-  const [folders, setFolders] = useState<Folder[]>(INITIAL_FOLDERS)
-  const [items, setItems] = useState<Item[]>(INITIAL_ITEMS)
-  const [sel, setSel] = useState<{ kind: NodeKind; id: string }>({ kind: 'cat', id: DEFAULT_CAT })
-  const [picker, setPicker] = useState<{ mode: PickerMode; target: 'sel' | 'add' } | null>(null)
-  const [draft, setDraft] = useState<AddDraft>(() => emptyDraft(`cat:${DEFAULT_CAT}`))
+  const { data: tree, isError, isLoading } = useSettingsTree()
+  const m = useSettingsTreeMutations()
 
-  // 선택 노드 — 없어졌으면 첫 카테고리로 되돌린다.
-  const found: Cat | Folder | Item | undefined =
-    sel.kind === 'cat'
-      ? cats.find((c) => c.id === sel.id)
-      : sel.kind === 'folder'
-        ? folders.find((f) => f.id === sel.id)
-        : items.find((b) => b.id === sel.id)
-  const node = found ?? cats[0]
-  const kind: NodeKind = found ? sel.kind : 'cat'
-  const item = kind === 'board' || kind === 'drive' ? (node as Item) : null
+  const nodes = flattenSettingsTree(tree, { isOfficeAdmin }, t('nav-public'))
+  const [selId, setSelId] = useState<string | null>(null)
+  const node = nodes.find((n) => n.id === selId) ?? nodes[0]
 
-  const patchSel = (patch: Partial<Cat & Folder & Item>) => {
-    if (kind === 'cat')
-      setCats((prev) => prev.map((c) => (c.id === node.id ? { ...c, ...patch } : c)))
-    else if (kind === 'folder')
-      setFolders((prev) => prev.map((f) => (f.id === node.id ? { ...f, ...patch } : f)))
-    else setItems((prev) => prev.map((b) => (b.id === node.id ? { ...b, ...patch } : b)))
+  const [draft, setDraft] = useState<AddDraft>(() => emptyDraft(''))
+  const [pendingDelete, setPendingDelete] = useState<SettingsNode | null>(null)
+  const [liveMsg, setLiveMsg] = useState('')
+  const delTitleId = useId()
+
+  const isCategory = node?.kind === 'cat' || node?.kind === 'folder'
+  // 트리에는 grant 가 없다 → 선택한 노드만 상세를 따로 받는다.
+  const boardDetail = useBoardDetail(node && !isCategory && !node.fixed ? node.id : null)
+  const catDetail = useCategoryDetail(isCategory && !node?.fixed ? node.id : null)
+  const detail = isCategory ? catDetail.data : boardDetail.data
+
+  /* ── 순서 변경 ──
+     드래그·키보드 모두 여기로 모인다. 낙관적 갱신은 하지 않는다 — 3단 트리의 형제 배열을
+     로컬에서 재배치했다가 서버와 맞추는 화해 로직이 오히려 버그 밭이고, 무효화 후 재조회
+     한 번이면 끝난다. 대신 실패는 토스트로, 성공은 live region 으로 알린다. */
+  const onMove = (dragged: SettingsNode, targetId: string, pos: DropPos) => {
+    const siblings = nodes.filter((n) => n.id === dragged.id || dndSame(dragged, n))
+    const next = reorder(siblings, dragged.id, targetId, pos)
+    const patch = positionPatch(next.map((n) => ({ id: n.id, position: n.position })))
+    if (Object.keys(patch).length === 0) return
+    const isCat = dragged.kind === 'cat' || dragged.kind === 'folder'
+    m.reorder.mutate(
+      isCat ? { update_category_position: patch } : { update_board_position: patch },
+      {
+        onSuccess: () => {
+          const at = next.findIndex((n) => n.id === dragged.id) + 1
+          setLiveMsg(t('admin-reorder-moved', { name: dragged.name, n: at }))
+        },
+        onError: () => onToast(t('admin-reorder-failed'), 'error'),
+      },
+    )
   }
 
-  const tree = flattenTree(cats, folders, items)
-
-  const onReorder = (dragged: TreeNode, targetId: string, pos: DropPos) => {
-    if (dragged.kind === 'cat') setCats((prev) => reorder(prev, dragged.id, targetId, pos))
-    else if (dragged.kind === 'folder')
-      setFolders((prev) => reorder(prev, dragged.id, targetId, pos))
-    else setItems((prev) => reorder(prev, dragged.id, targetId, pos))
+  /* ── 저장 ── */
+  const onSave = (d: NodeDraft) => {
+    if (!node) return
+    if (isCategory) {
+      const patch: CategoryUpdatePayload = categoryUpdatePatch(
+        { name: node.name, is_active: draftOf(node).is_active },
+        { name: d.name, is_active: d.is_active },
+      )
+      if (isEmptyPatch(patch)) return onToast(t('admin-no-change'))
+      m.updateCategory.mutate(
+        { id: node.id, payload: patch },
+        {
+          onSuccess: () => onToast(t('admin-toast-saved')),
+          onError: () => onToast(t('env-error'), 'error'),
+        },
+      )
+      return
+    }
+    // 전체 용량을 현재 사용량 아래로 내리면 업로드된 파일이 한도를 넘은 상태가 된다.
+    // Go 는 검증하지 않으므로 프론트에서 막는다(레거시와 같은 규칙).
+    const usage = boardDetail.data?.total_usage_size ?? 0
+    if (d.size_limit != null && d.size_limit > 0 && usage > d.size_limit) {
+      onToast(t('admin-quota-below-usage', { used: fmtSize(usage) }), 'error')
+      return
+    }
+    const patch = boardUpdatePatch(draftOf(node), d)
+    if (isEmptyPatch(patch)) return onToast(t('admin-no-change'))
+    m.updateBoard.mutate(
+      { id: node.id, payload: patch },
+      {
+        onSuccess: () => onToast(t('admin-toast-saved')),
+        onError: () => onToast(t('env-error'), 'error'),
+      },
+    )
   }
 
-  // 추가 모달의 위치 선택지 — 폴더 추가는 카테고리만 고를 수 있다.
+  /* ── grant 제거 (추가는 조직도 부재로 불가 — BR-012) ── */
+  const onRemoveGrant = (kind: 'admin' | 'member' | 'department', id: number) => {
+    if (!node) return
+    if (isCategory) {
+      const payload: CategoryUpdatePayload =
+        kind === 'admin'
+          ? { delete_category_admin_user_id: [id] }
+          : kind === 'member'
+            ? { delete_category_member_user_id: [id] }
+            : { delete_category_department_id: [id] }
+      m.updateCategory.mutate(
+        { id: node.id, payload },
+        { onError: () => onToast(t('env-error'), 'error') },
+      )
+      return
+    }
+    m.updateBoard.mutate(
+      {
+        id: node.id,
+        payload:
+          kind === 'admin'
+            ? { delete_board_admin_user_id: [id] }
+            : kind === 'member'
+              ? { delete_board_member_user_id: [id] }
+              : { delete_board_department_id: [id] },
+      },
+      { onError: () => onToast(t('env-error'), 'error') },
+    )
+  }
+
+  /* ── 삭제 ── */
+  const confirmDelete = () => {
+    const target = pendingDelete
+    if (!target) return
+    setPendingDelete(null)
+    const opts = {
+      onSuccess: () => {
+        setSelId(null)
+        onToast(t('admin-toast-deleted', { name: target.name }))
+      },
+      onError: () => onToast(t('env-error'), 'error'),
+    }
+    if (target.kind === 'cat' || target.kind === 'folder') m.deleteCategory.mutate(target.id, opts)
+    else m.deleteBoard.mutate(target.id, opts)
+  }
+
+  /* ── 추가 ── */
   const locOpts: { v: string; label: string }[] = []
-  for (const c of cats) {
-    locOpts.push({ v: `cat:${c.id}`, label: c.name })
-    if (addKind !== 'folder')
-      for (const f of folders.filter((x) => x.cat === c.id))
-        locOpts.push({ v: `fol:${f.id}`, label: `${c.name} / ${f.name}` })
+  for (const n of nodes) {
+    if (n.kind === 'cat' && !n.fixed) locOpts.push({ v: `cat:${n.id}`, label: n.name })
+    // 폴더 추가는 카테고리만 부모가 될 수 있다(Go 2단 제한).
+    if (n.kind === 'folder' && addKind !== 'folder')
+      locOpts.push({
+        v: `fol:${n.id}`,
+        label: `${nodes.find((x) => x.id === n.parentCat)?.name ?? ''} / ${n.name}`,
+      })
   }
 
   const addSubmit = (): boolean => {
     const name = draft.name.trim()
     if (!name || !addKind) return false
-    const id = `n${Date.now()}`
-    const [locType, locId] = (draft.loc || `cat:${DEFAULT_CAT}`).split(':')
-    if (addKind === 'cat') {
-      setCats((prev) => [
-        ...prev,
-        {
-          id,
-          name,
-          scope: draft.scope,
-          scopeLabel: draft.scopeLabel || undefined,
-          admins: draft.admins,
-        },
-      ])
-      setSel({ kind: 'cat', id })
-    } else if (addKind === 'folder') {
-      setFolders((prev) => [
-        ...prev,
-        {
-          id,
-          name,
-          cat: locId,
-          scope: draft.scope,
-          scopeLabel: draft.scopeLabel || undefined,
-          admins: draft.admins,
-        },
-      ])
-      setSel({ kind: 'folder', id })
-    } else {
-      const cat =
-        locType === 'cat' ? locId : (folders.find((f) => f.id === locId)?.cat ?? DEFAULT_CAT)
-      const base: Item = {
-        id,
-        name,
-        type: addKind,
-        active: addKind === 'board' ? draft.active : true,
-        scope: draft.scope,
-        scopeLabel: draft.scopeLabel || undefined,
-        admins: draft.admins,
-        alarm: draft.alarm,
-        cat,
-        folder: locType === 'fol' ? locId : null,
-      }
-      if (addKind === 'board') {
-        base.btype = draft.btype
-        base.desc = draft.desc.trim() || undefined
-      } else {
-        base.fileMax = draft.fileMax
-        base.totalMax = draft.totalMax
-        base.exts = draft.ext
-          .split(',')
-          .map((x) => x.trim().replace(/^\./, '').toLowerCase())
-          .filter(Boolean)
-      }
-      setItems((prev) => [...prev, base])
-      setSel({ kind: addKind, id })
+    const [locType, locId] = (draft.loc || locOpts[0]?.v || '').split(':')
+    const done = {
+      onSuccess: () => {
+        onAddClose()
+        setDraft(emptyDraft(''))
+        onToast(t('admin-toast-added', { name, type: t(TYPE_KEY[addKind]) }))
+      },
+      onError: () => onToast(t('env-error'), 'error'),
     }
-    onAddClose()
-    onToast(t('admin-toast-added', { name, type: t(TYPE_KEY[addKind]) }))
+    if (addKind === 'cat') {
+      m.createCategory.mutate({ name, is_active: true }, done)
+      return true
+    }
+    if (addKind === 'folder') {
+      m.createCategory.mutate({ name, parent_category_id: locId, is_active: true }, done)
+      return true
+    }
+    // 게시판·자료실. `category_id: null` 은 공용이고 회사 관리자만 만들 수 있다.
+    const payload: BoardCreatePayload = {
+      type: addKind === 'drive' ? 'DRIVE' : draft.btype,
+      title: name,
+      category_id: locType === 'cat' || locType === 'fol' ? locId : null,
+      is_post_alarm: draft.alarm,
+      is_active: addKind === 'board' ? draft.active : true,
+    }
+    if (addKind === 'board' && draft.desc.trim()) payload.description = draft.desc.trim()
+    if (addKind === 'drive') {
+      payload.size_limit = labelToBytes(draft.totalMax)
+      payload.size_limit_per_file = labelToBytes(draft.fileMax)
+      payload.except_extension = draft.ext
+        .split(',')
+        .map((x) => x.trim().replace(/^\./, ''))
+        .filter(Boolean)
+    }
+    m.createBoard.mutate(payload, done)
     return true
   }
 
-  const onPickerConfirm = (r: PickerResult) => {
-    if (!picker) return
-    if (picker.mode === 'scope') {
-      if (picker.target === 'sel') patchSel({ scope: 'org', scopeLabel: r.label })
-      else setDraft((d) => ({ ...d, scope: 'org', scopeLabel: r.label }))
-      onToast(t('admin-toast-scope-set'))
-    } else {
-      const merge = (cur: string[]) => {
-        const out = cur.slice()
-        for (const n of r.names) if (!out.includes(n)) out.push(n)
-        return out
-      }
-      if (picker.target === 'sel') patchSel({ admins: merge(currentAdmins(node)) })
-      else setDraft((d) => ({ ...d, admins: merge(d.admins) }))
-      onToast(t('admin-toast-manager-set', { n: r.names.length }))
-    }
-    setPicker(null)
-  }
+  const saving =
+    m.updateBoard.isPending ||
+    m.updateCategory.isPending ||
+    m.deleteBoard.isPending ||
+    m.deleteCategory.isPending
+
+  if (isError) return <div className="py-6 text-s text-gray-500">{t('admin-tree-error')}</div>
+  if (isLoading) return <div className="py-6 text-s text-gray-500">{t('common-loading')}</div>
 
   return (
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-1 items-start gap-4 min-[820px]:grid-cols-[300px_minmax(0,1fr)]">
         <ContentTree
-          nodes={tree}
-          sel={sel}
-          onSelect={setSel}
-          onReorder={onReorder}
+          nodes={nodes}
+          selId={node?.id ?? null}
+          onSelect={(n) => setSelId(n.id)}
+          onMove={onMove}
           note={t('admin-tree-note')}
+          emptyText={t('admin-tree-empty')}
         />
-        <NodeDetailPanel
-          node={node}
-          kind={kind}
-          item={item}
-          admins={currentAdmins(node)}
-          meName={me?.name ?? ''}
-          onPatch={patchSel}
-          onOpenScopePicker={() => setPicker({ mode: 'scope', target: 'sel' })}
-          onOpenAdminPicker={() => setPicker({ mode: 'admin', target: 'sel' })}
-          onDelete={() => onToast(t('admin-toast-del-demo', { name: node.name }))}
-          onSave={() => onToast(t('admin-toast-saved'))}
-        />
+        {node && (
+          <NodeDetailPanel
+            node={node}
+            detail={detail}
+            meName={me?.name ?? ''}
+            saving={saving}
+            onSave={onSave}
+            onDelete={() => setPendingDelete(node)}
+            onRemoveGrant={onRemoveGrant}
+          />
+        )}
       </div>
       <span className="text-xs text-gray-400">{t('admin-hint')}</span>
+      {/* 순서 변경은 색(드롭선)으로만 전달되므로 결과를 문장으로도 알린다. */}
+      <span aria-live="polite" className="sr-only">
+        {liveMsg}
+      </span>
 
       {addKind && (
         <AddNodeModal
@@ -194,26 +269,42 @@ export function ContentTab({
           draft={draft}
           locOpts={locOpts}
           onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
-          onOpenScopePicker={() => setPicker({ mode: 'scope', target: 'add' })}
-          onOpenAdminPicker={() => setPicker({ mode: 'admin', target: 'add' })}
           onClose={onAddClose}
           onSubmit={addSubmit}
         />
       )}
 
-      {/* 조직도 피커 — 열릴 때마다 새로 마운트되어 선택 state 가 초기화된다. */}
-      {picker && (
-        <OrgPickerModal
-          open
-          mode={picker.mode}
-          onClose={() => setPicker(null)}
-          onConfirm={onPickerConfirm}
-        />
+      {pendingDelete && (
+        <Modal onClose={() => setPendingDelete(null)} role="alertdialog" labelledBy={delTitleId}>
+          <div className="w-[380px] max-w-full rounded-xl bg-card p-5 shadow-[var(--shadow-modal)]">
+            <span id={delTitleId} className="block text-base font-bold">
+              {t('admin-del-title', { name: pendingDelete.name })}
+            </span>
+            {/* 삭제 영향 범위를 반드시 알린다 — Go 에 복원 경로가 없다. */}
+            <span className="mt-2 block text-s leading-relaxed text-gray-500">
+              {pendingDelete.kind === 'cat' || pendingDelete.kind === 'folder'
+                ? t('admin-del-cat-scope')
+                : t('admin-del-board-scope')}
+            </span>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingDelete(null)}
+                className="inline-flex h-10 items-center rounded-md border border-gray-200 bg-card px-4 text-sm font-semibold text-gray-800 hover:bg-gray-100"
+              >
+                {t('common-cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                className="inline-flex h-10 items-center rounded-md bg-destructive px-4 text-sm font-semibold text-white hover:bg-destructive-hover"
+              >
+                {t('common-delete')}
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   )
-}
-
-function currentAdmins(node: Cat | Folder | Item): string[] {
-  return node.admins ?? []
 }

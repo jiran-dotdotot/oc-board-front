@@ -1,7 +1,13 @@
 // 게시판 API — 전부 Go 스코프 경로(docs/api/go/04-board.md).
-import { getBoardResource, postBoardResource } from '@/lib/boardApi'
+import {
+  deleteBoardResource,
+  getBoardResource,
+  postBoardResource,
+  putBoardResource,
+} from '@/lib/boardApi'
 import { serializeParams } from '@/lib/queryParams'
-import type { CategoryBoard } from '@/types/category'
+import type { BoardCreatePayload, BoardUpdatePayload } from '@/types/board'
+import type { BoardDetail, CategoryBoard } from '@/types/category'
 import type { Paginated } from '@/types/post'
 
 // 사이드바 즐겨찾기는 한 페이지로 끝낸다 — 개인 북마크라 이 이상 쌓이는 화면이 아니다.
@@ -36,4 +42,34 @@ export async function toggleBoardBookmark(boardId: string): Promise<boolean> {
     `/boards/${boardId}/bookmark`,
   )
   return data.is_bookmarked
+}
+
+/** 게시판 상세 + grant 3종 + 자료실 사용량. 트리에는 grant 가 없어 선택 시 따로 받는다. */
+export async function selectBoardDetail(boardId: string, lang: string): Promise<BoardDetail> {
+  const { data } = await getBoardResource<BoardDetail>(`/boards/${boardId}`, {
+    headers: { lang },
+  })
+  return data
+}
+
+/** 게시판 생성 — 200(201 아님). `category_id: null` 은 공용이고 회사 관리자만 가능하다. */
+export async function createBoard(payload: BoardCreatePayload): Promise<void> {
+  await postBoardResource('/boards', payload)
+}
+
+/**
+ * 게시판 수정. ⚠️ **추가 키는 400**이므로 `BoardUpdatePayload` 밖의 값을 절대 섞지 않는다
+ * (`category_id`·`is_comment_alarm` 도 400). non-DRIVE 로 끝나는 요청에 `size_limit*` 키를
+ * 이름만 실어도 422 다 → 호출 쪽에서 자료실일 때만 싣는다.
+ */
+export async function updateBoard(boardId: string, payload: BoardUpdatePayload): Promise<void> {
+  await putBoardResource(`/boards/${boardId}`, payload)
+}
+
+/**
+ * 게시판 삭제(204). **회사 관리자 또는 카테고리 관리자만** 가능하다 —
+ * `can_manage` 로 버튼을 열면 게시판 관리자가 403 을 맞는다(04-board.md:524).
+ */
+export async function deleteBoard(boardId: string): Promise<void> {
+  await deleteBoardResource(`/boards/${boardId}`)
 }

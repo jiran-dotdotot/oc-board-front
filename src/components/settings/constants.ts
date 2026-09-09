@@ -1,5 +1,6 @@
 // 환경 설정 도메인 상수. 인라인 리터럴 금지 규약 — 화면은 여기서만 값을 읽는다.
-import type { AddDraft, BType, EnvTab, NodeKind } from './types'
+import type { AddDraft, EnvTab, NodeKind } from './types'
+import type { BoardType } from '@/types/category'
 
 /**
  * 탭 3개. 일반=전원, 메인화면=오피스 관리자, 게시판 관리=관리 권한 보유자.
@@ -23,16 +24,20 @@ export const TYPE_KEY: Record<
 }
 
 export const BTYPE_KEY: Record<
-  BType,
-  'admin-btype-basic' | 'admin-btype-preview' | 'admin-btype-album'
+  BoardType,
+  'admin-btype-basic' | 'admin-btype-preview' | 'admin-btype-album' | 'admin-add-drive'
 > = {
   BOARD: 'admin-btype-basic',
   PREVIEW: 'admin-btype-preview',
   ALBUM: 'admin-btype-album',
+  DRIVE: 'admin-add-drive',
 }
 
-/** 게시판 타입 라디오 순서(정본 web:1297-1299). `DRIVE` 는 트리 종류로 갈라져 여기 없다. */
-export const BTYPE_OPTIONS: BType[] = ['BOARD', 'PREVIEW', 'ALBUM']
+/**
+ * 게시판 타입 라디오 순서(정본 web:1297-1299). `DRIVE` 는 트리 종류로 갈라져 여기 없다 —
+ * Go 는 `PUT` 으로 DRIVE 전환도 허용하지만 정본에 그 컨트롤이 없어 노출하지 않는다.
+ */
+export const BTYPE_OPTIONS: Exclude<BoardType, 'DRIVE'>[] = ['BOARD', 'PREVIEW', 'ALBUM']
 
 /** 자료실 용량 칩(정본 아트보드 `화면 09:926-927`). */
 export const FILE_MAX_OPTS = ['100MB', '500MB', '1GB']
@@ -52,15 +57,12 @@ export function emptyDraft(loc: string): AddDraft {
     name: '',
     desc: '',
     loc,
-    scope: 'all',
-    scopeLabel: '',
     btype: 'BOARD',
     alarm: true,
     active: true,
     fileMax: FILE_MAX_OPTS[1],
     totalMax: TOTAL_MAX_OPTS[1],
     ext: '',
-    admins: [],
   }
 }
 

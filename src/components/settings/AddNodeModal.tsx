@@ -15,7 +15,7 @@ import type { AddDraft, NodeKind } from './types'
 import { CapChip, CaretDown, Field, RadioRow } from './ui'
 import { Modal } from '@/components/common/Modal'
 import { Switch } from '@/components/common/Switch'
-import { ErrIcon, PersonIcon, PlusMini, XMini } from '@/components/common/icons'
+import { ErrIcon, XMini } from '@/components/common/icons'
 
 /**
  * 카테고리·폴더·게시판·자료실 추가 모달.
@@ -27,8 +27,6 @@ export function AddNodeModal({
   draft,
   locOpts,
   onChange,
-  onOpenScopePicker,
-  onOpenAdminPicker,
   onClose,
   onSubmit,
 }: {
@@ -36,8 +34,6 @@ export function AddNodeModal({
   draft: AddDraft
   locOpts: { v: string; label: string }[]
   onChange: (patch: Partial<AddDraft>) => void
-  onOpenScopePicker: () => void
-  onOpenAdminPicker: () => void
   onClose: () => void
   onSubmit: () => boolean
 }) {
@@ -172,65 +168,19 @@ export function AddNodeModal({
             )}
           </Field>
 
-          {/* 공개 범위 */}
-          <Field label={t('admin-scope')} required>
+          {/* 공개 범위 · 관리자 — 조직도(`GET /companies/{cid}/departments`)가 member 토큰
+              전용이라 이 앱에서 401 이다(BR-012). 고를 수 없으므로 「전체 공개」로 만들고
+              사유를 «텍스트로» 남긴다. 만든 뒤 지정된 대상의 표시·제거는 상세 패널에서 된다. */}
+          <Field label={t('admin-scope')}>
             <div
               role="radiogroup"
               aria-label={t('admin-scope')}
               className="flex flex-wrap items-center gap-[18px]"
             >
-              <RadioRow
-                label={t('admin-scope-all')}
-                on={draft.scope === 'all'}
-                onClick={() => onChange({ scope: 'all' })}
-              />
-              <RadioRow
-                label={t('admin-scope-org')}
-                on={draft.scope === 'org'}
-                onClick={() => onChange({ scope: 'org' })}
-              />
-              {draft.scope === 'org' && (
-                <button
-                  type="button"
-                  onClick={onOpenScopePicker}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-200 bg-card px-3 text-xs font-semibold text-gray-700 hover:bg-gray-100"
-                >
-                  <PersonIcon /> {draft.scopeLabel || t('admin-scope-default')}
-                </button>
-              )}
+              <RadioRow label={t('admin-scope-all')} on onClick={() => {}} disabled />
+              <RadioRow label={t('admin-scope-org')} on={false} onClick={() => {}} disabled />
             </div>
-          </Field>
-
-          {/* 관리자 */}
-          <Field label={t('admin-managers')}>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {draft.admins.map((name) => (
-                <span
-                  key={name}
-                  className="inline-flex h-8 items-center gap-[7px] rounded-2xl bg-gray-50 pr-[7px] pl-[5px]"
-                >
-                  <span className="inline-flex size-[22px] items-center justify-center rounded-full bg-l-green text-2xs font-bold text-on-pastel">
-                    {name.slice(0, 1)}
-                  </span>
-                  <span className="text-s text-gray-700">{name}</span>
-                  <button
-                    type="button"
-                    aria-label={`${name} ${t('common-delete')}`}
-                    onClick={() => onChange({ admins: draft.admins.filter((n) => n !== name) })}
-                    className="inline-flex size-[17px] items-center justify-center rounded-full text-gray-400 hover:text-destructive"
-                  >
-                    <XMini />
-                  </button>
-                </span>
-              ))}
-              <button
-                type="button"
-                onClick={onOpenAdminPicker}
-                className="inline-flex h-8 items-center gap-1.5 rounded-2xl border border-dashed border-gray-300 px-3 text-xs font-semibold text-gray-500 hover:bg-gray-100"
-              >
-                <PlusMini /> {t('admin-add-manager')}
-              </button>
-            </div>
+            <span className="text-xs text-gray-400">{t('admin-grant-add-blocked')}</span>
           </Field>
 
           {/* 게시판 전용 */}
