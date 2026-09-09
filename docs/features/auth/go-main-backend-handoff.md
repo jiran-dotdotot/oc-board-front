@@ -1,5 +1,11 @@
 # 로그인 직후 메인 조회 — Go 전환 전달 자료
 
+> ⚠️ **이 문서는 `65b7f49` 시점의 이력이다 (2026-09-09 표시).** `ebff9af` 에서 `board` 인증 계약이
+> 폐지되고 `POST /api/v1/board/{token,login,refresh}` 3개가 삭제됐다. 아래의 로그인·refresh 회전·
+> `member401` 관련 「완료」·「검증」 서술은 **삭제된 계약에 대한 기록**이며 현행 계약의 근거가 아니다.
+> URL·파라미터·응답 계약 부분은 여전히 유효하다. 근거: [backend-replies/](../../api/backend-replies/README.md) ·
+> 후속: [BR-036](../../api/backend-requests.md#br-036).
+
 2026-09-08. 대상은 로그인 후 홈·사이드바의 목록 조회다. 백엔드가 전달한17:50:10~11 KST 요청에서 login·me는200, 기존4개 목록 경로는 bearer 추출 단계에서401이었다. 근거는 [백엔드 진단 원본](/Users/dotdotot/Documents/Workspace/ov/oc-api-go/doc/backend-replies/main-page-api-failures.md)이며, 프론트에서 같은 실계정 요청을 재현했다고 주장하는 기록이 아니다.
 
 ## 전달 파일과 계약 기준

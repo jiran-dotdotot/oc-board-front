@@ -1,5 +1,11 @@
 # Go 로그인 연결 — 백엔드 확인 요청 이력
 
+> ⚠️ **이 문서는 `65b7f49` 시점의 이력이다 (2026-09-09 표시).** `ebff9af` 에서 `board` 인증 계약이
+> 폐지되고 `POST /api/v1/board/{token,login,refresh}` 3개가 삭제됐다. 아래의 로그인·refresh 회전·
+> `member401` 관련 「완료」·「검증」 서술은 **삭제된 계약에 대한 기록**이며 현행 계약의 근거가 아니다.
+> URL·파라미터·응답 계약 부분은 여전히 유효하다. 근거: [backend-replies/](../../api/backend-replies/README.md) ·
+> 후속: [BR-036](../../api/backend-requests.md#br-036).
+
 **후속 상태(2026-09-08 17:50 KST 백엔드 회신 기준): 아래16:46의 차단은 과거 관측이다.** [백엔드 회신](/Users/dotdotot/Documents/Workspace/ov/oc-api-go/doc/backend-replies/BR-030-BR-031.md)에 따르면 실행65b7f49 적용·인증 설정·누락 DB 스키마 복구 후 실제 사용자의 login·me200과5174/5188 개발 CORS 허용을 확인했다. 실제 토큰으로 HTTP refresh 회전·재사용401을 확인하는 작업은 남아 있다. 이 기록은 백엔드 작성자의 서버 로그·검사 결과이며 프론트 작업자가 수행한 실계정 검증이 아니다.
 
 현재 로그인 뒤 메인4개401은 기존 서비스 경로와 bearer 누락에 관한 별도 건이다. [메인 연결 전달 문서](go-main-backend-handoff.md), [BR-013](../../api/backend-requests.md#br-013)을 따른다. 아래 최초 재현과 요청은 이력 보존을 위해 남긴다.
