@@ -1,9 +1,8 @@
 import { useTranslation } from 'react-i18next'
 
+import { DAY_OPTS, LATEST_POST_DAY_DEFAULT } from './constants'
 import { useMe } from '@/hooks/useMe'
 import { MEMBER_SETTINGS_UNSUPPORTED } from '@/services/settingService'
-
-const DAY_OPTS = [7, 30, 60, 90]
 
 // 환경 설정 › 메인화면. 최신글 노출 기간(company_settings.latest_post_day).
 // 저장 경로(PATCH /companies/{id}/settings)는 member 토큰 전용이라 이 앱에서는 «읽기 전용»이다
@@ -12,7 +11,7 @@ export function MainScreenTab() {
   const { t } = useTranslation()
   const { data: me } = useMe()
   const companySetting = me?.company_setting
-  const days = companySetting?.latest_post_day ?? 30
+  const days = companySetting?.latest_post_day ?? LATEST_POST_DAY_DEFAULT
   const isAdmin = !!me?.is_admin
 
   return (
@@ -23,7 +22,11 @@ export function MainScreenTab() {
       <div className="mt-3.5 flex flex-col gap-2 border-y border-gray-100 py-4">
         <span className="text-sm font-semibold">{t('env-main-days')}</span>
         <span className="text-xs text-gray-400">{t('env-main-days-desc')}</span>
-        <div className="flex flex-wrap gap-6 pt-1.5">
+        <div
+          role="radiogroup"
+          aria-label={t('env-main-days')}
+          className="flex flex-wrap gap-6 pt-1.5"
+        >
           {DAY_OPTS.map((d) => (
             <button
               key={d}

@@ -53,7 +53,12 @@ export function GeneralTab({ onToast }: { onToast: (msg: string) => void }) {
     )
   }
 
-  const sections = flattenCategories(tree?.categories)
+  // 정본은 중지된 게시판을 알림 표에서 뺀다(`active!==false`). 공용에만 걸려 있던 필터를
+  // 카테고리 소속 게시판에도 똑같이 적용한다.
+  const sections = flattenCategories(tree?.categories).map((s) => ({
+    ...s,
+    boards: s.boards.filter((b) => b.is_active !== false),
+  }))
   const publicBoards = (tree?.public_boards ?? []).filter((b) => b.is_active !== false)
 
   return (
@@ -83,24 +88,31 @@ export function GeneralTab({ onToast }: { onToast: (msg: string) => void }) {
           <span className="text-base font-bold">{t('env-gen-board-title')}</span>
           <span className="text-xs leading-relaxed text-gray-400">{t('env-gen-board-desc')}</span>
         </div>
-        <div className="ml-auto flex flex-none items-center gap-4 pt-[3px]">
-          <InlineSwitch
-            label={t('env-gen-allow-notice')}
-            on={userOn('is_notice_alarm')}
-            onClick={noop}
-            disabled={MEMBER_SETTINGS_UNSUPPORTED}
-          />
-          <InlineSwitch
-            label={t('env-gen-allow-alarm')}
-            on={userOn('is_post_alarm')}
-            onClick={noop}
-            disabled={MEMBER_SETTINGS_UNSUPPORTED}
-          />
+        {/* 정본은 웹에서 우측 정렬, 모바일에서 아래로 내려온다(mob:1123). */}
+        <div className="flex flex-none flex-col items-end gap-1 pt-[3px] max-[630px]:w-full max-[630px]:items-start min-[631px]:ml-auto">
+          <div className="flex items-center gap-4">
+            <InlineSwitch
+              label={t('env-gen-allow-notice')}
+              on={userOn('is_notice_alarm')}
+              onClick={noop}
+              disabled={MEMBER_SETTINGS_UNSUPPORTED}
+            />
+            <InlineSwitch
+              label={t('env-gen-allow-alarm')}
+              on={userOn('is_post_alarm')}
+              onClick={noop}
+              disabled={MEMBER_SETTINGS_UNSUPPORTED}
+            />
+          </div>
+          {/* 비활성 이유를 색·opacity 밖으로 — 이 두 스위치에는 사유 문구가 없었다. */}
+          {MEMBER_SETTINGS_UNSUPPORTED && (
+            <span className="text-2xs text-gray-400">{t('env-member-token-only')}</span>
+          )}
         </div>
       </div>
 
       <div className="mt-3">
-        <div className="grid h-10 grid-cols-[minmax(0,1fr)_56px_56px] items-center border-b border-gray-200 text-xs text-gray-500">
+        <div className="grid h-10 grid-cols-[minmax(0,1fr)_56px_56px] items-center border-b border-gray-200 text-xs text-gray-500 max-[630px]:grid-cols-[minmax(0,1fr)_48px_48px]">
           <span>{t('env-gen-col-board')}</span>
           <span className="text-center">{t('env-gen-col-notice')}</span>
           <span className="text-center">{t('env-gen-col-alarm')}</span>
@@ -108,7 +120,7 @@ export function GeneralTab({ onToast }: { onToast: (msg: string) => void }) {
 
         {isError && <div className="py-6 text-s text-gray-500">{t('env-error')}</div>}
 
-        {!isError && sections.length === 0 && publicBoards.length === 0 && (
+        {!isError && !sections.some((s) => s.boards.length > 0) && publicBoards.length === 0 && (
           <div className="py-6 text-s text-gray-500">{t('env-gen-empty')}</div>
         )}
 
@@ -119,13 +131,15 @@ export function GeneralTab({ onToast }: { onToast: (msg: string) => void }) {
             ))}
           </Group>
         )}
-        {sections.map((s) => (
-          <Group key={s.id} name={s.name}>
-            {s.boards.map((b) => (
-              <BoardRow key={b.id} board={b} on={boardOn} onToggle={setBoard} />
-            ))}
-          </Group>
-        ))}
+        {sections
+          .filter((s) => s.boards.length > 0)
+          .map((s) => (
+            <Group key={s.id} name={s.name}>
+              {s.boards.map((b) => (
+                <BoardRow key={b.id} board={b} on={boardOn} onToggle={setBoard} />
+              ))}
+            </Group>
+          ))}
       </div>
     </div>
   )
@@ -153,7 +167,7 @@ function BoardRow({
 }) {
   const drive = isDriveBoard(board)
   return (
-    <div className="grid h-11 grid-cols-[minmax(0,1fr)_56px_56px] items-center border-b border-gray-100">
+    <div className="grid h-11 grid-cols-[minmax(0,1fr)_56px_56px] items-center border-b border-gray-100 max-[630px]:h-[46px] max-[630px]:grid-cols-[minmax(0,1fr)_48px_48px]">
       <span className="flex min-w-0 items-center gap-2.5 pl-1.5">
         {drive ? (
           <DriveIcon className="size-3.5 flex-none text-gray-400" />

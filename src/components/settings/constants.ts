@@ -63,3 +63,11 @@ export function emptyDraft(loc: string): AddDraft {
     admins: [],
   }
 }
+
+/** URL 에 실리는 탭 값. 기본값 `general` 은 생략한다. */
+export const ENV_TABS: EnvTab[] = ['general', 'main', 'content']
+
+/** 최신글 노출 기간 라디오(정본 `mainDaysOpts` — 7·30·60·90일). */
+export const DAY_OPTS = [7, 30, 60, 90]
+/** `company_settings.latest_post_day` 서버 기본값(docs/api/go/02-management.md:60). */
+export const LATEST_POST_DAY_DEFAULT = 30
