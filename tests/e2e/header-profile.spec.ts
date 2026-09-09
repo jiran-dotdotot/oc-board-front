@@ -6,8 +6,9 @@ const token =
   'header.' +
   Buffer.from(
     JSON.stringify({
-      iss: 'oc-api-go/board',
-      sub: '42',
+      iss: 'http://officewave',
+      sub: 'Authorization',
+      scopes: ['ROLE_MEMBER'],
       company_id: 7,
       user_id: 42,
       exp: Math.floor(Date.now() / 1000) + 3600,
@@ -37,12 +38,16 @@ async function setup(
       return
     }
     const ok = (json: unknown) => route.fulfill({ status: 200, headers: cors, json })
-    if (path === '/api/v1/board/login')
+    if (path === '/api/v1/oauth/login')
       return ok({
         token_type: 'Bearer',
-        expires_in: 3600,
+        expired_in: 7200,
         access_token: token,
         refresh_token: 'fixture-refresh',
+        company_id: 7,
+        user_id: 42,
+        scopes: ['ROLE_MEMBER'],
+        agent_id: null,
       })
     if (path === '/api/v1/board/me')
       return ok({

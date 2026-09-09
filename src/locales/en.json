@@ -262,6 +262,7 @@
   "login-error": "The email or password is incorrect.",
   "login-forbidden": "This account cannot access the board. Please contact your administrator.",
   "login-user-not-found": "No board account was found. Please contact your administrator.",
+  "login-password-change": "You must change your password before signing in. Update it in OfficeWave and try again.",
   "login-rate-limited": "Too many login attempts. Please try again shortly.",
   "login-service-error": "Unable to connect to the login service. Please try again shortly.",
   "login-loading": "Logging in...",

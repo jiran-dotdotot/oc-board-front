@@ -6,8 +6,9 @@ const token =
   'header.' +
   Buffer.from(
     JSON.stringify({
-      iss: 'oc-api-go/board',
-      sub: '42',
+      iss: 'http://officewave',
+      sub: 'Authorization',
+      scopes: ['ROLE_MEMBER'],
       company_id: 7,
       user_id: 42,
       exp: Math.floor(Date.now() / 1000) + 3600,
@@ -144,12 +145,16 @@ async function setup(page: Page, context: BrowserContext, admin: boolean) {
     const path = url.pathname
     wires.push({ method: request.method(), path, body: bodyOf(request) })
     const ok = (json: unknown, status = 200) => route.fulfill({ status, headers: cors, json })
-    if (path === '/api/v1/board/login') {
+    if (path === '/api/v1/oauth/login') {
       await ok({
         token_type: 'Bearer',
-        expires_in: 3600,
+        expired_in: 7200,
         access_token: token,
         refresh_token: 'fixture-refresh',
+        company_id: 7,
+        user_id: 42,
+        scopes: ['ROLE_MEMBER'],
+        agent_id: null,
       })
       return
     }
@@ -336,4 +341,3 @@ test('게시판 관리자 — 부분 트리에 공용이 없고 삭제 버튼도
 
   expect(errors).toEqual([])
 })
-

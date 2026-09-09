@@ -1,8 +1,9 @@
-import { AUTH_PATHS } from '@/constants/auth'
+import { attachAgentId } from '@/lib/agentQuery'
 import { clearTokens, getAuthSession, setTokens } from '@/lib/authStorage'
 import i18n from '@/lib/i18n'
 import { queryClient } from '@/lib/queryClient'
-import type { AuthSession, LoginResponse } from '@/types/auth'
+import { refreshTokens } from '@/services/authService'
+import type { AuthSession } from '@/types/auth'
 import axios, { CanceledError, type InternalAxiosRequestConfig } from 'axios'
 
 type AuthRequestConfig = InternalAxiosRequestConfig & {
@@ -10,17 +11,16 @@ type AuthRequestConfig = InternalAxiosRequestConfig & {
   authRetry?: boolean
 }
 
-/** VITE_API_URL은 Go의 /api/v1까지. 인증 경로는 /board 아래다. */
+/**
+ * Go(게시판) 전용 인스턴스. `VITE_API_URL` 은 Go 의 `/api/v1` 까지다.
+ * `ebff9af` 이후 이 인스턴스의 **모든 경로가 member 계약**이라 Bearer 를 전부에 붙인다.
+ * 자격증명(로그인·재발급·로그아웃)은 이 인스턴스로 나가지 않는다 → `ovApiClient`.
+ */
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL?.trim() || '/api/v1',
   timeout: 15_000,
   headers: { 'Content-Type': 'application/json' },
 })
-
-function isTokenRequest(url = '') {
-  const path = url.split('?')[0]
-  return path === AUTH_PATHS.login || path === AUTH_PATHS.token || path === AUTH_PATHS.refresh
-}
 
 function requireSameSession(id?: string) {
   const session = getAuthSession()
@@ -36,18 +36,13 @@ export function expireSession(id?: string): void {
 }
 
 apiClient.interceptors.request.use((config: AuthRequestConfig) => {
-  if (isTokenRequest(config.url)) {
-    config.headers.delete('Authorization')
-  } else if (config.url?.startsWith('/board/')) {
-    // member 인증 경로(/companies/…)에 board 토큰을 보내지 않는다.
-    const session = config.authSessionId
-      ? requireSameSession(config.authSessionId)
-      : getAuthSession()
-    if (session) {
-      config.authSessionId = session.id
-      config.headers.set('Authorization', `Bearer ${session.access_token}`)
-    }
+  const session = config.authSessionId ? requireSameSession(config.authSessionId) : getAuthSession()
+  if (session) {
+    config.authSessionId = session.id
+    config.headers.set('Authorization', `Bearer ${session.access_token}`)
   }
+  // `agent_id` 부착은 여기 한 곳뿐이다(브라우저는 값이 없어 생략된다).
+  attachAgentId(config)
   // Go는 Lang으로 표시명 언어를, Time_zone(밑줄)으로 입력 시각·로컬 day를 정한다
   // (docs/api/go/README.md:90-95). 빠지면 브라우저 Accept-Language로 떨어져
   // 앱 언어와 무관한 언어로 응답한다. 호출부가 이미 지정했으면 그 값을 남긴다.
@@ -65,14 +60,10 @@ async function refreshSession(config: AuthRequestConfig): Promise<AuthSession> {
     // 다른 요청/탭이 이미 회전했다면 일회용 refresh를 다시 소비하지 않는다.
     if (requestToken !== `Bearer ${session.access_token}`) return session
     try {
-      const { data } = await apiClient.post<LoginResponse>(AUTH_PATHS.refresh, {
-        refresh_token: session.refresh_token,
-      })
+      // 갱신은 OfficeWave 계약이다(Go 에는 refresh 엔드포인트가 없다).
+      const data = await refreshTokens(session.refresh_token)
       const current = requireSameSession(session.id)
       if (current.refresh_token !== session.refresh_token) return current
-      if (data.token_type !== 'Bearer' || !data.access_token || !data.refresh_token) {
-        throw new Error('Invalid board token response')
-      }
       setTokens(data, session.id)
       return requireSameSession(session.id)
     } catch (error) {
@@ -99,13 +90,8 @@ apiClient.interceptors.response.use(
   async (error: unknown) => {
     if (!axios.isAxiosError(error)) throw error
     const config = error.config as AuthRequestConfig | undefined
-    if (
-      !config ||
-      error.response?.status !== 401 ||
-      isTokenRequest(config.url) ||
-      !config.url?.startsWith('/board/')
-    )
-      throw error
+    // Go 는 만료·무효를 모두 401 로 준다(OfficeWave 의 419 와 다르다).
+    if (!config || error.response?.status !== 401) throw error
     if (!config.authSessionId) throw error
     requireSameSession(config.authSessionId)
     if (config.authRetry) {

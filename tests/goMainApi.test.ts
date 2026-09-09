@@ -7,12 +7,24 @@ import { selectNotices, selectPost } from '@/services/postService'
 import { AxiosHeaders } from 'axios'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
-const pair = (company = 7, user = 42, issuer = 'oc-api-go/board') => ({
+/* OfficeWave(ES256) 토큰 + 세션 스코프. 경로의 회사·사용자는 이 값과 문자열까지 같아야 한다. */
+const pair = (company = 7, user = 42) => ({
   access_token:
     'header.' +
-    btoa(JSON.stringify({ iss: issuer, sub: String(user), company_id: company, user_id: user })) +
+    btoa(
+      JSON.stringify({
+        iss: 'http://officewave',
+        sub: 'Authorization',
+        company_id: company,
+        user_id: user,
+        scopes: ['ROLE_MEMBER'],
+      }),
+    ) +
     '.signature',
   refresh_token: 'fixture-refresh',
+  company_id: company,
+  user_id: user,
+  agent_id: null,
 })
 const originalAdapter = apiClient.defaults.adapter
 beforeEach(() => {
@@ -88,17 +100,21 @@ it('all main list variants use board scope, bearer, Go queries and the matching 
   ])
 })
 
-it.each(['missing', 'malformed', 'member'])(
-  'rejects %s identity before network access',
-  async (kind) => {
-    if (kind === 'malformed') setTokens({ access_token: 'invalid', refresh_token: 'fixture' })
-    if (kind === 'member') setTokens(pair(7, 42, 'member'))
-    const adapter = vi.fn()
-    apiClient.defaults.adapter = adapter
-    await expect(selectPost({}, 'ko')).rejects.toMatchObject({ code: 'ERR_CANCELED' })
-    expect(adapter).not.toHaveBeenCalled()
-  },
-)
+it('rejects a missing identity before network access', async () => {
+  const adapter = vi.fn()
+  apiClient.defaults.adapter = adapter
+  await expect(selectPost({}, 'ko')).rejects.toMatchObject({ code: 'ERR_CANCELED' })
+  expect(adapter).not.toHaveBeenCalled()
+})
+
+it.each([
+  ['scope 없는 응답', { access_token: 'a.b.c', refresh_token: 'r' }],
+  ['company_id 만 있는 응답', { access_token: 'a.b.c', refresh_token: 'r', company_id: 7 }],
+])('%s 는 세션이 되지 않는다 — 스코프 경로를 만들 수 없다', (_label, response) => {
+  // 스코프가 없으면 `{company_id}/{user_id}` 를 만들 수 없고 서버는 403 을 준다.
+  expect(() => setTokens(response as Parameters<typeof setTokens>[0])).toThrow('Invalid OfficeWave')
+  expect(getAuthSession()).toBeNull()
+})
 
 it('cancels a scoped request if the login changes before the interceptor attaches its token', async () => {
   setTokens(pair())

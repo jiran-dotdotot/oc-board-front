@@ -15,7 +15,7 @@
 > | [BR-013](#br-013)~[BR-017](#br-017) | **URL 은 유효, 인증 헤더 계약이 바뀌었다.** 「프론트 전환 완료」는 board 토큰 전제에서 참이었다 → 토큰 종류 교체가 남았으므로 **해결 처리를 유지하지 않는다**(부분 해결)                                              |
 > | [BR-032](#br-032)                   | **재측정 필요** — 근본원인(`huma.DefaultConfig`)은 `router.go:339` 로 그대로지만 `postsbody.go` 가 삭제되고 board 패키지가 재편됐다                                                                                   |
 > | [BR-018](#br-018)~[BR-027](#br-027) | **미판정** — 도메인 로직 변경 여부 미확인(`migrations/board/000001` 96줄 변경). 백엔드 판정([backend-requests-triage.md](backend-replies/backend-requests-triage.md))은 **`65b7f49` 기준**이라 그대로 적용하지 않는다 |
-> | **신설 [BR-036](#br-036)**          | member 토큰 획득 경로·수명·갱신·클레임·등급 게이트 미정 — **최우선 블로커**                                                                                                                                           |
+> | **신설 [BR-036](#br-036)**          | member 토큰 획득 경로·수명·갱신·클레임·등급 게이트 미정 — **최우선 블로커**. → 이후 프론트가 OfficeWave `POST /oauth/login`(password grant) 직접 호출로 **경로를 확정**했다(부분 해결, 잔여 5건)                      |
 > | **신설 [BR-037](#br-037)**          | 신규 2경로(thumbnail-url · attachments) 계약 문서 부재                                                                                                                                                                |
 >
 > **이번 갱신은 문서·대장만 고쳤다.** 토큰 획득 방식이 미정이라 코드는 손대지 않았다(사용자 결정).
@@ -44,7 +44,7 @@
 | [BR-033](#br-033) | 자료실 파일 응답에 폴더 경로(위치)가 없음          | 열림                   | 통합 검색 자료 탭 행의 위치 표시  |
 | [BR-034](#br-034) | 검색어의 ILIKE wildcard(`%`·`_`) escape 부재       | 열림                   | 통합 검색·목록 내 검색 전체       |
 | [BR-035](#br-035) | 최근 검색어의 자동 누적과 삭제 권한 비대칭         | 열림                   | 통합 검색 최근 검색어 삭제        |
-| [BR-036](#br-036) | **member 토큰 획득 경로·수명·갱신·클레임 미정**    | 열림                   | **앱 전체 — 게시판 API 전건**     |
+| [BR-036](#br-036) | member 토큰 획득 — 경로는 프론트가 확정, 잔여 5건  | 부분 해결              | 등급 게이트·비번변경·MFA·운영주소 |
 | [BR-037](#br-037) | 신규 2경로(thumbnail-url·attachments) 계약 부재    | 열림                   | 자료실 썸네일·게시글 첨부 업로드  |
 
 ## 보류·해결 항목 요약
@@ -597,12 +597,19 @@
 
 ## BR-036 · member 토큰의 획득 경로·수명·갱신·클레임 미정 — 최우선 블로커
 
-- 상태: 열림
+- 상태: **부분 해결** — 획득·갱신 경로는 프론트가 확정했고(아래 「프론트 전환」) 잔여 5건이 열려 있다
 - 발견일 / 발견 맥락: 2026-09-09 / 백엔드 통지 [board-auth-contract-change.md](backend-replies/board-auth-contract-change.md) §3 수신 후, `oc-api-go` @ `ebff9af` 를 읽기 전용으로 직접 확인했다. **분류: 계약 누락(인증 진입점 부재). 갱신: 2026-09-09, ebff9af 실측. 이력: 신설(열림).** 서버에 HTTP 요청은 보내지 않았다 — 보낼 토큰이 없다.
 - 증상: **이 앱은 어떤 게시판 API 도 호출할 수 없다.** `ebff9af` 에서 `board` 인증 계약이 폐지되고 자격증명 3경로가 삭제되어, Go 서비스에 **로그인 엔드포인트가 하나도 없다**(exempt 10개 중 로그인 계열 0). 게시판 표면 64경로는 `member`(OfficeWave ES256) 토큰만 검증한다. 프론트는 그 토큰을 **얻을 방법이 없다**.
 - Go 현황(프론트 실측): `internal/transport/httpapi/testdata/routes.txt` **88행**(exempt 10 / member 64 / service 14, `board` 라벨 0). `/api/v1/board/{token,login,refresh}` 부재. `board/{token,login,refresh}.go`·`internal/auth/boardtoken.go` 4파일 부재. 계약은 `middleware/auth.go:35-37` 의 exempt/service/member 3종이고 member 는 `ROLE_MEMBER` 를 요구한다. `middleware.PathScope()`(`router.go:333`) 가 유지되므로 토큰에 **`company_id`·`user_id` 클레임이 필수**이고 경로 값과 정확히 일치해야 한다(불일치 403, 정규 십진수만).
 - Laravel 참고: 열람하지 않음. Laravel Passport 흐름은 폐지된 계약이며 새 인증 방식의 근거가 될 수 없다.
 - 프론트 임시 조치: **없음 — 코드를 바꾸지 않았다.** 토큰 획득 방식이 정해지지 않은 상태에서 경로·헤더·클레임·수명을 추정해 구현하면 확정 후 다시 지워야 한다. 현재 `src/constants/auth.ts:3-5` 의 3경로 참조와 `src/lib/apiClient.ts` 의 401→refresh 회전은 **동작하지 않는 코드로 남아 있다**(전환 대기). `tests/e2e/auth.spec.ts` 는 삭제된 계약을 모의 픽스처로 검증하므로 통과하지만 그 통과는 **현행 계약의 근거가 아니다**. 토큰을 손으로 주입하는 개발용 우회나 board 토큰 재사용은 만들지 않았다.
+- **프론트 전환(2026-09-09) — 「경로 확정」은 백엔드 답이 아니라 프론트 결정이다.** 통지문 §3 의 3택은 여전히 미회신이다. 프론트는 회신을 기다리지 않고 **OfficeWave(`oc-api-laravel`) 로그인 API 를 직접 호출**하는 안을 골라 구현했다(사용자 결정). 근거는 Laravel 문서가 아니라 **형제 프론트의 실동작 코드**다: `oc-web-messenger/services/auth.ts:48` 이 `POST /api/v1/oauth/login` 에 `{grant_type:'password', type:'browser', authority:'normal', username, password}` 를 보낸다. 공개키가 동일함(`oc-api-go/keys/jwtES256.key.pub` = `oc-api-laravel/storage/keys/jwtES256.key.pub`, sha256 일치)이 이 경로가 Go 의 member 게이트를 통과하는 근거다. 이것은 **Go 계약이 아니다** — Go 문서에는 이 경로가 없고, 백엔드가 다른 방식을 지정하면 되돌린다. 상세·되돌릴 조건은 [docs/features/auth/decision.md](../features/auth/decision.md).
+  - 획득: `POST {VITE_OV_API_URL}/oauth/login` (password grant) → `access_token`(ES256)·`refresh_token`·`expired_in`(초)·`company_id`·`user_id`·`scopes`·`agent_id`
+  - 수명·갱신: **OfficeWave 가 정한다** — 브라우저+`normal` 은 `EXPIRED_TIME`(로컬 7200초, `AccountController:786`). 갱신은 `POST /refresh-token`. **만료 신호가 호스트마다 다르다**: Go 401 ↔ OfficeWave 419. 프론트는 Go 401 을 트리거로 OfficeWave 에 갱신을 요청하고, 갱신이 실패하면(419 포함) 세션을 폐기한다
+  - 클레임: `scopes` 에 `ROLE_MEMBER`, `company_id`·`user_id` 정수. ⚠️ `sub` 는 **`'Authorization'`** 이고 `agent_id` 는 **하드코딩 null** 이다(`OvHelper:102-121`) — 옛 board 토큰 전제(`iss=oc-api-go/board`, `sub=user_id`)로 거르던 `getTokenIdentity()` 를 교체했다
+  - `agent_id`: 브라우저 로그인은 Agent 행을 만들지 않아 **항상 null** 이다(`AccountController:467`). 사용자 지시로 **부착 지점만** 만들었고(`src/lib/agentQuery.ts`, 요청 인터셉터 한 곳) 값이 숫자가 아니면 **쿼리 키를 만들지 않는다**(생략 ≠ 빈값). Go 는 미지 쿼리를 거절하지 않는다(`RejectUnknownQueryParameters` 미설정 — 프론트 실측)
+  - **검증 상태**: 단위 179건·E2E 13건 통과는 **모의 픽스처**다. 실계정·실서버 200 확인은 별도로 수행한다(로컬은 issuer 불일치 때문에 `oc-api-go/.env` 의 `JWT_ISSUER_DOMAINS` 에 `officewave` 를 추가하고 **Go 재기동**이 필요하다)
+- **잔여 미확정 5건(이 항목이 계속 열려 있는 이유)**: ① **회사 등급 게이트의 행방** — 아래 ④ 그대로다. `checkPlan` 이 사라졌으므로 Free 회사가 이제 통과하는지, 다른 계층으로 옮겼는지 회신이 필요하다 ② **`is_required_password_change: true`** 응답 처리 — 정본에 화면이 없어 이번엔 UI 를 만들지 않고 로그인을 그대로 진행한다(비밀번호 변경 강제가 우회된다) ③ **`mfa.mfa_required: true`** — 같은 이유로 미구현 ④ **운영 배포의 OfficeWave 주소·CORS 허용 출처** — 로컬 `http://officewave` 만 확인했다 ⑤ **Go 의 `JWT_ISSUER_DOMAINS` 운영값** — 로컬은 프론트가 한 줄 고쳤지만 운영 배포값은 백엔드 소관이다
 - 백엔드 요청 내용: `oc-board-front` 가 member 토큰을 **어떻게 얻는지** 확정해 달라. 통지문 §3 의 3택 중 하나를 명시하고, 함께 다음을 알려 달라. ① 발급 주체와 프론트 전달 방식(쿼리스트링 / `postMessage` / 쿠키 / 헤더 주입 중 어느 것인지) ② **수명과 갱신 방법**(board 토큰은 1h + refresh 회전이었다. member 토큰의 만료·갱신 경로가 있는지, 없으면 만료 시 프론트가 무엇을 해야 하는지) ③ `ROLE_MEMBER` 스코프와 `company_id`·`user_id` 클레임의 정확한 키 이름·타입 ④ **회사 등급 게이트의 행방** — `checkPlan`(Free 차단)이 `65b7f49:internal/transport/httpapi/board/token.go:246` 에 있었고 `ebff9af` 의 `internal/**` 검색 결과 **0건**이다(프론트 실측 — 통지문은 「미확인」이라 했다). 등급 차단이 없어진 것인지, 다른 계층으로 옮긴 것인지 ⑤ 독립 실행(자사 로그인) 모드를 폐기하는 것이면 그렇게 명시해 달라 — 로그인 화면·`/login` 라우트·세션 저장의 처리 방향이 그 답에 달려 있다. **요청안(현행 아님)**: 임베드 전제라면 호스트가 `postMessage` 로 토큰과 만료시각을 넘기고 만료 전 재발급을 푸시하는 계약을 제안한다. 이 제안을 계약으로 사용하지 않는다.
 
 <a id="br-037"></a>

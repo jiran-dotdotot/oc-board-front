@@ -1,6 +1,7 @@
-import { AUTH_PATHS, AUTH_SESSION_KEY } from '@/constants/auth'
+import { AUTH_PATHS, AUTH_SESSION_KEY, OV_AUTH_PATHS } from '@/constants/auth'
 import { apiClient } from '@/lib/apiClient'
 import { clearTokens, getAuthSession, getRefreshToken, setTokens } from '@/lib/authStorage'
+import { ovApiClient } from '@/lib/ovApiClient'
 import { queryClient } from '@/lib/queryClient'
 import { login, logout } from '@/services/authService'
 import { getMe } from '@/services/userService'
@@ -8,23 +9,33 @@ import type { LoginResponse } from '@/types/auth'
 import { type AxiosAdapter, AxiosError, AxiosHeaders, type InternalAxiosRequestConfig } from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+/* OfficeWave(ES256) 토큰 모양. `sub` 는 'Authorization' 이고 `agent_id` 는 하드코딩 null 이다
+   — 예전 board 토큰(`iss=oc-api-go/board`, `sub=user_id`)과 다르다(OvHelper:102-121). */
 const jwt = (user = 1, company = 1, revision = 0) =>
   'header.' +
   btoa(
     JSON.stringify({
-      iss: 'oc-api-go/board',
-      sub: String(user),
+      iss: 'http://officewave',
+      sub: 'Authorization',
+      aud: 'browser',
       user_id: user,
       company_id: company,
+      agent_id: null,
+      agent_browser_id: 10 + revision,
+      scopes: ['ROLE_MEMBER'],
       revision,
     }),
   ) +
   '.signature'
 const tokens = (revision = 0, user = 1): LoginResponse => ({
   token_type: 'Bearer',
-  expires_in: 3600,
+  expired_in: 7200,
   access_token: jwt(user, 1, revision),
   refresh_token: 'refresh-' + user + '-' + revision,
+  company_id: 1,
+  user_id: user,
+  scopes: ['ROLE_MEMBER'],
+  agent_id: null,
 })
 function reply(config: InternalAxiosRequestConfig, status: number, data: unknown = {}) {
   const response = { config, status, statusText: String(status), data, headers: new AxiosHeaders() }
@@ -39,6 +50,7 @@ function deferred<T>() {
   return { promise, resolve }
 }
 const originalAdapter = apiClient.defaults.adapter
+const originalOvAdapter = ovApiClient.defaults.adapter
 let redirect: ReturnType<typeof vi.spyOn>
 
 beforeEach(() => {
@@ -68,55 +80,94 @@ beforeEach(() => {
 })
 afterEach(() => {
   apiClient.defaults.adapter = originalAdapter
+  ovApiClient.defaults.adapter = originalOvAdapter
   clearTokens()
   queryClient.clear()
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
 
-describe('Go authentication contract', () => {
-  it('login sends original credentials without bearer, replaces the session and clears user queries', async () => {
+describe('OfficeWave authentication contract', () => {
+  it('login posts the password grant without bearer, replaces the session and clears user queries', async () => {
     setTokens(tokens())
     const oldId = getAuthSession()!.id
     queryClient.setQueryData(['private-posts'], ['old user data'])
-    apiClient.defaults.adapter = (async (config) => {
-      expect(config.url).toBe(AUTH_PATHS.login)
+    ovApiClient.defaults.adapter = (async (config) => {
+      expect(config.url).toBe(OV_AUTH_PATHS.login)
       expect(config.headers.get('Authorization')).toBeUndefined()
-      expect(JSON.parse(config.data)).toEqual({ username: ' user ', password: ' password ' })
+      // credential 원문 그대로 + 브라우저 고정값. `cin` 은 이 경로가 요구하지 않는다.
+      expect(JSON.parse(config.data)).toEqual({
+        grant_type: 'password',
+        type: 'browser',
+        authority: 'normal',
+        username: ' user ',
+        password: ' password ',
+      })
       return reply(config, 200, tokens(0, 2))
     }) satisfies AxiosAdapter
     await login({ username: ' user ', password: ' password ' })
-    expect(getAuthSession()!.id).not.toBe(oldId)
-    expect(getAuthSession()!.access_token).toBe(jwt(2))
+    const session = getAuthSession()!
+    expect(session.id).not.toBe(oldId)
+    expect(session.access_token).toBe(jwt(2))
+    expect(session.user_id).toBe(2)
+    expect(session.company_id).toBe(1)
+    // 브라우저 로그인은 agent 를 만들지 않는다 → 쿼리에 붙일 값이 없다.
+    expect(session.agent_id).toBeNull()
     expect(queryClient.getQueryData(['private-posts'])).toBeUndefined()
   })
 
-  it.each([AUTH_PATHS.login, AUTH_PATHS.token, AUTH_PATHS.refresh])(
-    '%s failures never refresh or redirect',
-    async (url) => {
-      setTokens(tokens())
-      const session = getAuthSession()
-      const adapter = vi.fn(async (config) => reply(config, 401))
-      apiClient.defaults.adapter = adapter
-      await expect(apiClient.post(url, {})).rejects.toMatchObject({ response: { status: 401 } })
-      expect(adapter).toHaveBeenCalledTimes(1)
-      expect(getAuthSession()).toEqual(session)
-      expect(redirect).not.toHaveBeenCalled()
-    },
-  )
+  it('rejects a token without ROLE_MEMBER at login instead of letting every board call 401', async () => {
+    ovApiClient.defaults.adapter = async (config) =>
+      reply(config, 200, { ...tokens(), scopes: ['ROLE_GUEST'] })
+    await expect(login({ username: 'u', password: 'p' })).rejects.toThrow('ROLE_MEMBER')
+    expect(getAuthSession()).toBeNull()
+  })
 
-  it('concurrent 401s consume refresh once and replay with the rotated pair', async () => {
+  it('rejects a response without company/user scope — PathScope has nothing to match', async () => {
+    ovApiClient.defaults.adapter = async (config) =>
+      reply(config, 200, { ...tokens(), company_id: undefined, user_id: undefined })
+    await expect(login({ username: 'u', password: 'p' })).rejects.toThrow('Invalid OfficeWave')
+    expect(getAuthSession()).toBeNull()
+  })
+
+  it('every Go path carries the member bearer and omits agent_id', async () => {
+    setTokens(tokens())
+    const seen: string[] = []
+    apiClient.defaults.adapter = async (config) => {
+      seen.push(config.url ?? '')
+      expect(config.headers.get('Authorization')).toBe('Bearer ' + tokens().access_token)
+      expect((config.params as Record<string, unknown> | undefined)?.agent_id).toBeUndefined()
+      return reply(config, 200)
+    }
+    await Promise.all([apiClient.get(AUTH_PATHS.me), apiClient.get('/board/companies/1/users/1/x')])
+    expect(seen).toHaveLength(2)
+  })
+
+  it('attaches agent_id only when the session actually has one (pc agent deployments)', async () => {
+    setTokens({ ...tokens(), agent_id: 77 })
+    apiClient.defaults.adapter = async (config) => {
+      expect((config.params as Record<string, unknown>).agent_id).toBe(77)
+      return reply(config, 200)
+    }
+    await apiClient.get(AUTH_PATHS.me)
+  })
+
+  it('concurrent 401s consume the OfficeWave refresh once and replay with the rotated pair', async () => {
     setTokens(tokens())
     const id = getAuthSession()!.id
     let refreshes = 0
     let retried = 0
+    ovApiClient.defaults.adapter = async (config) => {
+      expect(config.url).toBe(OV_AUTH_PATHS.refresh)
+      refreshes++
+      expect(JSON.parse(config.data)).toEqual({
+        type: 'browser',
+        authority: 'normal',
+        refresh_token: tokens().refresh_token,
+      })
+      return reply(config, 200, tokens(1))
+    }
     apiClient.defaults.adapter = async (config) => {
-      if (config.url === AUTH_PATHS.refresh) {
-        refreshes++
-        expect(config.headers.get('Authorization')).toBeUndefined()
-        expect(JSON.parse(config.data)).toEqual({ refresh_token: tokens().refresh_token })
-        return reply(config, 200, tokens(1))
-      }
       if (config.headers.get('Authorization') === 'Bearer ' + tokens().access_token)
         return reply(config, 401)
       retried++
@@ -134,16 +185,19 @@ describe('Go authentication contract', () => {
       id,
       access_token: tokens(1).access_token,
       refresh_token: tokens(1).refresh_token,
+      company_id: 1,
+      user_id: 1,
+      agent_id: null,
     })
   })
 
-  it.each([401, 403, 500, 'network'])(
+  it.each([401, 419, 403, 500, 'network'])(
     'refresh %s retires a possibly consumed token without retrying it',
     async (failure) => {
       setTokens(tokens())
       let refreshes = 0
-      apiClient.defaults.adapter = async (config) => {
-        if (config.url !== AUTH_PATHS.refresh) return reply(config, 401)
+      apiClient.defaults.adapter = async (config) => reply(config, 401)
+      ovApiClient.defaults.adapter = async (config) => {
         refreshes++
         if (failure === 'network') throw new AxiosError('Response lost', 'ERR_NETWORK', config)
         return reply(config, Number(failure))
@@ -155,7 +209,7 @@ describe('Go authentication contract', () => {
     },
   )
 
-  it('a previous login request is not replayed using another user token', async () => {
+  it('a previous request is not replayed using another user token', async () => {
     setTokens(tokens())
     const started = deferred<void>()
     const release = deferred<void>()
@@ -181,8 +235,8 @@ describe('Go authentication contract', () => {
     setTokens(tokens())
     const started = deferred<void>()
     const release = deferred<void>()
-    apiClient.defaults.adapter = async (config) => {
-      if (config.url !== AUTH_PATHS.refresh) return reply(config, 401)
+    apiClient.defaults.adapter = async (config) => reply(config, 401)
+    ovApiClient.defaults.adapter = async (config) => {
       started.resolve()
       await release.promise
       return reply(config, status, tokens(1))
@@ -197,7 +251,7 @@ describe('Go authentication contract', () => {
     expect(redirect).not.toHaveBeenCalled()
   })
 
-  it('me uses Go path and Lang, preserves null relations without a persisted legacy profile', async () => {
+  it('me uses the Go path and Lang, preserving null relations', async () => {
     setTokens(tokens())
     const me = {
       id: 1,
@@ -224,26 +278,25 @@ describe('Go authentication contract', () => {
     expect(redirect).toHaveBeenCalledTimes(1)
   })
 
-  it('member paths do not receive board tokens or refresh the board session', async () => {
-    setTokens(tokens())
-    apiClient.defaults.adapter = async (config) => {
-      expect(config.headers.get('Authorization')).toBeUndefined()
-      return reply(config, 401)
-    }
-    await expect(apiClient.get('/companies/1/settings')).rejects.toBeDefined()
-    expect(getRefreshToken()).toBe(tokens().refresh_token)
-    expect(redirect).not.toHaveBeenCalled()
-  })
-
-  it('logout removes authentication and private query data', () => {
+  it('logout clears the session first and tells OfficeWave best-effort', async () => {
     setTokens(tokens())
     localStorage.setItem('oc-board-token', 'legacy')
     localStorage.setItem('oc-board-me', '{}')
     queryClient.setQueryData(['private-posts'], ['private'])
-    logout()
+    let calls = 0
+    ovApiClient.defaults.adapter = async (config) => {
+      calls++
+      expect(config.url).toBe(OV_AUTH_PATHS.logout)
+      // 로컬을 먼저 지우므로 Bearer 를 직접 실어야 한다 — 없으면 서버 세션이 안 끊긴다.
+      expect(config.headers.Authorization).toBe(`Bearer ${tokens().access_token}`)
+      return reply(config, 500) // 서버가 실패해도 로컬 정리는 끝나 있어야 한다
+    }
+    await logout()
+    expect(calls).toBe(1)
     expect(localStorage.getItem(AUTH_SESSION_KEY)).toBeNull()
     expect(localStorage.getItem('oc-board-token')).toBeNull()
     expect(localStorage.getItem('oc-board-me')).toBeNull()
+    expect(getRefreshToken()).toBeNull()
     expect(queryClient.getQueryCache().getAll()).toHaveLength(0)
   })
 })

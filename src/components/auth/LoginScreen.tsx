@@ -46,18 +46,22 @@ export function LoginScreen() {
   const [remember, setRemember] = useState(true)
   const loginMutation = useLogin()
   const loginError = loginMutation.error
-  const errorCode = isAxiosError(loginError) ? loginError.response?.data?.error?.code : undefined
   const errorStatus = isAxiosError(loginError) ? loginError.response?.status : undefined
+  // OfficeWave 규약(docs/api/api-spec.md:195-220): 403=자격증명 불일치 · 422=검증 실패 ·
+  // 412=비밀번호 변경 필요 · 410=세션 만료 · 419=JWT 만료. Go 의 `error.code` 봉투가 아니다.
   const errorKey =
-    errorStatus === 401 && errorCode === 'UNAUTHORIZED'
+    errorStatus === 403 || errorStatus === 401 || errorStatus === 422
       ? 'login-error'
-      : errorStatus === 403 && errorCode === 'FORBIDDEN'
-        ? 'login-forbidden'
-        : errorStatus === 404 && errorCode === 'NOT_FOUND'
-          ? 'login-user-not-found'
+      : errorStatus === 404
+        ? 'login-user-not-found'
+        : errorStatus === 412
+          ? 'login-password-change'
           : errorStatus === 429
             ? 'login-rate-limited'
-            : 'login-service-error'
+            : // 게시판을 쓸 수 없는 계정(ROLE_MEMBER 없음)은 로그인 단계에서 걸러진다.
+              loginError instanceof Error && loginError.message.includes('ROLE_MEMBER')
+              ? 'login-forbidden'
+              : 'login-service-error'
   const {
     register,
     handleSubmit,

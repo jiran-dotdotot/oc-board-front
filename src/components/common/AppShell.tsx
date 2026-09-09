@@ -497,7 +497,7 @@ export function AppShell() {
                       to="/login"
                       role="menuitem"
                       onClick={() => {
-                        logout()
+                        void logout()
                         setProfileOpen(false)
                       }}
                       className="flex h-9 w-full items-center gap-[9px] rounded-md px-2.5 text-sm text-gray-800 hover:bg-gray-100"

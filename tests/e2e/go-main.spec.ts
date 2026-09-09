@@ -9,8 +9,9 @@ const token =
   'header.' +
   Buffer.from(
     JSON.stringify({
-      iss: 'oc-api-go/board',
-      sub: '42',
+      iss: 'http://officewave',
+      sub: 'Authorization',
+      scopes: ['ROLE_MEMBER'],
       company_id: 7,
       user_id: 42,
       exp: Math.floor(Date.now() / 1000) + 3600,
@@ -170,12 +171,16 @@ for (const isAdmin of [true, false]) {
         })
         let json: unknown
         switch (url.pathname) {
-          case '/api/v1/board/login':
+          case '/api/v1/oauth/login':
             json = {
               token_type: 'Bearer',
-              expires_in: 3600,
+              expired_in: 7200,
               access_token: token,
               refresh_token: 'fixture-refresh',
+              company_id: 7,
+              user_id: 42,
+              scopes: ['ROLE_MEMBER'],
+              agent_id: null,
             }
             break
           case '/api/v1/board/me':

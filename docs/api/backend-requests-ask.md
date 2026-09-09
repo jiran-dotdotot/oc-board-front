@@ -8,7 +8,11 @@
 > board 인증 계약 폐지 통지를 받고 대장을 재판정했다([backend-replies/](backend-replies/README.md)).
 > **BR-012(독립 로그인의 member 자격)는 종결**됐다 — 요청한 방식은 아니지만 계약 통일로 질문 자체가
 > 사라졌다. 대신 **BR-036(member 토큰을 어떻게 얻는가)** 가 최우선 블로커로 들어왔다.
-> **이 앱은 현재 상태로 게시판 API 를 하나도 호출할 수 없다.**
+> 프론트는 회신을 기다리지 않고 **OfficeWave(`oc-api-laravel`) `POST /api/v1/oauth/login`(password
+> grant)을 직접 호출**해 member 토큰을 받는 방식으로 전환했다(형제 프론트
+> `oc-web-messenger/services/auth.ts:48` 의 실동작 코드를 근거로 삼았다. **Go 문서의 계약이 아니다.**)
+> 그래서 1번 항목은 **부분 해결**이고, 남은 회신은 아래 5건으로 좁혀졌다.
+> 다른 방식을 지정할 계획이라면 지금 알려 달라 — 그러면 이 전환을 되돌린다.
 >
 > BR-011(관리자의 타인 글 삭제)은 **회신을 받아 이 문서에서 빼고** 대장에 기록했다
 > (「유지 안 함 · 작성자 전용」 → 프론트 후속 2건).
@@ -18,19 +22,19 @@
   특히 [BR-022](backend-requests.md#br-022)(복원이 남의 수동 해제 북마크까지 되살림)와
   [BR-023](backend-requests.md#br-023)(정리·복원 경합으로 실제 파일 bytes 손실)은 **데이터 손실** 항목이다.
   다만 그 10건의 판정 근거는 `65b7f49` 기준이므로 `ebff9af` 재대조 때 함께 확인해 달라.
-- 실행 서버 실측은 전부 **로컬 `:8090`** 이며, `ebff9af` 이후로는 **토큰이 없어 HTTP 확인을 할 수 없다.**
+- 실행 서버 실측은 전부 **로컬 `:8090`** 이며, `ebff9af` 이후의 HTTP 확인은 아직 없다 — 위 전환으로 토큰은 얻을 수 있게 됐지만, 로컬 Go 의 `JWT_ISSUER_DOMAINS` 가 `officewave` 를 허용하지 않아 재기동 전까지는 유효 토큰도 401 이다.
 
-| #   | ID                                   | 필요한 것                            | 근거                     |
-| --- | ------------------------------------ | ------------------------------------ | ------------------------ |
-| 1   | [BR-036](backend-requests.md#br-036) | **인증 진입점 확정 (최우선 블로커)** | 실측(`ebff9af` 라우트)   |
-| 2   | [BR-032](backend-requests.md#br-032) | 계약 확정 (문서 ↔ 서버 불일치)       | 실측(`65b7f49`) + 재측정 |
-| 3   | [BR-029](backend-requests.md#br-029) | 환경 확인 (S3 서명자·CORS·CDN)       | 실측                     |
-| 4   | [BR-037](backend-requests.md#br-037) | 신규 2경로 계약 문서화               | 실측(라우트 등록 확인)   |
-| 5   | [BR-028](backend-requests.md#br-028) | 배포값 확인                          | 문의                     |
+| #   | ID                                   | 필요한 것                      | 근거                     |
+| --- | ------------------------------------ | ------------------------------ | ------------------------ |
+| 1   | [BR-036](backend-requests.md#br-036) | 인증 진입점 — 잔여 확정 5건    | 실측(`ebff9af` 라우트)   |
+| 2   | [BR-032](backend-requests.md#br-032) | 계약 확정 (문서 ↔ 서버 불일치) | 실측(`65b7f49`) + 재측정 |
+| 3   | [BR-029](backend-requests.md#br-029) | 환경 확인 (S3 서명자·CORS·CDN) | 실측                     |
+| 4   | [BR-037](backend-requests.md#br-037) | 신규 2경로 계약 문서화         | 실측(라우트 등록 확인)   |
+| 5   | [BR-028](backend-requests.md#br-028) | 배포값 확인                    | 문의                     |
 
 ---
 
-## 1. BR-036 · member 토큰을 어떻게 얻는가 — 앱이 아무 API 도 호출할 수 없다
+## 1. BR-036 · member 토큰 — 획득 경로는 프론트가 정했고, 확정이 남았다
 
 **실측(`oc-api-go` @ `ebff9af`, 읽기 전용)** — 통지문의 주장을 그대로 옮기지 않고 직접 확인했다.
 전부 일치했다:
@@ -44,19 +48,27 @@
 - **회사 등급 게이트(`checkPlan`, Free 차단)가 코드에서 사라졌다** — `65b7f49:board/token.go:246` 에
   있었고 `ebff9af` 의 `internal/**` 검색 결과 0건. (통지문은 「미확인」이라 했다.)
 
-**필요한 회신** — 통지문 §3 의 3택 확정과 함께:
+**프론트 현재 조치** — 자격증명만 OfficeWave 로 보낸다:
 
-1. 발급 주체와 **프론트 전달 방식**(쿼리스트링 / `postMessage` / 쿠키 / 헤더 주입)
-2. **수명과 갱신 방법** — board 토큰은 1h + refresh 회전이었다. member 토큰의 만료·갱신 경로가 있는가,
-   없으면 만료 시 프론트가 무엇을 해야 하는가
-3. `ROLE_MEMBER` 스코프와 `company_id`·`user_id` **클레임의 키 이름·타입**
-4. **회사 등급 게이트의 행방** — 없어진 것인가, 다른 계층으로 옮겼는가
-5. **독립 실행(자사 로그인) 모드를 폐기하는가** — 로그인 화면·`/login` 라우트·세션 저장의 처리 방향이
-   이 답에 달려 있다
+- `POST {OfficeWave}/api/v1/oauth/login` `{grant_type:'password', type:'browser', authority:'normal', username, password}`
+  → `access_token`(ES256)·`refresh_token`·`expired_in`·`company_id`·`user_id`·`scopes`
+- 게시판(Go) 호출은 그 `access_token` 을 그대로 Bearer 로 싣는다. 공개키가 두 레포에서 동일해
+  (`keys/jwtES256.key.pub` sha256 일치) Go 의 member 게이트를 통과한다
+- 갱신은 `POST /refresh-token`. **트리거는 Go 의 401** 이고 OfficeWave 의 419 는 갱신 실패로 본다
+- 클레임 해석은 OfficeWave 형태로 고쳤다 — `sub` 가 `'Authorization'` 이고 `agent_id` 가 null 인 점 포함
+- Go 로 나가는 모든 요청에 `agent_id` 부착 지점을 뒀지만 **브라우저는 값이 없어 쿼리 키를 만들지 않는다**
 
-**프론트 현재 조치** — **없다(의도적).** 토큰 획득 방식을 추정해 구현하면 확정 후 다시 지운다.
-`src/constants/auth.ts` 의 3경로 참조와 `src/lib/apiClient.ts` 의 401→refresh 회전은 동작하지 않는
-코드로 남겨 두었고, board 토큰 재사용이나 개발용 토큰 주입 우회를 만들지 않았다.
+**필요한 회신** — 위 방식이 백엔드 의도와 다르면 그것부터. 같다면 다음 5건:
+
+1. **회사 등급 게이트의 행방** — `checkPlan`(Free 차단)이 없어진 것인가, 다른 계층으로 옮겼는가.
+   프론트에는 지금 등급 차단 UI 가 없다
+2. **`is_required_password_change: true`** 응답을 프론트가 어떻게 처리해야 하는가 — 디자인 정본에 화면이
+   없어 **지금은 무시하고 로그인을 진행한다**(강제 변경이 우회된다). 별도 화면이 필요하면 계약을 달라
+3. **`mfa.mfa_required: true`** — 같은 이유로 미구현. 게시판이 이 흐름을 태워야 하는가
+4. **운영 배포의 OfficeWave 주소와 CORS 허용 출처** — 로컬 `http://officewave` 만 확인했다.
+   게시판은 별 출처이므로 preflight 허용이 필요하다
+5. **Go 의 `JWT_ISSUER_DOMAINS` 운영값** — OfficeWave `APP_URL` 의 호스트가 여기에 들어 있어야 한다
+   (로컬은 `officewave` 가 없어 유효 토큰도 401 이었다)
 
 ---
 
