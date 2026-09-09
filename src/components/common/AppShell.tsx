@@ -1,6 +1,6 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 
-import { Link, Outlet, useLocation } from '@tanstack/react-router'
+import { Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router'
 
 import { useTranslation } from 'react-i18next'
 
@@ -12,6 +12,7 @@ import {
   ChevronDownIcon,
   CloseIcon,
   DriveIcon,
+  FilterIcon,
   FolderIcon,
   GearIcon,
   HomeIcon,
@@ -23,6 +24,7 @@ import {
   SunIcon,
   UserIcon,
 } from '@/components/common/icons'
+import { isQueryReady } from '@/components/search/searchParams'
 import { useBoardBookmarkMutation, useBookmarkedBoards } from '@/hooks/useBoards'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { useCategories } from '@/hooks/useCategories'
@@ -319,11 +321,76 @@ function Logo({ className }: { className?: string }) {
   )
 }
 
+/* ── 헤더 검색 ──
+   정본(통합 앱)의 340×38 검색바. 입력값은 Enter·「검색」으로 `/search?q=` 로 넘긴다 —
+   예전에는 input 이 uncontrolled 고 버튼이 `<Link to="/search">` 라 «입력한 값을 버리고» 이동했다.
+   ⚙ 는 지시 확정 사항(정본에는 검색 화면 안에만 있다) — `filter=1` 로 필터를 펼친 채 연다. */
+function HeaderSearch() {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const [q, setQ] = useState('')
+  // 2자 미만은 보내지 않는다 — Go 는 1자 search 를 «필터 없는 전체 목록»으로 준다(05:275).
+  const go = (filter?: 1) => {
+    const value = q.trim()
+    if (!filter && !isQueryReady(value)) return
+    navigate({
+      to: '/search',
+      search: { q: value || undefined, filter },
+    })
+  }
+  return (
+    <div className="flex items-center gap-1.5">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          go()
+        }}
+        className="flex h-10 w-[340px] items-center gap-2 rounded-md bg-gray-100 py-0 pr-1.5 pl-3"
+      >
+        <SearchIcon className="size-4 flex-none text-gray-400" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={t('nav-search-placeholder')}
+          aria-label={t('nav-search-placeholder')}
+          className="min-w-0 flex-1 border-none bg-transparent text-sm outline-none"
+        />
+        <button
+          type="submit"
+          className="inline-flex h-7 flex-none items-center rounded bg-primary px-2.5 text-xs font-semibold text-white hover:bg-ov-blue-700"
+        >
+          {t('common-search')}
+        </button>
+      </form>
+      <button
+        type="button"
+        aria-label={t('search-advanced-open')}
+        onClick={() => go(1)}
+        className="inline-flex size-[34px] flex-none items-center justify-center rounded-md text-gray-600 hover:bg-gray-100"
+      >
+        <FilterIcon />
+      </button>
+    </div>
+  )
+}
+
 export function AppShell() {
   const { t } = useTranslation()
   const { pathname } = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const profileBtn = useRef<HTMLButtonElement>(null)
+  // ESC 로 닫고 포커스를 트리거로 돌려준다 — 키보드만으로 메뉴에서 빠져나올 수 있어야 한다.
+  useEffect(() => {
+    if (!profileOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      setProfileOpen(false)
+      profileBtn.current?.focus()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [profileOpen])
   // 모바일 드로어가 떠 있는 동안 배경 스크롤 잠금(중첩은 참조 카운팅)
   useBodyScrollLock(drawerOpen)
   // 로그인 후 셸 진입 시 /me 호출 → 사용자 정보(프로필 표시)
@@ -360,34 +427,30 @@ export function AppShell() {
               <SearchIcon className="size-4" />
             </Link>
             <ThemeToggle />
-            <span className="ml-1 inline-flex size-[30px] items-center justify-center rounded-full bg-l-blue text-xs font-bold text-on-pastel">
+            {/* 정본은 모바일에서 아바타 자체가 「내 활동」 진입점이다(mob:122 `goMy`) —
+                드롭다운이 없다. 링크가 아니면 탭해도 아무 일이 없다. */}
+            <Link
+              to="/my"
+              aria-label={t('nav-my')}
+              className="ml-1 inline-flex size-[30px] items-center justify-center rounded-full bg-l-blue text-xs font-bold text-on-pastel"
+            >
               {meInitial}
-            </span>
+            </Link>
           </div>
         </div>
 
         {/* 데스크톱 */}
         <div className="hidden h-(--spacing-topbar) items-center gap-[18px] px-5 min-[631px]:flex">
           <Logo className="flex-none text-lg" />
-          <div className="flex h-10 w-[340px] items-center gap-2 rounded-md bg-gray-100 py-0 pr-1.5 pl-3">
-            <SearchIcon className="size-4 flex-none text-gray-400" />
-            <input
-              placeholder={t('nav-search-placeholder')}
-              className="min-w-0 flex-1 border-none bg-transparent text-sm outline-none"
-            />
-            <Link
-              to="/search"
-              className="inline-flex h-7 flex-none items-center rounded bg-primary px-2.5 text-xs font-semibold text-white hover:bg-ov-blue-700"
-            >
-              {t('common-search')}
-            </Link>
-          </div>
+          <HeaderSearch />
           <div className="ml-auto flex items-center gap-1">
             <ThemeToggle />
             <div className="relative">
               <button
+                ref={profileBtn}
                 type="button"
                 onClick={() => setProfileOpen((v) => !v)}
+                aria-haspopup="menu"
                 className="flex items-center gap-2 rounded-md py-1 pr-2 pl-1 hover:bg-gray-100 aria-expanded:bg-gray-100"
                 aria-expanded={profileOpen}
               >
@@ -400,33 +463,56 @@ export function AppShell() {
                 <ChevronDownIcon />
               </button>
               {profileOpen && (
-                <div className="absolute top-[calc(100%+4px)] right-0 z-[var(--z-dropdown)] w-[200px] rounded-lg border border-gray-200 bg-card p-1 shadow-[var(--shadow-dropdown)]">
-                  <div className="flex flex-col gap-px border-b border-gray-200 px-2.5 pt-2 pb-1.5">
-                    <span className="text-s font-bold">{meName}</span>
-                    <span className="text-xs text-gray-400">{meEmail}</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm text-gray-800 hover:bg-gray-100"
+                <>
+                  {/* 바깥 클릭으로 닫기 — `Dropdown.tsx` 와 같은 오버레이 방식.
+                      초점 대상이 되지 않게 aria-hidden + tabIndex=-1, mousedown 에서 닫아
+                      그 아래 컨트롤의 click 이 살아 있게 한다. */}
+                  <div
+                    aria-hidden="true"
+                    tabIndex={-1}
+                    role="presentation"
+                    className="fixed inset-0 z-[var(--z-dropdown)] cursor-default"
+                    onMouseDown={() => setProfileOpen(false)}
+                  />
+                  {/* 정본 web:145-159 = mob:145-151 — 180px · p4 · 구분선은 헤더 아래 하나뿐.
+                      radius 는 정본표 램프(드롭다운 12)를 따른다(아트보드 8 보다 우선). */}
+                  <div
+                    role="menu"
+                    className="absolute top-[calc(100%+4px)] right-0 z-[var(--z-dropdown)] w-[180px] rounded-lg border border-gray-200 bg-card p-1 shadow-[var(--shadow-dropdown)]"
                   >
-                    <UserIcon className="size-3.5" />
-                    {t('nav-my')}
-                  </button>
-                  <div className="border-t border-gray-200 px-2.5 py-1.5">
-                    <LanguageSwitcher />
+                    <div className="flex flex-col gap-px border-b border-gray-100 px-2.5 pt-2 pb-1.5">
+                      <span className="text-s font-bold">{meName}</span>
+                      <span className="text-xs text-gray-400">{meEmail}</span>
+                    </div>
+                    <Link
+                      to="/my"
+                      role="menuitem"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex h-9 w-full items-center gap-[9px] rounded-md px-2.5 text-sm text-gray-800 hover:bg-gray-100"
+                    >
+                      <UserIcon className="size-3.5" />
+                      {t('nav-my')}
+                    </Link>
+                    <Link
+                      to="/login"
+                      role="menuitem"
+                      onClick={() => {
+                        logout()
+                        setProfileOpen(false)
+                      }}
+                      className="flex h-9 w-full items-center gap-[9px] rounded-md px-2.5 text-sm text-gray-800 hover:bg-gray-100"
+                    >
+                      <LogoutIcon />
+                      {t('nav-logout')}
+                    </Link>
+                    {/* 언어는 정본·레거시 어디에도 없는 이 앱 고유 UI다(호스트가 `?lang=` 로
+                        정해 주지 않는 자사 로그인 배포 때문에 남긴다). 정본에 없는 만큼
+                        «정본 메뉴 행» 모양 안에 넣어 이질감을 없앤다. */}
+                    <div className="mt-1 border-t border-gray-100 pt-1">
+                      <LanguageSwitcher onPick={() => setProfileOpen(false)} />
+                    </div>
                   </div>
-                  <Link
-                    to="/login"
-                    onClick={() => {
-                      logout()
-                      setProfileOpen(false)
-                    }}
-                    className="flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm text-gray-800 hover:bg-gray-100"
-                  >
-                    <LogoutIcon />
-                    {t('nav-logout')}
-                  </Link>
-                </div>
+                </>
               )}
             </div>
           </div>
