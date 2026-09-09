@@ -1066,3 +1066,22 @@ export function ZoomIcon({ className }: IconProps) {
     </svg>
   )
 }
+
+// ReplyArrowIcon — 답글의 깊이 신호(↳). 정본 「개선안 통합 앱.dc.html」 :597 의 두 path 그대로.
+export function ReplyArrowIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className ?? 'size-3.5'}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M5 5v6a4 4 0 0 0 4 4h10" />
+      <path d="M14 10l5 5-5 5" />
+    </svg>
+  )
+}

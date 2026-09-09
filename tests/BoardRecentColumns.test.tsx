@@ -26,7 +26,14 @@ const row: BoardRow = {
 
 const noop = () => {}
 const ctx = { open: noop, onBm: noop, onCopy: noop }
-const base = { rows: [row], ctx, notices: [], hiddenCount: 0, expanded: false, onToggleNotices: noop }
+const base = {
+  rows: [row],
+  ctx,
+  notices: [],
+  hiddenCount: 0,
+  expanded: false,
+  onToggleNotices: noop,
+}
 
 describe('BoardView 위치 컬럼', () => {
   beforeEach(async () => {

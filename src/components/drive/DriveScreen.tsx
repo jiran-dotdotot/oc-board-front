@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { BlockedModal } from '@/components/common/BlockedModal'
 import { Checkbox } from '@/components/common/Checkbox'
 import { Dropdown } from '@/components/common/Dropdown'
+import { FilePreviewModal } from '@/components/common/FilePreviewModal'
 import { Modal } from '@/components/common/Modal'
 import { Pagination } from '@/components/common/Pagination'
 import { Toast } from '@/components/common/Toast'
@@ -42,12 +43,11 @@ import {
   fmtDate,
   fmtSize,
 } from '@/components/drive/driveData'
-import { type PreviewKind, previewKind } from '@/components/drive/preview'
 import { DEFAULT_LIMIT_DAY } from '@/constants/post'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { useCategories } from '@/hooks/useCategories'
 import { useDrive } from '@/hooks/useDrive'
-import { useDriveDownload } from '@/hooks/useDriveDownload'
+import { useDownloadProgress, useDriveDownload } from '@/hooks/useDriveDownload'
 import {
   useDriveBookmarkMutation,
   useDriveDeleteMutation,
@@ -65,6 +65,7 @@ import type { ApiDriveFile, DriveFolder } from '@/types/drive'
 import { collectBoards, findBoard } from '@/utils/category'
 import { collectFolderParentIds } from '@/utils/driveFolders'
 import type { UploadLimits } from '@/utils/driveUpload'
+import { type PreviewKind, previewKind } from '@/utils/filePreview'
 import {
   LIMIT_OPTIONS,
   deviceDefaultLimit,
@@ -209,7 +210,7 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
   const selCount = selFiles.length + checkedFolders.size
   // 삭제 허용 판정. 레거시는 drive.is_admin(=게시판 관리자)만 봤지만, 서버는
   // /drive/file/board/{board} 에서 isBoardAdmin ‖ isAdminUser(회사 관리자) ‖ isCategoryAdmin 을 허용한다
-  // (docs/api/09-drive-file.md §7) → 회사 관리자가 프론트에서만 막히던 갭을 메운다.
+  // (docs/api/go/09-drive-file.md §권한) → 회사 관리자가 프론트에서만 막히던 갭을 메운다.
   const isDriveAdmin = !!drive?.is_admin || !!me?.is_admin
   // 삭제는 「내 것 또는 자료실 관리자」만 — 정본은 경고 문구를 선택 즉시 띄운다.
   const selHasOthers =
@@ -245,7 +246,8 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
   }
 
   // ── 다운로드 ─────────────────────────────────────────────────────────────
-  const { state: dl, start: startDownload, cancel: cancelDownload } = useDriveDownload()
+  const dl = useDriveDownload()
+  const { start: startDownload, cancel: cancelDownload } = dl
   const [dlCancelAsk, setDlCancelAsk] = useState(false)
   // 폴더는 내려받을 수 없다 — 하나라도 섞이면 비활성(레거시와 동일).
   const dlBlocked = checkedFolders.size > 0
@@ -259,7 +261,7 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
     const files = targets.map((f) => ({ id: f.id, name: f.name }))
     const r = await startDownload(files, t('drive-zip-name'))
     setDlCancelAsk(false)
-    if (r === 'unavailable') showToast(t('drive-dl-unavailable'), 'error')
+    if (r === 'unavailable') showToast(t('file-dl-unavailable'), 'error')
     else if (r === 'canceled') showToast(t('drive-dl-canceled'))
     else if (r === 'failed') showToast(t('drive-dl-fail'), 'error')
     // 완료도 알린다 — 모달이 스스로 닫히기만 하면 끝났는지 알 수 없다(토스트는 aria-live).
@@ -344,7 +346,7 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
       const issued = await getDriveFileDownloadUrl(f.id)
       setPreview({ url: issued.url, kind, file: f })
     } catch {
-      showToast(t('drive-dl-unavailable'), 'error')
+      showToast(t('file-dl-unavailable'), 'error')
     }
   }
 
@@ -393,8 +395,7 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
         const leaves = folderIds.filter((id) => !folderParentIds.has(id))
         const blocked = folderIds.filter((id) => folderParentIds.has(id))
         // 하위 «파일»이 남은 폴더는 서버가 조용히 건너뛴다 → 못 지운 id 는 선택에 남기고 안내한다.
-        const deleted =
-          leaves.length > 0 ? await delFolders.mutateAsync({ ids: leaves }) : []
+        const deleted = leaves.length > 0 ? await delFolders.mutateAsync({ ids: leaves }) : []
         const skippedLeaves = leaves.filter((id) => !deleted.includes(id))
         const left = [...blocked, ...skippedLeaves]
         setCheckedFolders(new Set(left))
@@ -443,7 +444,7 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
     setSearch({ f: id, page: undefined }, opts)
 
   // 서버는 없는 drive_folder_id 에 대해 에러가 아니라 drive_folders=[] · path=[] 를 준다
-  // (docs/api/08-drive-folder.md §7). f 가 있는데 path 가 비면 «삭제된 폴더» 이므로
+  // (docs/api/go/08-drive-folder.md §주의사항). f 가 있는데 path 가 비면 «삭제된 폴더» 이므로
   // 루트처럼 보이게 두면 브레드크럼도 없는 유령 폴더에 갇힌다 → 루트로 되돌린다.
   const ghostFolder = !!folderId && !!drive && crumbs.length === 0
   useEffect(() => {
@@ -977,23 +978,7 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
                 <XIcon />
               </button>
             </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between text-s">
-                {/* 진행 문구는 폴라이트로 읽는다 — % 는 너무 잦아 aria-live 대상에서 뺀다 */}
-                <span className="text-gray-600" role="status" aria-live="polite">
-                  {t('drive-dl-progress-n', { done: dl.done, total: dl.total })}
-                </span>
-                <span className="flex-none text-gray-500" aria-hidden="true">
-                  {dl.percent} %
-                </span>
-              </div>
-              <span className="block h-1.5 overflow-hidden rounded-full bg-gray-100">
-                <span
-                  className="block h-full rounded-full bg-primary transition-all"
-                  style={{ width: `${dl.percent}%` }}
-                />
-              </span>
-            </div>
+            <DownloadProgress dl={dl} />
             {dlCancelAsk && (
               <div className="flex flex-col items-center gap-3 border-t border-gray-100 pt-3.5">
                 <span className="text-center text-sm font-semibold">
@@ -1054,59 +1039,21 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
       {/* 미리보기 — 공용 Modal 을 쓴다. 직접 만들면 dialog 시맨틱·초점 이동·트랩이 빠진다.
           스크림만 어둡게 덮어쓴다(이미지·영상을 보는 화면이라 배경을 죽여야 한다). */}
       {preview && (
-        <Modal onClose={() => setPreview(null)} label={preview.file.name} scrim="bg-black/[0.78]">
-          <div className="relative flex max-h-[82dvh] w-[min(92vw,900px)] flex-col gap-2">
-            <div className="flex items-center gap-1.5">
-              <span className="min-w-0 flex-1 truncate text-s text-white/85">
-                {preview.file.name}
-              </span>
-              <button
-                type="button"
-                aria-label={t('file-download')}
-                disabled={dl.open}
-                onClick={() => {
-                  // 진행 모달과 겹치지 않게 미리보기를 먼저 닫는다 — 두 모달이 함께 뜨면
-                  // 스택 순서(진행 모달이 위)와 페인트 순서(미리보기가 위)가 어긋나고,
-                  // 초점·Tab 이 어느 패널에 속하는지도 모호해진다.
-                  const f = preview.file
-                  setPreview(null)
-                  runDownload([f])
-                }}
-                className="inline-flex size-[34px] flex-none items-center justify-center rounded-md bg-white/15 text-white hover:bg-white/25 disabled:text-white/40 disabled:hover:bg-white/15"
-              >
-                <DownloadIcon className="size-3" />
-              </button>
-              <button
-                type="button"
-                aria-label={t('common-close')}
-                onClick={() => setPreview(null)}
-                className="inline-flex size-[34px] flex-none items-center justify-center rounded-md bg-white/15 text-white hover:bg-white/25"
-              >
-                <XIcon />
-              </button>
-            </div>
-            <div className="flex min-h-0 flex-1 items-center justify-center">
-              {preview.kind === 'image' && (
-                <img
-                  src={preview.url}
-                  alt={preview.file.name}
-                  className="max-h-[72dvh] max-w-full rounded-lg object-contain"
-                />
-              )}
-              {preview.kind === 'video' && (
-                // 자막 트랙은 API 가 주지 않는다 — 생기면 <track> 을 붙인다.
-                <video src={preview.url} controls className="max-h-[72dvh] max-w-full rounded-lg" />
-              )}
-              {preview.kind === 'pdf' && (
-                <iframe
-                  src={preview.url}
-                  title={preview.file.name}
-                  className="h-[72dvh] w-full rounded-lg bg-white"
-                />
-              )}
-            </div>
-          </div>
-        </Modal>
+        <FilePreviewModal
+          url={preview.url}
+          kind={preview.kind}
+          name={preview.file.name}
+          onClose={() => setPreview(null)}
+          downloadDisabled={dl.open}
+          onDownload={() => {
+            // 진행 모달과 겹치지 않게 미리보기를 먼저 닫는다 — 두 모달이 함께 뜨면
+            // 스택 순서(진행 모달이 위)와 페인트 순서(미리보기가 위)가 어긋나고,
+            // 초점·Tab 이 어느 패널에 속하는지도 모호해진다.
+            const f = preview.file
+            setPreview(null)
+            runDownload([f])
+          }}
+        />
       )}
 
       {/* 안내(삭제 권한 없음 · 폴더가 비어 있지 않음) */}
@@ -1129,6 +1076,31 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
       )}
 
       <Toast toast={toast} onClose={hideToast} />
+    </div>
+  )
+}
+
+/** 진행률 막대 — 이 컴포넌트만 % 틱을 구독한다(파일 목록·트리는 다시 그리지 않는다). */
+function DownloadProgress({ dl }: { dl: ReturnType<typeof useDriveDownload> }) {
+  const { t } = useTranslation()
+  const p = useDownloadProgress(dl)
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between text-s">
+        {/* 진행 문구는 폴라이트로 읽는다 — % 는 너무 잦아 aria-live 대상에서 뺀다 */}
+        <span className="text-gray-600" role="status" aria-live="polite">
+          {t('drive-dl-progress-n', { done: p.done, total: p.total })}
+        </span>
+        <span className="flex-none text-gray-500" aria-hidden="true">
+          {p.percent} %
+        </span>
+      </div>
+      <span className="block h-1.5 overflow-hidden rounded-full bg-gray-100">
+        <span
+          className="block h-full rounded-full bg-primary transition-all"
+          style={{ width: `${p.percent}%` }}
+        />
+      </span>
     </div>
   )
 }

@@ -107,8 +107,7 @@ export interface DrivePresignFile {
 // ⚠ 다중 presign 은 «실패해도 HTTP 200». 성공/실패는 원소별 result.state 로만 판정한다.
 //   해당 없는 키는 null 이 아니라 «생략»된다(10:33).
 export type DrivePresignResult =
-  | { state: 'success'; file_id: string; url: string }
-  | { state: 'fail'; message: string }
+  { state: 'success'; file_id: string; url: string } | { state: 'fail'; message: string }
 
 // ⚠ 응답은 file_name/extension/size 를 echo 하지 않는다 — 로컬 File 과 인덱스로 짝짓는다(10:186).
 export interface DrivePresignItem {

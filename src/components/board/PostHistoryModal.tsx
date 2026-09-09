@@ -5,13 +5,13 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
 import { HISTORY_PAGE_SIZE } from './constants'
+import { Avatar } from '@/components/common/Avatar'
 import { Modal } from '@/components/common/Modal'
 import { Pagination } from '@/components/common/Pagination'
 import { CloseIcon } from '@/components/common/icons'
 import { isAuthenticated } from '@/lib/authStorage'
 import { getCommentLikeUsers, getPostLikeUsers, getPostViewers } from '@/services/postService'
 import type { PostLikeStat } from '@/types/post'
-import { initial, pastel } from '@/utils/avatar'
 import { fmtDateTime } from '@/utils/date'
 
 export type HistoryTab = 'views' | 'likes'
@@ -22,16 +22,6 @@ export interface HistoryTarget {
   commentId?: string
   likes: PostLikeStat[]
   tab: HistoryTab
-}
-
-function Avatar({ name, size }: { name: string | undefined; size: string }) {
-  return (
-    <span
-      className={`inline-flex ${size} flex-none items-center justify-center rounded-full text-xs font-bold text-on-pastel ${pastel(name ?? '?')}`}
-    >
-      {initial(name)}
-    </span>
-  )
 }
 
 /**
@@ -72,8 +62,10 @@ export function PostHistoryModal({
   }
 
   const views = useQuery({
-    // 세 내역 API 는 lang 을 «보내지 않는다»(services/postService.ts) → 언어를 키에 넣으면
-    // 바이트가 같은 응답을 전량 재요청하고 라이브 리전이 「불러오는 중」을 다시 읽는다.
+    // ⚠ 알려진 한계: 키에 언어가 없다. apiClient 는 모든 요청에 `Lang` 을 붙이고(lib/apiClient.ts:54)
+    //   Go 는 그 값으로 이름 뒤 퇴직/중지 접미사를 만든다(docs/api/go/05-post-read.md:83·:90).
+    //   따라서 전역 staleTime 안에 언어를 바꿔 다시 열면 이전 언어의 「(퇴직)」이 남는다.
+    //   상세 쿼리와 규약을 맞추려 유지한다 — 재요청 비용보다 «상세 조회수 증가»가 크다.
     queryKey: ['post-viewers', target.postId, page],
     queryFn: () => getPostViewers(target.postId, page, HISTORY_PAGE_SIZE),
     enabled: tab === 'views' && !target.commentId && isAuthenticated(),
@@ -159,11 +151,15 @@ export function PostHistoryModal({
         {/* 로딩·오류·빈 상태·목록 교체가 여기서 일어난다 → 라이브 리전으로 감싸야
             스크린리더가 「불러오는 중」·「없습니다」·행 수 변화를 읽어 준다(WCAG 4.1.3).
             aria-busy 로 «지금 갱신 중»임을 함께 알린다. */}
+        {/* 행에 초점 가능한 자식이 0개인 스크롤 컨테이너다 — tabIndex 가 없으면 Tab 이 목록을
+            통째로 건너뛰어 키보드만 쓰는 사용자는 화면 밖 행에 도달할 수 없다(WCAG 2.1.1). */}
         <div
           role="status"
           aria-live="polite"
           aria-busy={loading}
-          className="min-h-[140px] flex-1 overflow-y-auto p-2"
+          tabIndex={0}
+          aria-label={t(tab === 'views' ? 'detail-history-views' : 'detail-like-history')}
+          className="min-h-[140px] flex-1 overflow-y-auto p-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
         >
           {loading && <p className="p-4 text-center text-s text-gray-500">{t('common-loading')}</p>}
           {active.isError && (

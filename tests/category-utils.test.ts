@@ -1,7 +1,6 @@
-import { describe, expect, it } from 'vitest'
-
 import type { Category, CategoryBoard, CategoryTree } from '@/types/category'
 import { buildNavTree, collectBoards, flattenCategories } from '@/utils/category'
+import { describe, expect, it } from 'vitest'
 
 const board = (id: string, over: Partial<CategoryBoard> = {}) =>
   ({ id, title: id, is_active: true, ...over }) as CategoryBoard
@@ -45,7 +44,10 @@ describe('buildNavTree', () => {
       cat('empty', []),
       cat('dead', [board('x')], { is_active: false }),
       cat('live', [board('a'), board('off', { is_active: false })], {
-        child_categories: [cat('emptyFolder', []), cat('deadFolder', [board('y')], { is_active: false })],
+        child_categories: [
+          cat('emptyFolder', []),
+          cat('deadFolder', [board('y')], { is_active: false }),
+        ],
       }),
     ]
     const sections = buildNavTree(tree)

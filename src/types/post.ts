@@ -28,7 +28,7 @@ export interface PostFile {
   size?: number // bytes
 }
 
-// ⚠ 게시판명 컬럼은 `title` 이다 — `name` 은 board.boards 에 없다(docs/api/04-board.md §1).
+// ⚠ 게시판명 컬럼은 `title` 이다 — `name` 은 board.boards 에 없다(docs/api/go/04-board.md:80).
 // 예전 `name` 정의 때문에 목록의 '위치' 컬럼이 전부 빈 문자열로 렌더됐다.
 export interface PostBoard {
   id: string
@@ -113,7 +113,7 @@ export interface PostListParams {
 }
 
 // ─── 게시글 상세 (GET /api/v1/post/{post} — getPost) ────────────────────────
-// 근거: docs/api/05-post-read.md:214-244. 목록 필드 전체 + content + 아래 추가 필드.
+// 근거: docs/api/go/05-post-read.md §상세 DTO. 목록 필드 전체 + content + 아래 추가 필드.
 
 /** 게시글 상태. state != 'ACT' 이면 prev/next/row_num 이 전부 null 이고 조회 로그도 안 남는다. */
 export type PostState = 'ACT' | 'DEL' | 'SAVE' | 'HIDE' | 'SCHEDULED'
@@ -134,9 +134,7 @@ export interface CommentLikeStat extends PostLikeStat {
  * 댓글 한 칸. root/답글은 depth 가 아니라 parent_id 로 판정한다(depth 필드는 없다).
  * ⚠ `comment` 는 `is_active === false` 이면 **항상 null** 로 마스킹된다(07:121).
  *   → 「삭제된 댓글입니다」 자리표시자를 그려야 한다. 자식 대댓글은 연쇄 삭제되지 않는다(07:236).
- * ⚠ 자식 관계 키: 문서는 관계명 `childComments` 로 적었지만 Laravel 의 `$snakeAttributes`
- *   기본값 때문에 실제 JSON 키는 `child_drive_folders` 와 같은 규칙의 `child_comments` 다.
- *   레거시도 `comment.child_comments` 를 읽는다(PostView.vue:79). 둘 다 받아 둔다.
+ * ⚠ 자식 관계 키는 `child_comments` 하나다(docs/api/go/05-post-read.md:237).
  */
 export interface PostComment {
   id: string
@@ -154,7 +152,6 @@ export interface PostComment {
   user?: PostUser
   likes?: CommentLikeStat[]
   child_comments?: PostComment[]
-  childComments?: PostComment[]
 }
 
 // 상세 DTO(GET .../posts/{id}). 목록 필드 + content + 아래 추가 필드.

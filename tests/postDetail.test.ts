@@ -19,14 +19,11 @@ const c = (over: Partial<PostComment>): PostComment => ({
   ...over,
 })
 
-describe('commentChildren — 자식 키 두 표기 모두 읽는다', () => {
-  it('snake_case(실제 JSON)', () => {
+describe('commentChildren — Go 계약의 child_comments 하나만 읽는다', () => {
+  it('child_comments(docs/api/go/05-post-read.md:237)', () => {
     expect(commentChildren(c({ child_comments: [c({ id: 'k' })] }))).toHaveLength(1)
   })
-  it('camelCase(문서 표기)', () => {
-    expect(commentChildren(c({ childComments: [c({ id: 'k' })] }))).toHaveLength(1)
-  })
-  it('둘 다 없으면 빈 배열 — undefined 를 흘리지 않는다', () => {
+  it('없으면 빈 배열 — undefined 를 흘리지 않는다', () => {
     expect(commentChildren(c({}))).toEqual([])
   })
 })
@@ -112,11 +109,11 @@ describe('mapCommentTree · appendComment — 2단 트리 패치', () => {
     expect(out[0].is_active).toBe(false)
     expect(commentChildren(out[0])).toHaveLength(1)
   })
-  it('camelCase 로 온 자식도 패치 후 snake 한 쪽으로 정규화된다 — 두 키가 갈라지면 한쪽만 갱신된다', () => {
-    const tree = [c({ id: 'a', childComments: [c({ id: 'a1' })] })]
+  it('자식 한 칸만 바뀌고 형제는 그대로다', () => {
+    const tree = [c({ id: 'a', child_comments: [c({ id: 'a1' }), c({ id: 'a2' })] })]
     const out = mapCommentTree(tree, 'a1', (x) => ({ ...x, comment: '수정' }))
-    expect(out[0].childComments).toBeUndefined()
     expect(out[0].child_comments?.[0].comment).toBe('수정')
+    expect(out[0].child_comments?.[1].comment).not.toBe('수정')
   })
   it('최상위 댓글은 꼬리에 붙는다 — 서버 정렬이 오름차순이다', () => {
     const out = appendComment([c({ id: 'a' })], c({ id: 'new' }))

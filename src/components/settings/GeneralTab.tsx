@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next'
 import { BoardIcon, DriveIcon } from '@/components/common/icons'
 import { useMemberCategories } from '@/hooks/useCategories'
 import { useMe } from '@/hooks/useMe'
-import { useBoardAlarmMutation, useUserSettingMutation } from '@/hooks/useSettings'
+import { useBoardAlarmMutation } from '@/hooks/useSettings'
+import { MEMBER_SETTINGS_UNSUPPORTED } from '@/services/settingService'
 import { type CategoryBoard, isDriveBoard } from '@/types/category'
 import type { UserSettingPayload } from '@/types/setting'
 import { flattenCategories } from '@/utils/category'
@@ -20,30 +21,15 @@ export function GeneralTab({ onToast }: { onToast: (msg: string) => void }) {
   const { data: me } = useMe()
   const { data: tree, isError } = useMemberCategories()
 
-  const companySettingId = me?.company_setting?.id
   const us = me?.company_user_setting
-  const userMut = useUserSettingMutation(companySettingId)
   const boardMut = useBoardAlarmMutation()
 
-  // 서버값 위에 얹는 낙관적 오버레이. 실패하면 해당 키만 되돌린다.
-  const [userDraft, setUserDraft] = useState<Partial<Record<UserFlag, boolean>>>({})
   const [boardDraft, setBoardDraft] = useState<Record<string, boolean>>({})
 
-  // 개인 설정 기본값은 true (서버 fillable 기본값과 동일)
-  const userOn = (k: UserFlag) => userDraft[k] ?? us?.[k] !== false
-  const setUser = (k: UserFlag, next: boolean) => {
-    if (!companySettingId) return
-    setUserDraft((d) => ({ ...d, [k]: next }))
-    userMut.mutate(
-      { [k]: next },
-      {
-        onError: () => {
-          setUserDraft((d) => ({ ...d, [k]: !next }))
-          onToast(t('env-error'))
-        },
-      },
-    )
-  }
+  // 개인 설정 기본값은 true (서버 기본값과 동일). 저장 경로가 없어 «읽기 전용»이다.
+  const userOn = (k: UserFlag) => us?.[k] !== false
+  // 저장은 member 토큰 전용 경로라 이 앱에서 불가능하다 — 스위치는 비활성 + 사유 문구다.
+  const noop = () => {}
 
   // 게시판별 값도 서버가 COALESCE(..., true) 로 내려준다 → falsy만 off
   const boardKey = (id: string, f: BoardFlag) => `${id}:${f}`
@@ -77,17 +63,17 @@ export function GeneralTab({ onToast }: { onToast: (msg: string) => void }) {
         title={t('env-gen-comment')}
         desc={t('env-gen-comment-desc')}
         on={userOn('is_comment_alarm')}
-        onClick={() => setUser('is_comment_alarm', !userOn('is_comment_alarm'))}
+        onClick={noop}
         divider
-        disabled={!userMut.isSupported}
+        disabled={MEMBER_SETTINGS_UNSUPPORTED}
         unsupportedDesc={t('env-member-token-only')}
       />
       <SwitchRow
         title={t('env-gen-like')}
         desc={t('env-gen-like-desc')}
         on={userOn('is_like_alarm')}
-        onClick={() => setUser('is_like_alarm', !userOn('is_like_alarm'))}
-        disabled={!userMut.isSupported}
+        onClick={noop}
+        disabled={MEMBER_SETTINGS_UNSUPPORTED}
         unsupportedDesc={t('env-member-token-only')}
       />
 
@@ -100,14 +86,14 @@ export function GeneralTab({ onToast }: { onToast: (msg: string) => void }) {
           <InlineSwitch
             label={t('env-gen-allow-notice')}
             on={userOn('is_notice_alarm')}
-            onClick={() => setUser('is_notice_alarm', !userOn('is_notice_alarm'))}
-            disabled={!userMut.isSupported}
+            onClick={noop}
+            disabled={MEMBER_SETTINGS_UNSUPPORTED}
           />
           <InlineSwitch
             label={t('env-gen-allow-alarm')}
             on={userOn('is_post_alarm')}
-            onClick={() => setUser('is_post_alarm', !userOn('is_post_alarm'))}
-            disabled={!userMut.isSupported}
+            onClick={noop}
+            disabled={MEMBER_SETTINGS_UNSUPPORTED}
           />
         </div>
       </div>
@@ -219,7 +205,12 @@ function SwitchRow({
     >
       <span className="flex flex-col gap-0.5">
         <span className="text-sm font-semibold">{title}</span>
-        <span className="text-xs text-gray-400">{disabled ? unsupportedDesc : desc}</span>
+        {/* 사유 문구가 설명을 «대체»하면 그 스위치가 무엇을 켜고 끄는지 읽을 수 없다 —
+            정본은 설명을 상시 노출한다. 사유는 아래 줄에 덧붙인다. */}
+        <span className="text-xs text-gray-400">{desc}</span>
+        {disabled && unsupportedDesc && (
+          <span className="text-xs text-gray-500">{unsupportedDesc}</span>
+        )}
       </span>
       <span className="ml-auto flex-none">
         <Switch on={on} onClick={onClick} label={title} disabled={disabled} />

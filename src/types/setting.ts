@@ -1,4 +1,4 @@
-// 환경 설정 관련 요청/응답 타입 (docs/api/02-management.md §3·§5, 04-board.md §3.7)
+// 환경 설정 관련 요청/응답 타입 (docs/api/go/02-management.md · go/04-board.md:603)
 
 // POST /management/user-setting/{companySetting} — 본인 개인 알림 설정 (검증 없음, fillable만 반영)
 export interface UserSettingPayload {

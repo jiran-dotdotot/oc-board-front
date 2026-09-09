@@ -1,12 +1,12 @@
 import type { PostComment, PostLikeStat } from '@/types/post'
 
 /**
- * 대댓글 자식 배열. 문서는 관계명 `childComments` 로 적었지만 Laravel 의 `$snakeAttributes`
- * 기본값 때문에 실제 JSON 키는 `child_comments` 로 내려온다(레거시 PostView.vue:79 가 그걸 읽는다).
- * 어느 쪽이 와도 읽는다 — 키 하나 때문에 대댓글이 통째로 사라지는 게 최악이다.
+ * 대댓글 자식 배열. Go 계약의 키는 `child_comments` 하나뿐이다
+ * (docs/api/go/05-post-read.md:237 — 답글이 없으면 `[]`).
+ * 별칭 폴백을 두지 않는다 — 계약에 없는 키를 받아 주면 다음 회귀를 조용히 숨긴다(BR-032 규약).
  */
 export function commentChildren(c: PostComment): PostComment[] {
-  return c.child_comments ?? c.childComments ?? []
+  return c.child_comments ?? []
 }
 
 /**

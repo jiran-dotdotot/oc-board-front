@@ -19,7 +19,7 @@ export const SAMPLE_POSTS: Post[] = [
  * 공감으로 «새로 누를 수 있는» 이모지 세트.
  *
  * ⚠️ 가정: 서버·디자인 정본·레거시 어디에도 «세트» 라는 개념이 없다.
- *  - 서버는 `emoji` 를 자유 문자열로 받고(docs/api/07-post-comment-like.md:252),
+ *  - 서버는 `emoji` 를 자유 문자열로 받고(docs/api/go/07-post-comment-like.md:44),
  *    상세의 `post.likes` 는 **반응이 1건 이상인 이모지만** 집계해 준다 → 세트를 줄 수 없다.
  *  - 레거시는 emoji-mart 전체 카탈로그 피커였다(EmojiSelector.vue:3).
  *  - 정본 아트보드엔 이모지 리터럴이 0건이다(프로토타입 시드값).
@@ -32,9 +32,10 @@ export const REACTION_EMOJIS = ['👍', '❤️', '😊', '🎉', '😢', '👏'
 /**
  * 공감 줄에 **항상 보이는** 칩. 반응이 0건이어도 그린다(정본 스크린샷의 `🏷 0` 자리).
  *
- * ⚠ 서버는 «반응이 1건 이상인» 이모지만 집계해 준다(docs/api/07-post-comment-like.md:288) →
+ * ⚠ 서버는 «반응이 1건 이상인» 이모지만 집계해 준다(docs/api/go/07-post-comment-like.md §공감 집계) →
  *   0 카운트 칩은 서버에서 나올 수 없고 이 상수로만 그릴 수 있다.
- *   정본 `dReactChips` 의 `hint-placeholder-count="4"` 와 개수를 맞췄다.
+ *   ⚠ 4개는 «우리 결정»이다. 정본 `dReactChips` 의 반복수는 2 이고(4 는 다른 요소인
+ *   `postPkEmojis` 값이다), 고정 칩 개수를 지정한 정본 근거는 없다.
  *   세트 «밖» 이모지로 달린 기존 반응은 이 네 칩 뒤에 이어 붙는다 — 데이터가 숨지 않는다.
  */
 export const REACTION_PINNED = ['👍', '❤️', '😊', '🎉'] as const
@@ -45,5 +46,5 @@ export const COMMENT_HEART_EMOJI = '❤️'
 /** 첨부 목록에서 접기 전에 보여 주는 행 수. 정본 `dAttRows` 3행 + 「외 N개 모두 보기」. */
 export const ATTACHMENT_PREVIEW_ROWS = 3
 
-/** 내역 모달 페이지당 개수. API 기본값과 같다(docs/api/05-post-read.md:250, 07:325). */
+/** 내역 모달 페이지당 개수. API 기본값과 같다(docs/api/go/05-post-read.md:259, go/07:325). */
 export const HISTORY_PAGE_SIZE = 20

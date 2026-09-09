@@ -1,4 +1,4 @@
-import { previewKind } from '@/components/drive/preview'
+import { previewKind } from '@/utils/filePreview'
 import { describe, expect, it } from 'vitest'
 
 describe('previewKind', () => {

@@ -6,7 +6,7 @@ import { commentChildren } from '@/utils/postComments'
  * 상세 캐시를 «직접 패치»하기 위한 순수 함수들.
  *
  * 왜 재조회가 아니라 패치인가: `GET /post/{post}` 는 호출마다 `view_logs` 를 1건 넣는다
- * (docs/api/05-post-read.md:218). invalidate 로 재조회하면 공감 한 번에 조회수가 오른다
+ * (docs/api/go/05-post-read.md:42). invalidate 로 재조회하면 공감 한 번에 조회수가 오른다
  * (실측: 28 → 29). 그래서 mutation 응답으로 캐시를 고친다.
  */
 
@@ -36,8 +36,7 @@ export function applyToggle<T extends PostLikeStat>(
 
 /**
  * 댓글 트리(2단)에서 id 가 맞는 한 칸만 바꾼다.
- * ⚠ 자식 키가 `child_comments`/`childComments` 두 표기로 올 수 있어, 패치 결과는 항상
- *   `child_comments` 한 쪽으로 정규화한다 — 안 그러면 두 키가 갈라져 한쪽만 갱신된다.
+ * 자식 키는 `child_comments` 하나다(docs/api/go/05-post-read.md:237).
  */
 export function mapCommentTree(
   comments: PostComment[],
@@ -49,7 +48,7 @@ export function mapCommentTree(
       // 정규화는 «fn 의 결과» 를 기준으로 한다 — 원본 자식으로 덮으면 fn 이 방금 붙인
       // 답글이 버려진다(테스트가 이걸 잡았다).
       const next = fn(c)
-      return { ...next, child_comments: commentChildren(next), childComments: undefined }
+      return { ...next, child_comments: commentChildren(next) }
     }
     const kids = commentChildren(c)
     if (kids.length === 0) return c
@@ -57,7 +56,6 @@ export function mapCommentTree(
     return {
       ...c,
       child_comments: kids.map((k) => (k.id === id ? fn(k) : k)),
-      childComments: undefined,
     }
   })
 }

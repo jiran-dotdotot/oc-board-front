@@ -4,9 +4,10 @@ import { useTranslation } from 'react-i18next'
 
 import { ReactionPicker } from './ReactionPicker'
 import { COMMENT_HEART_EMOJI } from './constants'
-import { DotsIcon, HeartIcon } from '@/components/common/icons'
+import { Avatar } from '@/components/common/Avatar'
+import { Popover } from '@/components/common/Popover'
+import { DotsIcon, HeartIcon, ReplyArrowIcon } from '@/components/common/icons'
 import type { PostComment } from '@/types/post'
-import { initial, pastel } from '@/utils/avatar'
 import { fmtDateTime } from '@/utils/date'
 import { commentChildren, countComments } from '@/utils/postComments'
 
@@ -24,7 +25,11 @@ export interface CommentActions {
   onReact: (commentId: string, emoji: string) => void
   onHistory: (c: PostComment) => void
   /** 게시글이 댓글을 받지 않으면 입력·답글·수정이 전부 400/403 이다 — 미리 막는다. */
+  /** 댓글 작성·수정 가능 여부 — 서버는 is_allow_comment «그리고» state==='ACT' 를 본다. */
   allowed: boolean
+  /** 공감 가능 여부. 서버는 공감에서 게시글 state 를 «검사하지 않는다»
+   *  (docs/api/go/07-post-comment-like.md:356) — 숨김 글의 댓글도 공감·취소가 200 이다. */
+  reactAllowed: boolean
   /** 게시판 관리자면 남의 댓글도 지울 수 있다(docs/api/07:213). */
   isAdmin: boolean
   busy: boolean
@@ -41,85 +46,44 @@ export interface CommentActions {
 function CommentMenu({
   label,
   items,
+  btnRef,
 }: {
   label: string
   items: { key: string; label: string; danger?: boolean; onPick: () => void }[]
+  /** 편집창을 닫을 때 초점을 돌려받을 수 있도록 호출부가 트리거를 잡아 둔다. */
+  btnRef?: React.RefObject<HTMLButtonElement | null>
 }) {
-  const [open, setOpen] = useState(false)
-  const triggerRef = useRef<HTMLButtonElement | null>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
-      setOpen(false)
-      triggerRef.current?.focus()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [open])
-
   if (items.length === 0) return null
   return (
-    <div
-      className="relative flex-none"
-      onBlur={(e) => {
-        if (!open) return
-        if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
-        setOpen(false)
-      }}
+    <Popover
+      label={label}
+      btnRef={btnRef}
+      triggerClass="inline-flex size-7 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+      trigger={<DotsIcon />}
+      panelClass="top-[calc(100%+4px)] right-0 w-[150px] p-1"
     >
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-label={label}
-        className="inline-flex size-7 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-      >
-        <DotsIcon />
-      </button>
-      {open && (
-        <>
-          <div
-            aria-hidden="true"
-            tabIndex={-1}
-            role="presentation"
-            className="fixed inset-0 z-[var(--z-dropdown)] cursor-default"
-            onMouseDown={() => setOpen(false)}
-          />
-          <div className="absolute top-[calc(100%+4px)] right-0 z-[var(--z-dropdown)] w-[150px] rounded-lg border border-gray-200 bg-card p-1 shadow-[var(--shadow-dropdown)]">
-            {items.map((it) => (
-              <button
-                key={it.key}
-                type="button"
-                onClick={() => {
-                  setOpen(false)
-                  it.onPick()
-                }}
-                className={`flex h-[34px] w-full items-center rounded-md px-2.5 text-s ${
-                  it.danger
-                    ? 'text-destructive hover:bg-destructive-bg'
-                    : 'text-gray-800 hover:bg-gray-100'
-                }`}
-              >
-                {it.label}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
-
-function Avatar({ name, size }: { name: string | undefined; size: string }) {
-  return (
-    <span
-      className={`inline-flex ${size} flex-none items-center justify-center rounded-full text-s font-bold text-on-pastel ${pastel(name ?? '?')}`}
-    >
-      {initial(name)}
-    </span>
+      {(close) =>
+        items.map((it) => (
+          <button
+            key={it.key}
+            type="button"
+            onClick={() => {
+              // ⚠ 순서가 중요하다 — close() 가 «지금 초점을 쥔 이 버튼»을 언마운트하므로
+              //   먼저 트리거로 초점을 돌려놓아야 뒤이어 열리는 모달의 opener 가 body 가 되지 않는다.
+              close()
+              it.onPick()
+            }}
+            className={`flex h-[34px] w-full items-center rounded-md px-2.5 text-s ${
+              it.danger
+                ? 'text-destructive hover:bg-destructive-bg'
+                : 'text-gray-800 hover:bg-gray-100'
+            }`}
+          >
+            {it.label}
+          </button>
+        ))
+      }
+    </Popover>
   )
 }
 
@@ -252,7 +216,8 @@ function CommentRow({
   const [editing, setEditing] = useState(false)
   const [replying, setReplying] = useState(false)
   // 편집창·답글창이 닫히면 그 안의 초점 요소가 사라진다 → 열었던 버튼으로 돌려준다(WCAG 2.4.3).
-  const editBtn = useRef<HTMLButtonElement | null>(null)
+  // 「수정」은 ⋮ 메뉴 «안»에 있어 항목 버튼이 사라진다 → 메뉴 트리거를 초점 반환 지점으로 쓴다.
+  const menuBtn = useRef<HTMLButtonElement | null>(null)
   const replyBtn = useRef<HTMLButtonElement | null>(null)
   const restore = (r: React.RefObject<HTMLButtonElement | null>) =>
     requestAnimationFrame(() => r.current?.focus())
@@ -263,14 +228,15 @@ function CommentRow({
   //   (Comment.vue:333 의 v-for 가 v-if 밖에 있다).
   if (!c.is_active) {
     return (
-      <>
-        <div className={reply ? 'pl-11' : undefined}>
+      <div className={reply ? 'mt-1.5 flex gap-2' : 'flex gap-2.5'}>
+        {reply && <ReplyArrowIcon className="mt-[5px] size-3.5 flex-none text-gray-300" />}
+        <div className="flex min-w-0 flex-1 flex-col gap-[5px]">
           <p className="text-sm text-gray-500">{t('detail-comment-deleted')}</p>
+          {commentChildren(c).map((r) => (
+            <CommentRow key={r.id} c={r} a={a} reply meName={meName} />
+          ))}
         </div>
-        {commentChildren(c).map((r) => (
-          <CommentRow key={r.id} c={r} a={a} reply meName={meName} />
-        ))}
-      </>
+      </div>
     )
   }
 
@@ -282,14 +248,16 @@ function CommentRow({
     <>
       {/* 정본 댓글 행에는 «테두리도 세로 패딩도 없다» — 행 간격은 부모의 gap:16 하나로 만든다.
           예전엔 행마다 border-t + py-14 를 그려 디자인과 다르게 줄이 그어져 보였다. */}
-      <div className={`flex gap-2.5 ${reply ? 'pl-11' : ''}`}>
-        <Avatar name={c.user?.name ?? undefined} size={reply ? 'size-[30px]' : 'size-8'} />
+      <div className={reply ? 'mt-1.5 flex gap-2' : 'flex gap-2.5'}>
+        {reply && <ReplyArrowIcon className="mt-[5px] size-3.5 flex-none text-gray-300" />}
+        <Avatar name={c.user?.name ?? undefined} size={reply ? 'size-[26px]' : 'size-8'} />
         <div className="flex min-w-0 flex-1 flex-col gap-[5px]">
           <div className="flex items-center gap-2">
             <span className="text-s font-semibold">{c.user?.name ?? '-'}</span>
             <span className="text-xs text-gray-400">{fmtDateTime(c.created_at)}</span>
             <span className="ml-auto flex flex-none items-center">
               <CommentMenu
+                btnRef={menuBtn}
                 label={t('detail-comment-menu', { name: c.user?.name ?? '' })}
                 items={[
                   ...(c.is_mine && a.allowed && !editing
@@ -328,13 +296,13 @@ function CommentRow({
               busy={a.busy}
               onCancel={() => {
                 setEditing(false)
-                restore(editBtn)
+                restore(menuBtn)
               }}
               onSubmit={async (v) => {
                 const ok = await a.onEdit(c.id, v)
                 if (ok) {
                   setEditing(false)
-                  restore(editBtn)
+                  restore(menuBtn)
                 }
                 return ok
               }}
@@ -350,13 +318,15 @@ function CommentRow({
             <button
               type="button"
               onClick={() => a.onReact(c.id, COMMENT_HEART_EMOJI)}
-              disabled={!a.allowed}
+              disabled={!a.reactAllowed}
               aria-pressed={!!hearts?.is_reacted}
               aria-label={t(hearts?.is_reacted ? 'detail-react-on' : 'detail-react-off', {
                 emoji: COMMENT_HEART_EMOJI,
               })}
-              className={`inline-flex items-center gap-1 text-xs hover:text-primary disabled:opacity-60 ${
-                hearts?.is_reacted ? 'text-primary' : 'text-gray-400'
+              className={`inline-flex h-[22px] items-center gap-1 rounded-full border px-2 text-xs disabled:opacity-60 ${
+                hearts?.is_reacted
+                  ? 'border-primary bg-ov-blue-50 text-primary hover:bg-ov-blue-100'
+                  : 'border-gray-200 text-gray-500 hover:bg-gray-100'
               }`}
             >
               <HeartIcon small filled={!!hearts?.is_reacted} />
@@ -368,13 +338,15 @@ function CommentRow({
                 key={l.emoji}
                 type="button"
                 onClick={() => a.onReact(c.id, l.emoji)}
-                disabled={!a.allowed}
+                disabled={!a.reactAllowed}
                 aria-pressed={!!l.is_reacted}
                 aria-label={t(l.is_reacted ? 'detail-react-on' : 'detail-react-off', {
                   emoji: l.emoji,
                 })}
-                className={`inline-flex items-center gap-1 text-xs hover:text-primary disabled:opacity-60 ${
-                  l.is_reacted ? 'text-primary' : 'text-gray-400'
+                className={`inline-flex h-[22px] items-center gap-1 rounded-full border px-2 text-xs disabled:opacity-60 ${
+                  l.is_reacted
+                    ? 'border-primary bg-ov-blue-50 text-primary hover:bg-ov-blue-100'
+                    : 'border-gray-200 text-gray-500 hover:bg-gray-100'
                 }`}
               >
                 <span className="text-sm leading-none">{l.emoji}</span>
@@ -395,8 +367,8 @@ function CommentRow({
             )}
             {/* 정본 댓글 행엔 하트 하나뿐이지만 서버·레거시는 자유 이모지를 허용한다 —
                 게시글 공감과 «같은» 고정 세트 팝오버를 붙여 새 이모지도 달 수 있게 한다.
-                댓글 미허용 글에서는 아예 렌더하지 않는다(disabled 만 두면 이유가 안 보인다). */}
-            {a.allowed && (
+                공감 불가 글에서는 아예 렌더하지 않는다(disabled 만 두면 이유가 안 보인다). */}
+            {a.reactAllowed && (
               <ReactionPicker likes={c.likes ?? []} onPick={(e) => a.onReact(c.id, e)} size="sm" />
             )}
           </div>
@@ -421,11 +393,13 @@ function CommentRow({
               }}
             />
           )}
+          {/* 답글은 부모 본문 컬럼 «안»에 둔다 — 밖에 두면 목록의 gap-4 가 그대로 적용돼
+              「부모와 그 답글」 간격이 「무관한 다음 댓글」 간격과 같아져 위계가 사라진다. */}
+          {commentChildren(c).map((r) => (
+            <CommentRow key={r.id} c={r} a={a} reply meName={meName} />
+          ))}
         </div>
       </div>
-      {commentChildren(c).map((r) => (
-        <CommentRow key={r.id} c={r} a={a} reply meName={meName} />
-      ))}
     </>
   )
 }

@@ -37,6 +37,7 @@ const actions = (over: Partial<CommentActions> = {}): CommentActions => ({
   onReact: noop,
   onHistory: noop,
   allowed: true,
+  reactAllowed: true,
   isAdmin: false,
   busy: false,
   ...over,
@@ -157,30 +158,28 @@ describe('PostAttachments — 정본 3행 + 모두 보기', () => {
   })
 
   it('3행까지만 보이고 나머지는 「외 N개 모두 보기」로 접힌다', () => {
-    render(<PostAttachments files={[1, 2, 3, 4, 5].map(file)} onDownload={noop} configured />)
+    render(<PostAttachments files={[1, 2, 3, 4, 5].map(file)} onDownload={noop} onPreview={noop} />)
     expect(screen.getByText('문서3.pdf')).toBeInTheDocument()
     expect(screen.queryByText('문서4.pdf')).toBeNull()
     expect(screen.getByRole('button', { name: /외 2개 모두 보기/ })).toBeInTheDocument()
   })
 
-  it('다운로드를 못 쓰는 상태면 비활성이고 «이유»가 글자로 보인다', () => {
-    render(<PostAttachments files={[file(1)]} onDownload={noop} configured={false} />)
-    expect(screen.getByRole('button', { name: '전체 다운로드' })).toBeDisabled()
-    expect(
-      screen.getByText(
-        '지금은 내려받을 수 없습니다. 서버에서 다운로드 주소 발급이 준비되지 않았습니다.',
-      ),
-    ).toBeInTheDocument()
+  // 레거시 PostView.vue:435 의 눈 아이콘 — 내려받지 않고 보는 유일한 경로다.
+  it('행의 미리보기 버튼이 그 파일을 넘긴다', () => {
+    const onPreview = vi.fn()
+    render(<PostAttachments files={[file(1)]} onDownload={noop} onPreview={onPreview} />)
+    fireEvent.click(screen.getByRole('button', { name: '미리보기' }))
+    expect(onPreview).toHaveBeenCalledWith(expect.objectContaining({ id: 'f1' }))
   })
 
   it('첨부가 없으면 박스를 그리지 않는다', () => {
-    const { container } = render(<PostAttachments files={[]} onDownload={noop} configured />)
+    const { container } = render(<PostAttachments files={[]} onDownload={noop} onPreview={noop} />)
     expect(container).toBeEmptyDOMElement()
   })
 
   it('여러 건을 한 번에 넘긴다 — zip 판정은 훅이 files.length 로 한다(레거시 파리티)', () => {
     const onDownload = vi.fn()
-    render(<PostAttachments files={[file(1), file(2)]} onDownload={onDownload} configured />)
+    render(<PostAttachments files={[file(1), file(2)]} onDownload={onDownload} onPreview={noop} />)
     screen.getByRole('button', { name: '전체 다운로드' }).click()
     expect(onDownload).toHaveBeenCalledWith([file(1), file(2)])
   })
@@ -237,7 +236,7 @@ describe('PostAttachments 전체 모달 — 정본 구조(:1507-1540)', () => {
     size: 1024,
   })
   const openAll = (files: PostFile[]) => {
-    render(<PostAttachments files={files} onDownload={noop} configured />)
+    render(<PostAttachments files={files} onDownload={noop} onPreview={noop} />)
     fireEvent.click(screen.getByRole('button', { name: /모두 보기/ }))
   }
 
@@ -272,7 +271,7 @@ describe('PostAttachments 전체 모달 — 정본 구조(:1507-1540)', () => {
       <PostAttachments
         files={[1, 2, 3, 4].map((i) => file(i))}
         onDownload={onDownload}
-        configured
+        onPreview={noop}
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: /모두 보기/ }))
@@ -284,13 +283,13 @@ describe('PostAttachments 전체 모달 — 정본 구조(:1507-1540)', () => {
   it('확장자가 없는 파일 칩에는 「파일」이 찍힌다 — 「다운로드」가 아니다', () => {
     // ⚠ 기본 매개변수는 undefined 를 넘기면 «기본값»이 적용된다 → 객체를 직접 만든다.
     const noExt: PostFile = { id: 'f9', src: 'k/9', origin_file_name: 'Makefile' }
-    render(<PostAttachments files={[noExt]} onDownload={noop} configured />)
+    render(<PostAttachments files={[noExt]} onDownload={noop} onPreview={noop} />)
     expect(screen.getByText('파일')).toBeInTheDocument()
     expect(screen.queryByText('다운로드')).toBeNull()
   })
 
   it('파일별 다운로드 버튼 이름에 파일명이 들어간다 — 이름 없는 아이콘 버튼 금지(WCAG 4.1.2)', () => {
-    render(<PostAttachments files={[file(1)]} onDownload={noop} configured />)
+    render(<PostAttachments files={[file(1)]} onDownload={noop} onPreview={noop} />)
     expect(screen.getByRole('button', { name: '문서1.pdf 이 파일만 다운로드' })).toBeInTheDocument()
   })
 })
@@ -304,9 +303,25 @@ describe('댓글 이모지 피커 — 게시글과 같은 고정 세트를 쓴�
     expect(onReact).toHaveBeenCalledWith('c9', '🎉')
   })
 
-  it('댓글 미허용 글에서는 「+」를 아예 렌더하지 않는다 — 눌러도 403 이다', () => {
-    render(<PostComments comments={[comment({})]} actions={actions({ allowed: false })} />)
+  it('공감 불가 글에서는 「+」를 아예 렌더하지 않는다 — 눌러도 403 이다', () => {
+    render(<PostComments comments={[comment({})]} actions={actions({ reactAllowed: false })} />)
     expect(screen.queryByRole('button', { name: '공감 추가' })).toBeNull()
+  })
+
+  // 서버는 공감에서 게시글 state 를 검사하지 않는다(docs/api/go/07-post-comment-like.md:356) —
+  // 숨김 글이라 «댓글 작성»은 막혀도 공감·취소는 열려 있어야 한다.
+  it('숨김 글(작성 불가)이어도 공감은 열려 있다', () => {
+    render(
+      <PostComments
+        comments={[comment({})]}
+        actions={actions({ allowed: false, reactAllowed: true })}
+      />,
+    )
+    expect(screen.getByRole('button', { name: '공감 추가' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /공감하기|공감 취소/ })).not.toHaveProperty(
+      'disabled',
+      true,
+    )
   })
 
   it('이미 누른 이모지는 팝오버에서도 aria-pressed=true 다', () => {
@@ -440,7 +455,7 @@ describe('첨부 전체 모달 — ESC 로 닫힌다', () => {
       extension: 'pdf',
       size: 1024,
     })
-    render(<PostAttachments files={[1, 2, 3, 4].map(f)} onDownload={noop} configured />)
+    render(<PostAttachments files={[1, 2, 3, 4].map(f)} onDownload={noop} onPreview={noop} />)
     fireEvent.click(screen.getByRole('button', { name: /모두 보기/ }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     fireEvent.keyDown(document, { key: 'Escape' })

@@ -10,6 +10,7 @@ import {
   CloseIcon,
   DashIcon,
   DownloadIcon,
+  EyeIcon,
   PaperclipIcon,
 } from '@/components/common/icons'
 import { fmtSize } from '@/components/drive/driveData'
@@ -36,25 +37,28 @@ function FileMeta({ f, extFallback }: { f: PostFile; extFallback: string }) {
   )
 }
 
-function DownloadBtn({
-  label,
-  onClick,
-  disabled,
-  reason,
-}: {
-  label: string
-  onClick: () => void
-  disabled: boolean
-  reason: string
-}) {
+function PreviewBtn({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      disabled={disabled}
       aria-label={label}
-      title={disabled ? reason : label}
-      className="inline-flex size-7 flex-none items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-primary disabled:text-gray-300 disabled:hover:bg-transparent"
+      title={label}
+      className="inline-flex size-7 flex-none items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-primary"
+    >
+      <EyeIcon className="size-3" />
+    </button>
+  )
+}
+
+function DownloadBtn({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className="inline-flex size-7 flex-none items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-primary"
     >
       <DownloadIcon />
     </button>
@@ -68,15 +72,13 @@ function DownloadBtn({
 export function PostAttachments({
   files,
   onDownload,
-  configured,
+  onPreview,
 }: {
   files: PostFile[]
   /** 여러 건이면 zip 으로 묶인다 — 판정은 useDriveDownload 안에 있다. */
   onDownload: (targets: PostFile[]) => void
-  /** S3 공개 주소가 설정되지 않으면 내려받을 수 없다. 색이 아니라 문구로 이유를 알린다. */
-  /** 다운로드 가능 여부. Go 는 발급을 요청해 봐야 503 을 알 수 있어(09:600) 현재 호출부는
-   *  항상 true 를 넘긴다 — 사전 판정 수단이 생기면 그대로 연결한다. */
-  configured: boolean
+  /** 내려받지 않고 보기 — 자료실과 같은 창을 쓴다(components/common/FilePreviewModal). */
+  onPreview: (file: PostFile) => void
 }) {
   const { t } = useTranslation()
   const [allOpen, setAllOpen] = useState(false)
@@ -103,7 +105,6 @@ export function PostAttachments({
   if (files.length === 0) return null
   const rows = files.slice(0, ATTACHMENT_PREVIEW_ROWS)
   const hidden = files.length - rows.length
-  const reason = t('detail-dl-unavailable')
   const extFallback = t('file-generic')
 
   const toggle = (id: string) =>
@@ -128,9 +129,7 @@ export function PostAttachments({
           <button
             type="button"
             onClick={() => onDownload(files)}
-            disabled={!configured}
-            title={!configured ? reason : undefined}
-            className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-primary disabled:text-gray-300"
+            className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-primary"
           >
             <DownloadIcon className="size-3.5" />
             {t('detail-att-all')}
@@ -142,16 +141,15 @@ export function PostAttachments({
             key={f.id}
             // ⚠ `last:border-b-0` 을 쓰면 안 된다 — 전체 모달에서는 행마다 부모가 달라
             //   모든 행이 «마지막»이 되어 구분선이 전부 사라진다. 인덱스로 명시한다.
-            className={`flex h-[46px] items-center gap-[11px] px-[15px] hover:bg-gray-50 ${
+            className={`flex h-[46px] items-center gap-[11px] px-[15px] hover:bg-gray-100 ${
               i < rows.length - 1 || hidden > 0 ? 'border-b border-gray-100' : ''
             }`}
           >
             <FileMeta f={f} extFallback={extFallback} />
+            <PreviewBtn label={t('file-preview')} onClick={() => onPreview(f)} />
             <DownloadBtn
               label={`${f.origin_file_name} ${t('detail-att-dl-one')}`}
               onClick={() => onDownload([f])}
-              disabled={!configured}
-              reason={reason}
             />
           </div>
         ))}
@@ -161,15 +159,11 @@ export function PostAttachments({
             type="button"
             onClick={() => setAllOpen(true)}
             // 정본: 모바일 h44 → 데스크톱 h42
-            className="flex h-[44px] items-center justify-center gap-1.5 text-s font-semibold text-gray-600 hover:bg-gray-50 hover:text-primary min-[631px]:h-[42px]"
+            className="flex h-[44px] items-center justify-center gap-1.5 text-s font-semibold text-gray-600 hover:bg-gray-100 hover:text-primary min-[631px]:h-[42px]"
           >
             {t('detail-att-more', { n: hidden })}
             <ChevronIcon className="size-3" dir="right" small />
           </button>
-        )}
-
-        {!configured && (
-          <p className="border-t border-gray-100 px-[15px] py-2 text-xs text-gray-500">{reason}</p>
         )}
       </div>
 
@@ -216,7 +210,7 @@ export function PostAttachments({
                 return (
                   <div
                     key={f.id}
-                    className={`flex h-[46px] items-center gap-2.5 pr-5 hover:bg-gray-50 ${
+                    className={`flex h-[46px] items-center gap-2.5 pr-5 hover:bg-gray-100 ${
                       i < files.length - 1 ? 'border-b border-gray-100' : ''
                     }`}
                   >
@@ -233,11 +227,10 @@ export function PostAttachments({
                       <Box checked={on} />
                       <FileMeta f={f} extFallback={extFallback} />
                     </button>
+                    <PreviewBtn label={t('file-preview')} onClick={() => onPreview(f)} />
                     <DownloadBtn
                       label={`${f.origin_file_name} ${t('detail-att-dl-one')}`}
                       onClick={() => onDownload([f])}
-                      disabled={!configured}
-                      reason={reason}
                     />
                   </div>
                 )
@@ -248,9 +241,7 @@ export function PostAttachments({
               <button
                 type="button"
                 onClick={() => onDownload(files)}
-                disabled={!configured}
-                title={!configured ? reason : undefined}
-                className="inline-flex h-[38px] flex-1 items-center justify-center gap-1.5 rounded-md border border-gray-200 bg-card text-s font-semibold text-gray-800 hover:bg-gray-100 disabled:text-gray-300"
+                className="inline-flex h-[38px] flex-1 items-center justify-center gap-1.5 rounded-md border border-gray-200 bg-card text-s font-semibold text-gray-800 hover:bg-gray-100"
               >
                 <DownloadIcon className="size-3.5" />
                 {t('detail-att-all')}
@@ -258,7 +249,7 @@ export function PostAttachments({
               <button
                 type="button"
                 onClick={() => onDownload(selected)}
-                disabled={!configured || selected.length === 0}
+                disabled={selected.length === 0}
                 className="inline-flex h-[38px] flex-1 items-center justify-center gap-1.5 rounded-md bg-primary text-s font-semibold text-white hover:bg-ov-blue-700 disabled:bg-gray-100 disabled:text-gray-300"
               >
                 <DownloadIcon className="size-3.5" />

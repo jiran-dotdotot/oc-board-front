@@ -1,35 +1,19 @@
-import { useState } from 'react'
-
 import { useTranslation } from 'react-i18next'
 
 import { useMe } from '@/hooks/useMe'
-import { useCompanySettingMutation } from '@/hooks/useSettings'
+import { MEMBER_SETTINGS_UNSUPPORTED } from '@/services/settingService'
 
 const DAY_OPTS = [7, 30, 60, 90]
 
-// 환경 설정 › 메인화면. 최신글 노출 기간(company_settings.latest_post_day) —
-// office 관리자만 저장 가능(POST /management/company-setting/{companySetting}).
-export function MainScreenTab({ onToast }: { onToast: (msg: string) => void }) {
+// 환경 설정 › 메인화면. 최신글 노출 기간(company_settings.latest_post_day).
+// 저장 경로(PATCH /companies/{id}/settings)는 member 토큰 전용이라 이 앱에서는 «읽기 전용»이다
+// — 고를 수 있는데 저장은 안 되는 상태를 만들지 않으려고 라디오까지 비활성으로 둔다(BR-012).
+export function MainScreenTab() {
   const { t } = useTranslation()
   const { data: me } = useMe()
   const companySetting = me?.company_setting
-  const mut = useCompanySettingMutation(companySetting?.id)
-
-  const [draft, setDraft] = useState<number | null>(null)
-  const days = draft ?? companySetting?.latest_post_day ?? 30
-  // 회사 설정 저장은 member 토큰 전용 경로로 옮겨져 이 앱에서는 호출할 수 없다 — BR-005.
-  const canSave = !!companySetting?.id && !!me?.is_admin && mut.isSupported
-
-  const save = () => {
-    if (!canSave) return
-    mut.mutate(
-      { latest_post_day: days },
-      {
-        onSuccess: () => onToast(t('admin-toast-saved')),
-        onError: () => onToast(t('env-error')),
-      },
-    )
-  }
+  const days = companySetting?.latest_post_day ?? 30
+  const isAdmin = !!me?.is_admin
 
   return (
     <div className="flex max-w-[860px] flex-col">
@@ -46,8 +30,8 @@ export function MainScreenTab({ onToast }: { onToast: (msg: string) => void }) {
               type="button"
               role="radio"
               aria-checked={days === d}
-              onClick={() => setDraft(d)}
-              className="inline-flex items-center gap-2"
+              disabled
+              className="inline-flex items-center gap-2 disabled:opacity-100"
             >
               <span
                 className={[
@@ -61,17 +45,16 @@ export function MainScreenTab({ onToast }: { onToast: (msg: string) => void }) {
         </div>
       </div>
 
-      {!canSave && (
-        <span className="pt-3 text-xs text-gray-400">
-          {mut.isSupported ? t('env-main-admin-only') : t('env-member-token-only')}
-        </span>
-      )}
+      {/* 두 사유는 서로 다르다 — 관리자가 아니면 「관리자만」, 관리자여도 저장 경로가 없으면
+          「member 토큰 필요」다. 하나로 합치면 사용자에게 틀린 이유가 나간다. */}
+      <span className="pt-3 text-xs text-gray-400">
+        {isAdmin ? t('env-member-token-only') : t('env-main-admin-only')}
+      </span>
 
       <div className="flex pt-3.5">
         <button
           type="button"
-          onClick={save}
-          disabled={!canSave || mut.isPending}
+          disabled={MEMBER_SETTINGS_UNSUPPORTED}
           className="ml-auto inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-semibold text-white hover:bg-ov-blue-700 disabled:opacity-40"
         >
           {t('common-save')}

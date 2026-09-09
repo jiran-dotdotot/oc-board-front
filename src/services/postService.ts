@@ -19,7 +19,9 @@ import type {
 } from '@/types/post'
 
 // 활성 공지 상한. ponytail: take 로 한 페이지만 — 실무상 충분, 넘치면 이 값만 올린다.
-// Go take 는 100 초과를 거절하지 않고 100으로 clamp 한다(09:122 · 05:258 표).
+// ⚠ 이건 «우리» 상한이다. /posts 의 take 에는 정책 상한이 없다
+//   (docs/api/go/05-post-read.md:46 · :259 「상한 없음」). 100 clamp 는 자료실 전용이다
+//   (docs/api/go/09-drive-file.md:121).
 const NOTICE_TAKE = 100
 
 export async function selectPost(params: PostListParams, lang: string): Promise<Paginated<Post>> {
@@ -88,9 +90,7 @@ export async function selectNotices(
 // 게시글 북마크 토글 (POST .../posts/{id}/bookmark — docs/api/go/06-post-write.md:506).
 // Go 응답은 이번 호출 «후» 상태를 is_bookmarked 로 직접 준다 — deleted_at 을 추론하지 않는다.
 export async function togglePostBookmark(postId: string): Promise<boolean> {
-  const { data } = await postBoardResource<{ is_bookmarked: boolean }>(
-    `/posts/${postId}/bookmark`,
-  )
+  const { data } = await postBoardResource<{ is_bookmarked: boolean }>(`/posts/${postId}/bookmark`)
   return data.is_bookmarked
 }
 

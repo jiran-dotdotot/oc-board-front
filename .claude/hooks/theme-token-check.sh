@@ -22,12 +22,18 @@ esac
 [ -f "$CSS" ] || exit 0
 
 # 블록별 토큰 이름 추출 — 첫 :root {..} 와 첫 .dark {..}
+# ⚠ 셀렉터는 «들여쓰여 있을 수 있다» — .dark 가 @media not print 안으로 들어간 적이 있는데,
+#   컬럼 0 에 앵커돼 있어서 매치가 0건이 되고 검사가 «항상 통과»했다. 닫는 중괄호도 마찬가지다.
 names() {
   awk -v want="$1" '
-    $0 ~ "^"want" ?\\{" { inb=1; next }
-    inb && /^\}/        { exit }
-    inb                 { if (match($0, /--[a-z0-9-]+[[:space:]]*:/)) {
-                            t=substr($0, RSTART, RLENGTH); sub(/[[:space:]]*:$/, "", t); print t } }
+    $0 ~ "^[[:space:]]*"want"[[:space:]]*\\{" { inb=1; depth=1; next }
+    inb {
+      if (match($0, /--[a-z0-9-]+[[:space:]]*:/)) {
+        t=substr($0, RSTART, RLENGTH); sub(/[[:space:]]*:$/, "", t); print t
+      }
+      n=gsub(/\{/, "{"); m=gsub(/\}/, "}"); depth += n - m
+      if (depth <= 0) exit
+    }
   ' "$CSS" | sort -u
 }
 

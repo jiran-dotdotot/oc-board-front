@@ -465,7 +465,7 @@ export function SettingsScreen() {
 
         <div className="flex min-w-0 flex-1 flex-col">
           {tab === 'general' && <GeneralTab onToast={showToast} />}
-          {tab === 'main' && <MainScreenTab onToast={showToast} />}
+          {tab === 'main' && <MainScreenTab />}
           {tab === 'content' && (
             <div className="flex flex-col gap-5">
               {/* 트리 + 상세 */}
