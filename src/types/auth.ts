@@ -1,4 +1,4 @@
-// 인증 관련 타입 (실제 API 응답 기준 — POST /login)
+// docs/api/go/01-auth-user.md — login/token/refresh의 TokenBody.
 
 export interface LoginRequest {
   username: string
@@ -6,8 +6,15 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token_type: string // "Bearer"
-  expires_in: number // 초 단위
+  token_type: 'Bearer'
+  expires_in: number // access TTL 초. refresh 만료시각이 아니다.
+  access_token: string
+  refresh_token: string
+  $schema?: string
+}
+
+export interface AuthSession {
+  id: string // 로그인마다 새 식별자를 만들고 refresh 중에는 유지한다.
   access_token: string
   refresh_token: string
 }

@@ -239,84 +239,89 @@
 
 /* 다크 테마 — 화면별 .dc(예: 화면 07 자료실) per-screen dark 토큰 반영.
    페이지 배경 = gray-50(#1C1C1F), 카드/표면 = --color-bg(#26262A) → 페이지·카드 톤 분리. */
-.dark {
-  /* ── 브랜드·시맨틱 (정본표 다크) ── */
-  --background: #1c1c1f; /* gray-50 «캔버스» */
-  --foreground: #f7f7fa; /* gray-900 */
-  --card: #26262a; /* --color-bg : 카드·헤더·사이드바 표면 */
-  --card-foreground: #f7f7fa;
-  --popover: #26262a;
-  --popover-foreground: #f7f7fa;
-  --primary: #4b79ff; /* 다크는 한 단계 밝게 */
-  --primary-foreground: #ffffff;
-  --secondary: #303036;
-  --secondary-foreground: #f7f7fa;
-  --muted: #303036; /* gray-100 */
-  --muted-foreground: #a4a4af; /* gray-500 */
-  --accent: rgba(75, 121, 255, 0.16); /* ov-blue-50 (다크는 알파 틴트) */
-  --accent-foreground: #93aeff;
+/* 인쇄에서는 다크 토큰을 «적용하지 않는다» — 흰 종이에 흰 글자가 찍히기 때문이다.
+   토큰 자체를 끄면 라이트 «정본값»이 그대로 쓰이므로 인쇄 전용 색을 새로 만들 필요가 없다
+   (docs/guides/design-tokens-guide.md 가 유일한 색 정본 — 임의 hex 금지). */
+@media not print {
+  .dark {
+    /* ── 브랜드·시맨틱 (정본표 다크) ── */
+    --background: #1c1c1f; /* gray-50 «캔버스» */
+    --foreground: #f7f7fa; /* gray-900 */
+    --card: #26262a; /* --color-bg : 카드·헤더·사이드바 표면 */
+    --card-foreground: #f7f7fa;
+    --popover: #26262a;
+    --popover-foreground: #f7f7fa;
+    --primary: #4b79ff; /* 다크는 한 단계 밝게 */
+    --primary-foreground: #ffffff;
+    --secondary: #303036;
+    --secondary-foreground: #f7f7fa;
+    --muted: #303036; /* gray-100 */
+    --muted-foreground: #a4a4af; /* gray-500 */
+    --accent: rgba(75, 121, 255, 0.16); /* ov-blue-50 (다크는 알파 틴트) */
+    --accent-foreground: #93aeff;
 
-  --destructive: #fd4c45;
-  --destructive-hover: #ff6b65;
-  --destructive-bg: rgba(253, 76, 69, 0.16);
-  --warning: #ff9045;
-  --warning-hover: #ffa666;
-  --warning-bg: rgba(255, 144, 69, 0.16);
-  --success: #10bf79;
-  --success-hover: #3bd495;
-  --success-bg: rgba(16, 191, 121, 0.16);
-  --info-bg: rgba(75, 121, 255, 0.16);
+    --destructive: #fd4c45;
+    --destructive-hover: #ff6b65;
+    --destructive-bg: rgba(253, 76, 69, 0.16);
+    --warning: #ff9045;
+    --warning-hover: #ffa666;
+    --warning-bg: rgba(255, 144, 69, 0.16);
+    --success: #10bf79;
+    --success-hover: #3bd495;
+    --success-bg: rgba(16, 191, 121, 0.16);
+    --info-bg: rgba(75, 121, 255, 0.16);
 
-  /* 오버레이·그림자 (정본표 다크) */
-  --scrim-modal: rgba(0, 0, 0, 0.62);
-  --scrim-sheet: rgba(0, 0, 0, 0.4);
-  --shadow-dropdown: 0 6px 16px rgba(0, 0, 0, 0.45);
-  --shadow-modal: 0 10px 30px rgba(0, 0, 0, 0.55);
+    /* 오버레이·그림자 (정본표 다크) */
+    --scrim-modal: rgba(0, 0, 0, 0.62);
+    --scrim-sheet: rgba(0, 0, 0, 0.4);
+    --shadow-dropdown: 0 6px 16px rgba(0, 0, 0, 0.45);
+    --shadow-modal: 0 10px 30px rgba(0, 0, 0, 0.55);
 
-  --border: #3c3c43; /* gray-200 */
-  --input: #4f4f58; /* gray-300 */
-  --ring: #4b79ff;
-  --chart-1: #4b79ff;
-  --chart-2: #5ee4af;
-  --chart-3: #ffb17c;
-  --chart-4: #956ffe;
-  --chart-5: #ff50b9;
-  --sidebar: #26262a;
-  --sidebar-foreground: #f7f7fa;
-  --sidebar-primary: #4b79ff;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(75, 121, 255, 0.16);
-  --sidebar-accent-foreground: #93aeff;
-  --sidebar-border: #3c3c43;
-  --sidebar-ring: #4b79ff;
+    --border: #3c3c43; /* gray-200 */
+    --input: #4f4f58; /* gray-300 */
+    --ring: #4b79ff;
+    --chart-1: #4b79ff;
+    --chart-2: #5ee4af;
+    --chart-3: #ffb17c;
+    --chart-4: #956ffe;
+    --chart-5: #ff50b9;
+    --sidebar: #26262a;
+    --sidebar-foreground: #f7f7fa;
+    --sidebar-primary: #4b79ff;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: rgba(75, 121, 255, 0.16);
+    --sidebar-accent-foreground: #93aeff;
+    --sidebar-border: #3c3c43;
+    --sidebar-ring: #4b79ff;
 
-  /* ov-blue 램프 (다크) — 50~200 은 블루 틴트, 300+ 는 밝은 블루 */
---ov-blue-50: rgba(75, 121, 255, 0.16);
-  --ov-blue-100: rgba(75, 121, 255, 0.24);
-  --ov-blue-200: rgba(124, 158, 255, 0.38);
-  --ov-blue-300: #4a72ff;
-  --ov-blue-400: #7fa0ff;
-  --ov-blue-500: #93aeff;
-  --ov-blue-600: #4b79ff;
-  --ov-blue-700: #6d93ff;
-  --ov-blue-800: #b9ccff;
-  --ov-blue-900: #d6e5ff;
+    /* ov-blue 램프 (다크) — 50~200 은 블루 틴트, 300+ 는 밝은 블루 */
+    --ov-blue-50: rgba(75, 121, 255, 0.16);
+    --ov-blue-100: rgba(75, 121, 255, 0.24);
+    --ov-blue-200: rgba(124, 158, 255, 0.38);
+    --ov-blue-300: #4a72ff;
+    --ov-blue-400: #7fa0ff;
+    --ov-blue-500: #93aeff;
+    --ov-blue-600: #4b79ff;
+    --ov-blue-700: #6d93ff;
+    --ov-blue-800: #b9ccff;
+    --ov-blue-900: #d6e5ff;
 
-  /* 회색 램프 (다크) — 디자인 dark 블록 값. 라이트 짝은 :root 에 있다 */
---gray-50: #1c1c1f;
-  --gray-100: #303036;
-  --gray-200: #3c3c43;
-  --gray-300: #4f4f58;
-  --gray-400: #8e8e99;
-  --gray-500: #a4a4af;
-  --gray-600: #c7c7d0;
-  --gray-700: #dfdfe5;
-  --gray-800: #efeff2;
-  --gray-900: #f7f7fa;
+    /* 회색 램프 (다크) — 디자인 dark 블록 값. 라이트 짝은 :root 에 있다 */
+    --gray-50: #1c1c1f;
+    --gray-100: #303036;
+    --gray-200: #3c3c43;
+    --gray-300: #4f4f58;
+    --gray-400: #8e8e99;
+    --gray-500: #a4a4af;
+    --gray-600: #c7c7d0;
+    --gray-700: #dfdfe5;
+    --gray-800: #efeff2;
+    --gray-900: #f7f7fa;
 
-  /* 스크롤바 다크 (디자인 --dk-thumb / --dk-thumb-h) */
-  --scrollbar-thumb: #4f4f58;
-  --scrollbar-thumb-hover: #8e8e99;
+    /* 스크롤바 다크 (디자인 --dk-thumb / --dk-thumb-h) */
+    --scrollbar-thumb: #4f4f58;
+    --scrollbar-thumb-hover: #8e8e99;
+  }
 }
 
 @layer base {
@@ -388,5 +393,126 @@
 @keyframes login-show {
   to {
     opacity: 1;
+  }
+}
+
+/* ── 게시글 본문(살균된 서버 HTML) ──────────────────────────────────────────
+   나모 에디터 산출물이 그대로 들어온다. Preflight 가 h1~h6·ul·ol 을 지워 버리므로
+   본문 안에서만 되살린다. 레거시는 이 리셋을 Shadow DOM 안의 <style> 로 넣었는데,
+   여기서는 살균 단계에서 <style> 태그를 제거하므로 앱 CSS 로 처리한다.
+   ⚠ position 은 살균 단계에서 인라인 style 에서 걷어낸다(utils/postHtml.ts) —
+     본문이 헤더·사이드바 위를 덮지 못하게. */
+/* 본문이 헤더·사이드바 위를 덮지 못하게 «박스 안에 가둔다».
+   paint containment 는 이 박스를 fixed/absolute 자손의 컨테이닝 블록으로 만들고
+   밖으로 나가는 그리기를 잘라낸다 — 살균에서 position 을 걷어내지 않아도 되므로
+   작성자의 정상 겹침 서식(relative + absolute 캡션)이 살아남는다. */
+.post-body {
+  contain: paint;
+}
+.post-body :is(h1, h2, h3, h4, h5, h6) {
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 1em 0 0.4em;
+}
+.post-body h1 {
+  font-size: 1.5em;
+}
+.post-body h2 {
+  font-size: 1.3em;
+}
+.post-body h3 {
+  font-size: 1.15em;
+}
+.post-body p {
+  margin: 0 0 0.9em;
+}
+.post-body :is(ul, ol) {
+  margin: 0 0 0.9em;
+  padding-left: 1.4em;
+  list-style: revert;
+}
+.post-body li {
+  margin: 0.2em 0;
+}
+.post-body blockquote {
+  margin: 0 0 0.9em;
+  padding: 0.2em 0 0.2em 0.9em;
+  border-left: 3px solid var(--color-gray-200);
+  color: var(--color-gray-600);
+}
+.post-body a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+/* 큰 이미지·표가 페이지 자체를 가로로 밀지 않게 한다 */
+.post-body :is(img, video) {
+  max-width: 100%;
+  height: auto;
+}
+.post-body table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+.post-body :is(th, td) {
+  border: 1px solid var(--color-gray-200);
+  padding: 0.4em 0.6em;
+}
+.post-body hr {
+  margin: 1.2em 0;
+  border-top: 1px solid var(--color-gray-200);
+}
+
+/* 다크에서 «작성자가 박아 넣은 색»을 무시한다.
+   나모 에디터 본문은 style="color:#000000" · <font color> · bgcolor 를 그대로 내보내고
+   (실측: 살균이 네 경로 모두 통과시킨다 — utils/postHtml.ts 는 position 만 걷어낸다),
+   인라인 style 은 어떤 선택자보다 우선하므로 !important 없이는 덮을 수 없다.
+   그대로 두면 검정 글자가 --card(#26262a) 위에 얹혀 대비 약 1.35:1 로 판독 불가다.
+   레거시엔 ① 다크 강제 오버라이드(main.css:381-384)와 ② 본문 전용 라이트 토글이 있었고
+   지금은 둘 다 없다 — 가독성이 색 충실도보다 앞선다(WCAG 1.4.3).
+   ⚠ 대가: 다크에서는 작성자가 의도한 강조색(빨강 등)도 함께 사라진다. */
+.dark .post-body [style*='color'],
+.dark .post-body [bgcolor],
+.dark .post-body font[color] {
+  color: var(--color-gray-800) !important;
+  background-color: transparent !important;
+}
+
+/* ── 인쇄 ────────────────────────────────────────────────────────────────
+   레거시는 Preflight 사본을 인라인한 446줄 팝업 템플릿을 window.open 으로 띄웠다
+   (utils/printableTemplate.ts). 팝업 차단·Tailwind 미주입 문제가 있고 작성자·날짜도
+   빠져 있었다. 여기서는 현재 문서를 그대로 인쇄한다 — 앱 셸만 숨기면 된다. */
+@media print {
+  /* 다크 토큰은 위에서 `@media not print` 로 이미 꺼져 있다 → 라이트 정본값이 그대로 쓰인다.
+     여기서는 UA 폼 컨트롤이 다크로 그려지지 않게 color-scheme 만 고정한다. */
+  :root {
+    color-scheme: light;
+  }
+  /* 앱 셸만 숨긴다. `.print\:hidden` 은 Tailwind 내장 변형이 이미 생성하므로
+     여기서 다시 선언하지 않는다 — 손으로 쓴 !important 사본이 있으면
+     `min-[631px]:print:block` 처럼 더 좁은 print 변형으로 되살릴 수 없다. */
+  aside,
+  header[data-app-header] {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  /* 배경 그래픽을 켜고 인쇄해도 검은 판이 통째로 찍히지 않게 한다 */
+  main,
+  article {
+    background: transparent !important;
+  }
+  main {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  .post-body a::after {
+    /* 종이에서는 링크를 클릭할 수 없으니 주소를 함께 찍는다 */
+    content: ' (' attr(href) ')';
+    font-size: 0.85em;
+    color: #555;
   }
 }

@@ -1,0 +1,13 @@
+# Project MCP parity with .mcp.json. Shared tools remain in ~/.codex/config.toml.
+[features]
+hooks = true
+
+[mcp_servers.shadcn]
+command = "npx"
+args = ["shadcn@latest", "mcp"]
+startup_timeout_sec = 60
+
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = ["-y", "chrome-devtools-mcp@latest", "--isolated", "--viewport", "1440x900", "--screenshotFormat", "webp", "--screenshotMaxWidth", "1600", "--categoryPerformance", "false", "--usageStatistics", "false"]
+startup_timeout_sec = 60

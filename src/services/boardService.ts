@@ -1,5 +1,5 @@
-// 게시판 API 서비스. GET /api/v1/board (selectBoard) · POST /api/v1/board/bookmark/{board}.
-import { apiClient } from '@/lib/apiClient'
+// 게시판 API — 전부 Go 스코프 경로(docs/api/go/04-board.md).
+import { getBoardResource, postBoardResource } from '@/lib/boardApi'
 import { serializeParams } from '@/lib/queryParams'
 import type { CategoryBoard } from '@/types/category'
 import type { Paginated } from '@/types/post'
@@ -7,37 +7,33 @@ import type { Paginated } from '@/types/post'
 // 사이드바 즐겨찾기는 한 페이지로 끝낸다 — 개인 북마크라 이 이상 쌓이는 화면이 아니다.
 const BOOKMARK_TAKE = 100
 
-// 내가 북마크한 게시판.
-// ⚠ 카테고리 트리(GET /category)에서 is_bookmark를 걸러 쓰면 안 된다 — 트리 포함 조건은
-//   '카테고리' 멤버십/부서/카테고리관리자라(docs/api/03-category.md §1), 게시판 멤버로만
-//   읽는 보드는 카테고리가 트리에 없어 통째로 빠진다. 즐겨찾기는 이 엔드포인트가 정본이다.
-// ⚠ GET /board 는 읽기 권한 필터도 is_active 필터도 없다(docs/api/04-board.md §3.1).
-//   권한은 북마크 시점에 이미 검사됐고(POST /board/bookmark 는 read 필요), is_active는 여기서 거른다.
-// 정렬은 서버 고정 — 북마크 updated_at asc(= 즐겨찾기한 순서).
+// Go /bookmarks는 활성·읽기 권한 필터 후 페이지를 반환한다.
+// 카테고리 트리에서 추출하지 않는다. 정렬은 bookmark.updated_at, board_id 순.
+// 근거: docs/api/go/04-board.md:324-342. board_id는 id와 같은 별칭이다.
 export async function selectBookmarkedBoards(lang: string): Promise<CategoryBoard[]> {
-  const { data } = await apiClient.get<Paginated<CategoryBoard>>('/board', {
-    params: { is_bookmark: 1, take: BOOKMARK_TAKE },
+  const { data } = await getBoardResource<Paginated<CategoryBoard>>('/bookmarks', {
+    params: { take: BOOKMARK_TAKE },
     paramsSerializer: { serialize: serializeParams },
     headers: { lang },
   })
-  return (data.data ?? []).filter((b) => b.is_active !== false)
+  return data.data
 }
 
-// 게시판 상세. 게시판명(title)·글쓰기 권한(is_writable)·관리 권한(is_admin)이 온다.
-// ⚠ 응답에 is_bookmark 는 없다(docs/api/04-board.md §3.4) → 즐겨찾기 상태는
-//   useBookmarkedBoards 로 판정한다. 읽기 권한 없으면 403.
-// 컬럼 구성이 CategoryBoard 와 같고 is_writable/is_admin 도 이미 있어 타입을 재사용한다.
+// 게시판 상세(docs/api/go/04-board.md:249). 게시판명(title)·글쓰기 권한(is_writable)·
+// 관리 권한(is_admin/can_manage)에 더해 **is_bookmark 도 함께 온다**(실측 2026-09-09).
+// 컬럼 구성이 CategoryBoard 와 같아 타입을 재사용한다. 읽기 권한 없으면 403.
 export async function selectBoard(boardId: string, lang: string): Promise<CategoryBoard> {
-  const { data } = await apiClient.get<CategoryBoard>(`/board/${boardId}`, {
+  const { data } = await getBoardResource<CategoryBoard>(`/boards/${boardId}`, {
     headers: { lang },
   })
   return data
 }
 
-// 북마크 토글(등록↔해제). 해제도 200이라 응답의 deleted_at 유무로 현재 상태를 판정한다.
+// 북마크 토글(등록↔해제). Go 는 이번 호출 «후» 상태를 is_bookmarked 로 직접 준다
+// (docs/api/go/04-board.md:546) — deleted_at 을 추론하지 않는다.
 export async function toggleBoardBookmark(boardId: string): Promise<boolean> {
-  const { data } = await apiClient.post<{ deleted_at?: string | null }>(
-    `/board/bookmark/${boardId}`,
+  const { data } = await postBoardResource<{ is_bookmarked: boolean }>(
+    `/boards/${boardId}/bookmark`,
   )
-  return !data?.deleted_at
+  return data.is_bookmarked
 }

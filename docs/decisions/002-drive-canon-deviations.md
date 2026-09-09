@@ -13,6 +13,11 @@
 - **동작 정본**: `../jupiter-board-web` (Vue3 + Pinia)
 - **색·치수 정본**: `docs/guides/design-tokens-guide.md` (아트보드 인라인 값보다 이 표가 이긴다)
 
+2026-09-08 새 원문 적용: 아래 UI 결정과 Vue 동작 근거는 유지한다. API 인용은
+`feat/settings` · `65b7f49` 조사 원문으로 갱신했다. [출처·갱신 안내](../api/README.md)를 따른다.
+`docs/api/go/`만 구현 근거이며 과거 백엔드 동작 기록은 현행 구현 지침이 아니다.
+Go 계약으로 막히는 지점만 역방향 참조해 [백엔드 요청 대장](../api/backend-requests.md)에 기록한다.
+
 ---
 
 ## 1. 「최근 자료」에 정렬·개수 드롭다운을 남긴다
@@ -52,7 +57,7 @@
 
 ## 4. 저장 용량 게이지 임계 90%
 
-`usagePct >= 90` 이면 막대가 `bg-destructive` 로 바뀐다. **정본·`docs/api/`·정본 토큰표에 근거가 없다.**
+`usagePct >= 90` 이면 막대가 `bg-destructive` 로 바뀐다. **이 임계값은 API 계약이 아니라 아래 Vue 동작과 사용자 결정에 근거한다.**
 
 **레거시 근거로 유지한다.** `../jupiter-board-web/src/pages/drive/[driveId]/index.vue:293-309`
 가 사용량 ≥90% 에서 막대를 빨강으로 바꾼다. 용량이 차 가는 것을 업로드가 실패하기 전에 알리는 실익이 있다.
@@ -73,16 +78,18 @@ HEIC(변환 후 표시)까지 창 안에서 열어 준다. 한국어 사내 게�
 
 ## 6. 폴더 항목 수 `N개` 를 표시하지 않는다
 
-정본 폴더 행은 이름 옆에 `{{ fo.n }}개` 를 보여 준다. **표시하지 않는다** — 서버가 폴더별 파일 수를
-주지 않는다. `child_drive_folders` 로 «하위 폴더» 수는 셀 수 있지만 그것을 「N개」로 쓰면 오해를 부른다.
-파일 수를 넣으려면 폴더마다 `GET /drive/file` 을 한 번씩 더 치거나 서버에 필드가 필요하다.
+정본 폴더 행은 이름 옆에 `{{ fo.n }}개` 를 보여 준다. **표시하지 않는다** — Go `FolderView`의
+필드 목록에는 파일 수가 없다([FolderView·FolderNode](../api/go/08-drive-folder.md#folderview)). `child_drive_folders`로
+«하위 폴더» 수는 셀 수 있지만 그것을 「N개」로 쓰면 오해를 부른다.
+파일 수 표시를 재개하려면 Go 목록 계약으로 조회 가능한지 먼저 확인하고, 계약이 부족하면 대장에 요청한다.
 사용자 판단: 생략 유지.
 
 ## 7. 정렬 옵션 3개 (정본 드롭다운은 4항목)
 
 `new` / `sizeDesc` / `sizeAsc` — 레거시 `[driveId]/index.vue:46-59` 와 동일.
 정본 드롭다운은 항목이 4개로 보이지만 네 번째의 실제 라벨을 확인하지 못했고,
-`sort[by]` 는 `drive.drive_files` 실제 컬럼이어야 무시되지 않는다(`docs/api/09-drive-file.md` §1).
+Go 정렬은 임의 DB 컬럼이 아니라 문서의 허용 분기를 따른다(`docs/api/go/09-drive-file.md:141`).
+`size`·`origin_file_name`·관련도 분기 외에는 `created_at`으로 폴백한다.
 사용자 판단: 레거시 파리티로 3개 유지.
 
 ## 8. 빈 상태 카드 라운드는 12px (아트보드는 8px)
@@ -99,7 +106,7 @@ CLAUDE.md 가 「색·치수 정본은 `docs/guides/design-tokens-guide.md` 하�
 | `localStorage['lastDriveBoard']` | `src/components/drive/constants.ts` | 없음 — `?b=` 없는 `/drive` 진입 시 어느 자료실을 열지 정해야 해서 신설. 레거시엔 board 없는 자료실 화면 자체가 없다 |
 | 폴더명 30자 | `FOLDER_NAME_MAX` | 레거시 `maxlength="30"` — 서버엔 길이 제한이 없다 |
 | 다운로드 취소를 «실패»로 처리하지 않음 | `src/hooks/useDriveDownload.ts` | 레거시 버그를 의도적으로 안 옮겼다 — `abort()` 가 `Promise.all` 을 reject 시켜 「다운로드 실패」 알럿이 뜬다 |
-| 폴더 다건 삭제 전 자식 가드 | `src/utils/driveFolders.ts` | `docs/api/08-drive-folder.md:286` 이 프론트 가드를 명시적으로 요구한다. 레거시엔 없어서 고아 폴더가 생길 수 있었다 |
+| 폴더 다건 삭제 전 자식 가드 | `src/utils/driveFolders.ts` | 기존 UI 가드는 유지하되 현행 계약 근거는 `docs/api/go/08-drive-folder.md:228`이다. Go 서버도 살아있는 하위 폴더·파일을 검사하며, 최종 성공 여부는 삭제된 id 배열로 판단한다 |
 
 ---
 
@@ -110,7 +117,7 @@ CLAUDE.md 가 「색·치수 정본은 `docs/guides/design-tokens-guide.md` 하�
 | 지적 | 판정 |
 |---|---|
 | 「최근 자료에 기간 제한 표시가 없다」 | **사실오류.** `DriveScreen.tsx` 가 `recent-files-desc`(「최근 {{n}}일(환경 설정 · 메인화면 기준)간 등록·업데이트된 자료를 보여줍니다.」)를 렌더한다. 남는 논점은 「용량순 정렬이 30일 창 안에서만 돈다」인데 그것이 이 화면의 정의이고 레거시도 같다 |
-| `presignFailKey('not_enough_drive_capacity')` 가 절대 매칭되지 않는다 | **문서 상충.** `docs/api/10-…:40` 은 이 키가 «번역됨» 이라 하고 `:126` 은 다중 presign 의 원소별 `result.message` 를 «키 문자열 그대로» 로 적었다. 우리는 다중 엔드포인트만 쓰므로 `:126` 이 적용된다. 번역문이 와도 `default` 분기가 일반 실패 문구로 받는다 — 동작 파손 없음 |
+| `presignFailKey('not_enough_drive_capacity')` 가 절대 매칭되지 않는다 | 과거 검토 판정의 현행 Go 근거: [업로드 예약 응답](../api/go/10-upload-department-client.md#uploadresult)은 원소별 `result.state="fail"`과 해당 실패 토큰을 명시한다. 전체 요청 오류 봉투의 번역 메시지와 구분한다 |
 | 모바일 자료실을 무한 스크롤로 (정본은 페이저) | **확정 결정.** 사용자 선택 — 레거시·디자인 설명문서·이 리포의 게시판 목록이 모두 «데스크톱 페이지네이션 + 모바일 무한스크롤» 이다 |
 | `/board/recent` 표의 '위치' 컬럼 | **이전 세션 작업.** 이번 자료실 변경분이 아니다. 별도 판단 대상 |
 
@@ -160,11 +167,13 @@ CLAUDE.md 가 「색·치수 정본은 `docs/guides/design-tokens-guide.md` 하�
 
 ### 문구 정정 — 폴더 삭제의 «영구 소멸» 범위
 
-리포트의 「폴더 안의 휴지통 파일까지 영구 소멸」은 **단건 삭제 라우트** 기준이다
-(`docs/api/08-drive-folder.md:224` — 하위 `FAIL`/`DEL` 파일을 DB hard delete).
-우리는 **board 라우트**를 쓰고 그것은 `drive_folder_id = null` **고아 처리**다(`:283`) — 파일은 휴지통에 남는다.
-다만 **폴더 복원 API 가 존재하지 않아**(`/drive/file/restore` 만 있다) 폴더 자체는 되돌릴 수 없다.
-그래서 「복구 가능」 안내는 폴더에 대해 여전히 거짓이었고, 그 부분은 유효한 지적이었다.
+당시 리포트 정정은 과거 백엔드 단건·다건 삭제의 차이를 설명한 기록이었다.
+현재 구현 근거는 Go `DELETE S/folders` 하나다(`docs/api/go/08-drive-folder.md:206`·`:238`).
+Go는 폴더를 soft delete하고 하위 `FAIL` 파일·관련 북마크를 함께 처리하며, 과거의
+hard delete나 `drive_folder_id=null` 고아 처리를 구현 계약으로 가져오지 않는다(`docs/api/go/08-drive-folder.md:242`).
+Go 폴더 엔드포인트 5개의 목록에도 복원 계약은 없으므로 폴더를 복구 가능하다고 안내할 근거가 없다
+(`docs/api/go/08-drive-folder.md:104`·`:313`, 전체 경로는 [Go 카탈로그](../guides/api-catalog.md)).
+기존 사용자 결정과 UI 문구 수정은 유지하며, 복원 기능이 필요해지면 요청 대장에 올린다.
 
 ### M11 — 상태 배경 위 전경색 토큰이 정본에 없다
 

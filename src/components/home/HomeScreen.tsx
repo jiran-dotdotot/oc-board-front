@@ -14,7 +14,7 @@ import {
   EyeIcon,
 } from '@/components/common/icons'
 import { DEFAULT_LIMIT_DAY } from '@/constants/post'
-import { useDriveFiles } from '@/hooks/useDriveFiles'
+import { useDriveFilePage } from '@/hooks/useDriveFiles'
 import { useMe } from '@/hooks/useMe'
 import { usePosts } from '@/hooks/usePosts'
 import type { ApiDriveFile } from '@/types/drive'
@@ -54,13 +54,13 @@ interface HomePost {
 function toHomePost(p: Post): HomePost {
   return {
     id: p.id,
-    title: p.title,
+    title: p.title ?? '',
     board: p.board?.title ?? '',
     author: p.user?.name ?? '',
     date: fmtDate(p.posted_at ?? p.created_at),
     views: p.view_count,
     likes: p.like_count,
-    notice: (p.badges ?? []).some((b) => b.type === 'NOTICE'),
+    notice: (p.badges ?? []).some((b) => b.type === 'NOTICE' && b.is_active === true),
     unread: p.is_view === false, // 서버 is_view($appends) — 없으면 읽음 취급
     comments: p.comment_count,
   }
@@ -103,12 +103,12 @@ export function HomeScreen() {
     data: fileData,
     isLoading: filesLoading,
     isError: filesError,
-  } = useDriveFiles({
-    limit: HOME_TAKE,
+  } = useDriveFilePage({
+    take: HOME_TAKE,
     limit_day: limitDay,
     sort: { by: 'created_at', order: 'desc' },
   })
-  const files = (fileData ?? []).slice(0, HOME_TAKE).map(toHomeFile)
+  const files = (fileData?.data ?? []).map(toHomeFile)
 
   return (
     <div className="flex w-full flex-col gap-4">

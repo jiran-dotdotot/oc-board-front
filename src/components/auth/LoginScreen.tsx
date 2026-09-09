@@ -1,6 +1,5 @@
 import { useState } from 'react'
 
-import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
 import { useTranslation } from 'react-i18next'
@@ -15,13 +14,14 @@ import {
 } from '@/components/common/icons'
 import { useLogin } from '@/hooks/useLogin'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { isAxiosError } from 'axios'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
 // 화면 노트(§7-B): 이메일/비밀번호 "형식 검증 없음" — 필수(빈값)만 인라인 검증.
 const loginSchema = z.object({
-  email: z.string().min(1),
-  password: z.string().min(1),
+  email: z.string().refine((value) => value.trim().length > 0),
+  password: z.string().refine((value) => value.trim().length > 0),
 })
 
 type LoginValues = z.infer<typeof loginSchema>
@@ -42,10 +42,22 @@ function fieldBorder(value: string, hasError: boolean) {
 export function LoginScreen() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const [showPw, setShowPw] = useState(false)
   const [remember, setRemember] = useState(true)
   const loginMutation = useLogin()
+  const loginError = loginMutation.error
+  const errorCode = isAxiosError(loginError) ? loginError.response?.data?.error?.code : undefined
+  const errorStatus = isAxiosError(loginError) ? loginError.response?.status : undefined
+  const errorKey =
+    errorStatus === 401 && errorCode === 'UNAUTHORIZED'
+      ? 'login-error'
+      : errorStatus === 403 && errorCode === 'FORBIDDEN'
+        ? 'login-forbidden'
+        : errorStatus === 404 && errorCode === 'NOT_FOUND'
+          ? 'login-user-not-found'
+          : errorStatus === 429
+            ? 'login-rate-limited'
+            : 'login-service-error'
   const {
     register,
     handleSubmit,
@@ -59,15 +71,13 @@ export function LoginScreen() {
   const email = useWatch({ control, name: 'email' })
   const password = useWatch({ control, name: 'password' })
 
-  // 실제 로그인: POST /login → 성공 시 토큰 저장(authService) 후 홈 이동, 실패 시 에러 표시.
+  // Go 로그인 성공 시 토큰·전체 사용자 캐시는 authService에서 교체한다.
   const onSubmit = (values: LoginValues) => {
     if (loginMutation.isPending) return
     loginMutation.mutate(
       { username: values.email, password: values.password },
       {
         onSuccess: () => {
-          // 이전 사용자 정보 캐시 제거 → 새 세션에서 /me 새로 조회
-          queryClient.removeQueries({ queryKey: ['me'] })
           navigate({ to: '/' })
         },
       },
@@ -130,8 +140,9 @@ export function LoginScreen() {
                   <MailIcon />
                   <input
                     id="login-email"
-                    type="email"
-                    autoComplete="email"
+                    type="text"
+                    inputMode="email"
+                    autoComplete="username"
                     aria-invalid={!!errors.email}
                     placeholder={t('login-email-placeholder')}
                     className="min-w-0 flex-1 border-none bg-transparent text-sm text-gray-900 outline-none"
@@ -202,8 +213,11 @@ export function LoginScreen() {
             </div>
 
             {loginMutation.isError && (
-              <p className="mt-4 rounded-md bg-destructive-bg px-3 py-2.5 text-s font-medium text-destructive">
-                {t('login-error')}
+              <p
+                role="alert"
+                className="mt-4 rounded-md bg-destructive-bg px-3 py-2.5 text-s font-medium text-destructive"
+              >
+                {t(errorKey)}
               </p>
             )}
 

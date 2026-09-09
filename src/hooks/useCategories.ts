@@ -7,8 +7,7 @@ import { isAuthenticated } from '@/lib/authStorage'
 import { selectAdminCategory, selectCategory } from '@/services/categoryService'
 
 // 사이드바 게시판 트리. 셸 전역에서 쓰이므로 staleTime을 길게 둬 화면 이동마다 재호출하지 않는다.
-// office 관리자(is_admin)는 회사 전체 트리(/category/admin), 나머지는 내 멤버/부서 범위(/category).
-// 카테고리/게시판 관리자에겐 두 응답이 동일하므로 is_admin만 본다(isAnyAdmin 아님).
+// 회사 관리자(is_admin)는 Go /categories/admin, 나머지는 /categories?with_category_admin=1.
 export function useCategories() {
   const { i18n } = useTranslation()
   const { data: me } = useMe()
@@ -23,8 +22,7 @@ export function useCategories() {
   })
 }
 
-// 개인 알림 설정(환경 설정 › 일반)용 트리. 관리자여도 항상 /category —
-// /category/admin 응답에는 is_board_member_*_alarm 필드가 없다.
+// 개인 알림 설정(환경 설정 › 일반)은 Go /categories의 사용자 범위를 사용한다.
 // queryKey는 useCategories의 비관리자 분기와 동일해 캐시를 공유한다.
 export function useMemberCategories() {
   const { i18n } = useTranslation()

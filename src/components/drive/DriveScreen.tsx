@@ -59,10 +59,10 @@ import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useMe } from '@/hooks/useMe'
 import { getCurrentUserId } from '@/lib/authStorage'
+import { getDriveFileDownloadUrl } from '@/services/driveService'
 import { isDriveBoard } from '@/types/category'
 import type { ApiDriveFile, DriveFolder } from '@/types/drive'
 import { collectBoards, findBoard } from '@/utils/category'
-import { s3BaseUrl, s3FileUrl } from '@/utils/driveDownload'
 import { collectFolderParentIds } from '@/utils/driveFolders'
 import type { UploadLimits } from '@/utils/driveUpload'
 import {
@@ -72,7 +72,7 @@ import {
   writeStoredLimit,
 } from '@/utils/listLimit'
 
-// API 파일 → 화면 뷰모델. is_bookmark 는 응답에 항상 실린다($appends — docs/api/09-drive-file.md:39).
+// Go 파일 → 화면 뷰모델. src는 없으며 다운로드 URL 연결은 별도 전환 대상이다.
 function toFile(f: ApiDriveFile, meId: number | null): DriveFile {
   const ext = (f.extension ?? '').toUpperCase()
   return {
@@ -80,13 +80,12 @@ function toFile(f: ApiDriveFile, meId: number | null): DriveFile {
     name: f.origin_file_name,
     ext,
     tagBg: EXT_BG[ext] ?? EXT_BG_DEFAULT,
-    board: f.board?.title ?? '', // more_field=board (서비스 기본값)
+    board: f.board?.title ?? '',
     by: f.user?.name ?? '',
     mine: meId != null && f.user_id === meId,
     date: fmtDate(f.created_at),
     size: fmtSize(f.size),
     bm: !!f.is_bookmark,
-    src: f.src,
   }
 }
 
@@ -250,18 +249,14 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
   const [dlCancelAsk, setDlCancelAsk] = useState(false)
   // 폴더는 내려받을 수 없다 — 하나라도 섞이면 비활성(레거시와 동일).
   const dlBlocked = checkedFolders.size > 0
-  const dlConfigured = !!s3BaseUrl()
   // 비활성 사유 — 있으면 버튼 옆에 «글자로» 띄우고 aria-describedby 로도 묶는다.
-  const dlOff = selFiles.length === 0 || dlBlocked || !dlConfigured || dl.open
+  // presign 설정 여부는 발급을 요청해 봐야 알 수 있어(503) 사전 비활성 조건이 아니다.
+  const dlOff = selFiles.length === 0 || dlBlocked || dl.open
   const delOff = selCount === 0 || selHasOthers
-  const dlDisabledReason = !dlConfigured
-    ? t('drive-dl-unavailable')
-    : dlBlocked
-      ? t('drive-dl-folder-note')
-      : null
+  const dlDisabledReason = dlBlocked ? t('drive-dl-folder-note') : null
 
   const runDownload = async (targets: DriveFile[]) => {
-    const files = targets.filter((f) => f.src).map((f) => ({ src: f.src as string, name: f.name }))
+    const files = targets.map((f) => ({ id: f.id, name: f.name }))
     const r = await startDownload(files, t('drive-zip-name'))
     setDlCancelAsk(false)
     if (r === 'unavailable') showToast(t('drive-dl-unavailable'), 'error')
@@ -275,7 +270,9 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
   const { create: createFolder, rename: renameFolder } = useDriveFolderMutation()
   const [newFolder, setNewFolder] = useState(false)
   const [renaming, setRenaming] = useState<string | null>(null)
-  const canWrite = !!drive?.is_writable
+  // ⚠ 권한·확장자·파일당 상한은 최상위가 아니라 board 관계에 있다(실측 2026-09-09).
+  const driveMeta = drive?.board
+  const canWrite = !!driveMeta?.is_writable
 
   const submitNewFolder = (title: string) => {
     if (!b) return
@@ -307,8 +304,8 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
   const upload = useDriveUpload(b, folderId)
   // 검증 한도는 자료실(board) 설정에서 온다. size_limit 은 -1(무제한)로 오기도 한다.
   const uploadLimits: UploadLimits = {
-    exceptExtension: drive?.except_extension ?? [],
-    sizeLimitPerFile: drive?.size_limit_per_file ?? 0,
+    exceptExtension: driveMeta?.except_extension ?? [],
+    sizeLimitPerFile: driveMeta?.size_limit_per_file ?? 0,
     sizeLimit: drive?.size_limit ?? 0,
     usedSize: drive?.total_usage_size ?? 0,
   }
@@ -339,12 +336,16 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
     file: DriveFile
   } | null>(null)
   useBodyScrollLock(!!preview)
-  const openPreview = (f: DriveFile) => {
-    const base = s3BaseUrl()
-    if (!base || !f.src) return showToast(t('drive-dl-unavailable'), 'error')
+  // 미리보기도 5분 presign 을 따로 받는다 — 공개 S3 주소를 조립하지 않는다(09:185).
+  const openPreview = async (f: DriveFile) => {
     const kind = previewKind(f.ext)
     if (kind === 'none') return showToast(t('drive-preview-unsupported'))
-    setPreview({ url: s3FileUrl(base, f.src), kind, file: f })
+    try {
+      const issued = await getDriveFileDownloadUrl(f.id)
+      setPreview({ url: issued.url, kind, file: f })
+    } catch {
+      showToast(t('drive-dl-unavailable'), 'error')
+    }
   }
 
   // ── 삭제 ────────────────────────────────────────────────────────────────
@@ -378,9 +379,9 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
     try {
       let skipped = 0
       if (fileIds.length > 0) {
-        // 응답은 «업데이트된 행 수». 권한 밖 id 는 조용히 빠지므로 요청 수와 비교해야 한다.
-        const deleted = await delFiles.mutateAsync({ boardId: b, ids: fileIds })
-        skipped = fileIds.length - (typeof deleted === 'number' ? deleted : fileIds.length)
+        // 부분 실패도 200 이다 — 권한 밖·이미 휴지통 id 는 ignored_ids 로만 온다(09:407).
+        const res = await delFiles.mutateAsync({ ids: fileIds })
+        skipped = res.ignored_ids.length
       }
       setCheckedFiles(new Set())
       if (skipped > 0) {
@@ -393,7 +394,7 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
         const blocked = folderIds.filter((id) => folderParentIds.has(id))
         // 하위 «파일»이 남은 폴더는 서버가 조용히 건너뛴다 → 못 지운 id 는 선택에 남기고 안내한다.
         const deleted =
-          leaves.length > 0 ? await delFolders.mutateAsync({ boardId: b, ids: leaves }) : []
+          leaves.length > 0 ? await delFolders.mutateAsync({ ids: leaves }) : []
         const skippedLeaves = leaves.filter((id) => !deleted.includes(id))
         const left = [...blocked, ...skippedLeaves]
         setCheckedFolders(new Set(left))
@@ -655,7 +656,7 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
               </button>
               <button
                 type="button"
-                disabled={!drive?.is_writable}
+                disabled={!canWrite}
                 onClick={openUpload}
                 className="inline-flex h-8 flex-none items-center gap-1.5 rounded-md bg-primary px-3.5 text-s font-semibold text-white hover:bg-ov-blue-700 disabled:bg-gray-200 disabled:text-gray-400"
               >
@@ -729,7 +730,7 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
                 <DriveIcon className="size-5" />
               </span>
               <span className="text-s text-gray-400">{t('drive-empty')}</span>
-              {!recent && drive?.is_writable && (
+              {!recent && canWrite && (
                 <button
                   type="button"
                   onClick={openUpload}
@@ -901,13 +902,11 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
                     </button>
                     <button
                       type="button"
-                      disabled={!dlConfigured || dl.open}
+                      disabled={dl.open}
                       onClick={() => runDownload([f])}
                       aria-label={t('file-download')}
                       className={`inline-flex size-[27px] items-center justify-center rounded-md ${
-                        !dlConfigured || dl.open
-                          ? 'text-gray-300'
-                          : 'text-gray-500 hover:bg-gray-100'
+                        dl.open ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-100'
                       }`}
                     >
                       <DownloadIcon className="size-3" />
@@ -1064,7 +1063,7 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
               <button
                 type="button"
                 aria-label={t('file-download')}
-                disabled={!dlConfigured || dl.open}
+                disabled={dl.open}
                 onClick={() => {
                   // 진행 모달과 겹치지 않게 미리보기를 먼저 닫는다 — 두 모달이 함께 뜨면
                   // 스택 순서(진행 모달이 위)와 페인트 순서(미리보기가 위)가 어긋나고,

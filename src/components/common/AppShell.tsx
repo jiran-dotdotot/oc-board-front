@@ -27,6 +27,7 @@ import { useBoardBookmarkMutation, useBookmarkedBoards } from '@/hooks/useBoards
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { useCategories } from '@/hooks/useCategories'
 import { useMe } from '@/hooks/useMe'
+import { logout } from '@/services/authService'
 import { type CategoryBoard, isDriveBoard } from '@/types/category'
 import { buildNavTree } from '@/utils/category'
 
@@ -334,7 +335,11 @@ export function AppShell() {
   return (
     <div className="flex min-h-svh flex-col bg-background">
       {/* ── 톱바 ── */}
-      <header className="sticky top-0 z-[var(--z-shell)] border-b border-gray-200 bg-card">
+      {/* data-app-header: 인쇄 시 셸만 숨기려면 «앱 헤더»와 «본문 안 header» 를 구분해야 한다 */}
+      <header
+        data-app-header
+        className="sticky top-0 z-[var(--z-shell)] border-b border-gray-200 bg-card"
+      >
         {/* 모바일 */}
         <div className="flex h-(--spacing-topbar) items-center gap-3 px-3 min-[631px]:hidden">
           <button
@@ -412,7 +417,10 @@ export function AppShell() {
                   </div>
                   <Link
                     to="/login"
-                    onClick={() => setProfileOpen(false)}
+                    onClick={() => {
+                      logout()
+                      setProfileOpen(false)
+                    }}
                     className="flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm text-gray-800 hover:bg-gray-100"
                   >
                     <LogoutIcon />

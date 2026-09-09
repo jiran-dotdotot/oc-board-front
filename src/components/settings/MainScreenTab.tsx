@@ -17,7 +17,8 @@ export function MainScreenTab({ onToast }: { onToast: (msg: string) => void }) {
 
   const [draft, setDraft] = useState<number | null>(null)
   const days = draft ?? companySetting?.latest_post_day ?? 30
-  const canSave = !!companySetting?.id && !!me?.is_admin
+  // 회사 설정 저장은 member 토큰 전용 경로로 옮겨져 이 앱에서는 호출할 수 없다 — BR-005.
+  const canSave = !!companySetting?.id && !!me?.is_admin && mut.isSupported
 
   const save = () => {
     if (!canSave) return
@@ -60,7 +61,11 @@ export function MainScreenTab({ onToast }: { onToast: (msg: string) => void }) {
         </div>
       </div>
 
-      {!canSave && <span className="pt-3 text-xs text-gray-400">{t('env-main-admin-only')}</span>}
+      {!canSave && (
+        <span className="pt-3 text-xs text-gray-400">
+          {mut.isSupported ? t('env-main-admin-only') : t('env-member-token-only')}
+        </span>
+      )}
 
       <div className="flex pt-3.5">
         <button

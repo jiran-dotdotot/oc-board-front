@@ -1,10 +1,9 @@
-// GET /api/v1/category — 내 카테고리 트리 + 전사 공개 게시판 (docs/api/03-category.md §1)
+// Go 카테고리 트리에서 사용하는 필드. docs/api/go/03-category.md:37-73.
 
 export type BoardType = 'BOARD' | 'PREVIEW' | 'ALBUM' | 'DRIVE'
 
 // 카테고리 트리에 실려 오는 게시판 노드.
-// 계산 플래그(is_writable/is_bookmark/is_admin/is_category_admin)는 raw SQL alias라
-// 모델 캐스팅이 안 걸린다 → boolean이 아닐 수 있어 unknown으로 받고 truthy 판정한다.
+// Go BoardView의 계산 플래그는 boolean이다(docs/api/go/04-board.md:98-114).
 export interface CategoryBoard {
   id: string
   company_id: number
@@ -18,15 +17,14 @@ export interface CategoryBoard {
   position: number
   read_permission: 'ALL' | 'ADMIN' | 'MEMBER'
   write_permission: 'ALL' | 'ADMIN' | 'MEMBER'
-  is_writable?: unknown
-  is_bookmark?: unknown
-  is_admin?: unknown
-  is_category_admin?: unknown
-  // 게시판별 '내' 알림 설정 = COALESCE(user_board_settings.*, true).
-  // ⚠ /category 응답에만 있고 /category/admin 분기에는 없다 → useMemberCategories로 읽을 것.
-  is_board_member_post_alarm?: unknown
-  is_board_member_notice_alarm?: unknown
-  is_board_member_comment_alarm?: unknown
+  is_writable?: boolean
+  is_bookmark?: boolean
+  is_admin?: boolean // board/category 관리자; 회사 관리자만이면 false
+  is_category_admin?: boolean
+  // Go 사용자·관리자 트리에 모두 포함. 설정 행이 없으면 서버가 true를 계산한다.
+  is_board_member_post_alarm?: boolean
+  is_board_member_notice_alarm?: boolean
+  is_board_member_comment_alarm?: boolean
 }
 
 export interface Category {
@@ -40,7 +38,7 @@ export interface Category {
   is_post_alarm: boolean
   is_comment_alarm: boolean
   boards: CategoryBoard[]
-  // ⚠ 백엔드 makeCategoryTree 한계로 2depth(1→2)까지만 안정적으로 중첩됨
+  // Go 트리는 직속 자식까지이며 자식의 child_categories는 []다.
   child_categories: Category[]
 }
 

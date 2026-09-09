@@ -79,12 +79,16 @@ export function GeneralTab({ onToast }: { onToast: (msg: string) => void }) {
         on={userOn('is_comment_alarm')}
         onClick={() => setUser('is_comment_alarm', !userOn('is_comment_alarm'))}
         divider
+        disabled={!userMut.isSupported}
+        unsupportedDesc={t('env-member-token-only')}
       />
       <SwitchRow
         title={t('env-gen-like')}
         desc={t('env-gen-like-desc')}
         on={userOn('is_like_alarm')}
         onClick={() => setUser('is_like_alarm', !userOn('is_like_alarm'))}
+        disabled={!userMut.isSupported}
+        unsupportedDesc={t('env-member-token-only')}
       />
 
       <div className="flex flex-wrap items-start gap-3 pt-[18px]">
@@ -97,11 +101,13 @@ export function GeneralTab({ onToast }: { onToast: (msg: string) => void }) {
             label={t('env-gen-allow-notice')}
             on={userOn('is_notice_alarm')}
             onClick={() => setUser('is_notice_alarm', !userOn('is_notice_alarm'))}
+            disabled={!userMut.isSupported}
           />
           <InlineSwitch
             label={t('env-gen-allow-alarm')}
             on={userOn('is_post_alarm')}
             onClick={() => setUser('is_post_alarm', !userOn('is_post_alarm'))}
+            disabled={!userMut.isSupported}
           />
         </div>
       </div>
@@ -194,12 +200,16 @@ function SwitchRow({
   on,
   onClick,
   divider,
+  disabled,
+  unsupportedDesc,
 }: {
   title: string
   desc: string
   on: boolean
   onClick: () => void
   divider?: boolean
+  disabled?: boolean
+  unsupportedDesc?: string
 }) {
   return (
     <div
@@ -209,25 +219,45 @@ function SwitchRow({
     >
       <span className="flex flex-col gap-0.5">
         <span className="text-sm font-semibold">{title}</span>
-        <span className="text-xs text-gray-400">{desc}</span>
+        <span className="text-xs text-gray-400">{disabled ? unsupportedDesc : desc}</span>
       </span>
       <span className="ml-auto flex-none">
-        <Switch on={on} onClick={onClick} label={title} />
+        <Switch on={on} onClick={onClick} label={title} disabled={disabled} />
       </span>
     </div>
   )
 }
 
-function InlineSwitch({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
+function InlineSwitch({
+  label,
+  on,
+  onClick,
+  disabled,
+}: {
+  label: string
+  on: boolean
+  onClick: () => void
+  disabled?: boolean
+}) {
   return (
     <span className="inline-flex items-center gap-[7px]">
       <span className="text-s text-gray-600">{label}</span>
-      <Switch on={on} onClick={onClick} label={label} />
+      <Switch on={on} onClick={onClick} label={label} disabled={disabled} />
     </span>
   )
 }
 
-function Switch({ on, onClick, label }: { on: boolean; onClick: () => void; label: string }) {
+function Switch({
+  on,
+  onClick,
+  label,
+  disabled,
+}: {
+  on: boolean
+  onClick: () => void
+  label: string
+  disabled?: boolean
+}) {
   return (
     <button
       type="button"
@@ -235,8 +265,9 @@ function Switch({ on, onClick, label }: { on: boolean; onClick: () => void; labe
       aria-checked={on}
       aria-label={label}
       onClick={onClick}
+      disabled={disabled}
       className={[
-        'relative h-[22px] w-[38px] flex-none rounded-full transition-colors',
+        'relative h-[22px] w-[38px] flex-none rounded-full transition-colors disabled:opacity-40',
         on ? 'bg-primary' : 'bg-gray-200',
       ].join(' ')}
     >

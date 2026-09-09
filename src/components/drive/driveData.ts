@@ -1,9 +1,10 @@
 import { LIMIT_OPTIONS } from '@/utils/listLimit'
 
-// 자료실(화면 07) 뷰모델. 목록=GET /drive/file, 폴더/용량/권한=GET /drive/{board}.
+// 자료실(화면 07) 뷰모델.
+// 목록=GET .../drive-files, 폴더/용량/권한=GET .../boards/{id}/drive.
 
 export interface DriveFile {
-  id: string | number
+  id: string // drive_file UUID — 다운로드 URL 발급(…/download-url)에 그대로 쓴다
   name: string
   ext: string
   tagBg: string
@@ -13,7 +14,6 @@ export interface DriveFile {
   date: string
   size: string
   bm?: boolean
-  src?: string // S3 오브젝트 키 — 다운로드가 이걸로 URL 을 만든다
 }
 
 // 표 상단에 고정되는 폴더 행(정본: 페이징 대상이 아니다).
@@ -56,25 +56,8 @@ export interface DriveSearch extends DriveRecentSearch {
   f?: string
 }
 
-// 확장자 → 파스텔 배경
-export const EXT_BG: Record<string, string> = {
-  PDF: 'bg-l-red',
-  XLSX: 'bg-l-green',
-  XLS: 'bg-l-green',
-  CSV: 'bg-l-green',
-  PNG: 'bg-l-purple',
-  JPG: 'bg-l-purple',
-  JPEG: 'bg-l-purple',
-  GIF: 'bg-l-purple',
-  HWP: 'bg-l-blue',
-  DOC: 'bg-l-blue',
-  DOCX: 'bg-l-blue',
-  PPT: 'bg-l-orange',
-  PPTX: 'bg-l-orange',
-  ZIP: 'bg-l-gray',
-  RAR: 'bg-l-gray',
-}
-export const EXT_BG_DEFAULT = 'bg-l-gray'
+// 확장자 파스텔 표는 단일 출처다 — 세 화면(자료실·홈·게시글 첨부)이 같은 색을 써야 한다.
+export { EXT_BG, EXT_BG_DEFAULT } from '@/constants/fileExt'
 
 // bytes → 사람이 읽는 크기
 export function fmtSize(bytes: number): string {

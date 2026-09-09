@@ -13,3 +13,37 @@ export const SAMPLE_POSTS: Post[] = [
   { id: 2, title: '게시판 리뉴얼 안내', author: '관리자', createdAt: '2026-08-05' },
   { id: 3, title: '자유게시판이 열렸습니다', author: 'OC', createdAt: '2026-08-10' },
 ]
+
+// ─── 게시글 상세 ───────────────────────────────────────────────────────────
+/**
+ * 공감으로 «새로 누를 수 있는» 이모지 세트.
+ *
+ * ⚠️ 가정: 서버·디자인 정본·레거시 어디에도 «세트» 라는 개념이 없다.
+ *  - 서버는 `emoji` 를 자유 문자열로 받고(docs/api/07-post-comment-like.md:252),
+ *    상세의 `post.likes` 는 **반응이 1건 이상인 이모지만** 집계해 준다 → 세트를 줄 수 없다.
+ *  - 레거시는 emoji-mart 전체 카탈로그 피커였다(EmojiSelector.vue:3).
+ *  - 정본 아트보드엔 이모지 리터럴이 0건이다(프로토타입 시드값).
+ * 정본 스크린샷에서 읽히는 👍 ❤️ 😊 를 앞에 두고 채운 값이다. 이 상수만 고치면 바뀐다.
+ *
+ * 세트 «밖»의 이모지로 달린 기존 반응은 사라지지 않는다 — 칩은 서버 집계를 그대로 그린다.
+ */
+export const REACTION_EMOJIS = ['👍', '❤️', '😊', '🎉', '😢', '👏'] as const
+
+/**
+ * 공감 줄에 **항상 보이는** 칩. 반응이 0건이어도 그린다(정본 스크린샷의 `🏷 0` 자리).
+ *
+ * ⚠ 서버는 «반응이 1건 이상인» 이모지만 집계해 준다(docs/api/07-post-comment-like.md:288) →
+ *   0 카운트 칩은 서버에서 나올 수 없고 이 상수로만 그릴 수 있다.
+ *   정본 `dReactChips` 의 `hint-placeholder-count="4"` 와 개수를 맞췄다.
+ *   세트 «밖» 이모지로 달린 기존 반응은 이 네 칩 뒤에 이어 붙는다 — 데이터가 숨지 않는다.
+ */
+export const REACTION_PINNED = ['👍', '❤️', '😊', '🎉'] as const
+
+/** 댓글의 하트 버튼이 토글하는 이모지. 정본 댓글 행엔 하트 하나뿐이라 ❤️ 로 잇는다. */
+export const COMMENT_HEART_EMOJI = '❤️'
+
+/** 첨부 목록에서 접기 전에 보여 주는 행 수. 정본 `dAttRows` 3행 + 「외 N개 모두 보기」. */
+export const ATTACHMENT_PREVIEW_ROWS = 3
+
+/** 내역 모달 페이지당 개수. API 기본값과 같다(docs/api/05-post-read.md:250, 07:325). */
+export const HISTORY_PAGE_SIZE = 20

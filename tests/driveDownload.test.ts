@@ -1,4 +1,4 @@
-import { mapLimit, s3FileUrl, uniqueFileNames } from '@/utils/driveDownload'
+import { mapLimit, uniqueFileNames } from '@/utils/driveDownload'
 import { describe, expect, it } from 'vitest'
 
 describe('uniqueFileNames — zip 안 이름 충돌', () => {
@@ -34,13 +34,6 @@ describe('uniqueFileNames — zip 안 이름 충돌', () => {
   it('결과에 중복이 하나도 남지 않는다', () => {
     const out = uniqueFileNames(['a.pdf', 'a (1).pdf', 'a.pdf', 'a.pdf', 'a (2).pdf'])
     expect(new Set(out).size).toBe(out.length)
-  })
-})
-
-describe('s3FileUrl', () => {
-  it('베이스 끝 슬래시와 키 앞 슬래시가 겹쳐도 하나만 남는다', () => {
-    expect(s3FileUrl('https://cdn.test/', '/drive/1/2.pdf')).toBe('https://cdn.test/drive/1/2.pdf')
-    expect(s3FileUrl('https://cdn.test', 'drive/1/2.pdf')).toBe('https://cdn.test/drive/1/2.pdf')
   })
 })
 

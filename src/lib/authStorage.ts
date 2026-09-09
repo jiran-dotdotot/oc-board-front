@@ -1,64 +1,87 @@
-// 토큰 저장소 (localStorage). apiClient·authService 양쪽이 공유하므로 별도 모듈로 분리(순환 import 방지).
-import type { LoginResponse } from '@/types/auth'
-import type { Me } from '@/types/user'
+import { AUTH_SESSION_KEY } from '@/constants/auth'
+import type { AuthSession, LoginResponse } from '@/types/auth'
 
-const ACCESS_KEY = 'oc-board-token'
-const REFRESH_KEY = 'oc-board-refresh'
-const ME_KEY = 'oc-board-me'
+// Go 세션은 이전 Laravel 토큰/프로필과 분리하고 토큰 쌍을 한 번에 교체한다.
+export function getAuthSession(): AuthSession | null {
+  try {
+    const session = JSON.parse(localStorage.getItem(AUTH_SESSION_KEY) ?? 'null')
+    return session &&
+      typeof session.id === 'string' &&
+      session.id &&
+      typeof session.access_token === 'string' &&
+      session.access_token &&
+      typeof session.refresh_token === 'string' &&
+      session.refresh_token
+      ? session
+      : null
+  } catch {
+    return null
+  }
+}
 
 export function getAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_KEY)
+  return getAuthSession()?.access_token ?? null
 }
 
 export function getRefreshToken(): string | null {
-  return localStorage.getItem(REFRESH_KEY)
+  return getAuthSession()?.refresh_token ?? null
 }
 
-export function setTokens(res: Pick<LoginResponse, 'access_token' | 'refresh_token'>): void {
-  localStorage.setItem(ACCESS_KEY, res.access_token)
-  localStorage.setItem(REFRESH_KEY, res.refresh_token)
-  localStorage.removeItem(ME_KEY) // 새 로그인 → 이전 사용자 정보 무효화(다음 /me로 갱신)
+export function setTokens(
+  response: Pick<LoginResponse, 'access_token' | 'refresh_token'>,
+  sessionId: string = crypto.randomUUID(),
+): void {
+  if (
+    typeof response.access_token !== 'string' ||
+    !response.access_token ||
+    typeof response.refresh_token !== 'string' ||
+    !response.refresh_token
+  ) {
+    throw new Error('Invalid board token response')
+  }
+  localStorage.setItem(
+    AUTH_SESSION_KEY,
+    JSON.stringify({
+      id: sessionId,
+      access_token: response.access_token,
+      refresh_token: response.refresh_token,
+    } satisfies AuthSession),
+  )
+  for (const key of ['oc-board-token', 'oc-board-refresh', 'oc-board-me']) {
+    localStorage.removeItem(key)
+  }
 }
 
 export function clearTokens(): void {
-  localStorage.removeItem(ACCESS_KEY)
-  localStorage.removeItem(REFRESH_KEY)
-  localStorage.removeItem(ME_KEY)
+  localStorage.removeItem(AUTH_SESSION_KEY)
+  for (const key of ['oc-board-token', 'oc-board-refresh', 'oc-board-me']) {
+    localStorage.removeItem(key)
+  }
 }
 
 export function isAuthenticated(): boolean {
-  return !!getAccessToken()
+  return getAuthSession() !== null
 }
 
-// 로그인 사용자 정보(/me) 캐시 — 새로고침에도 재호출 없이 재사용. 로그인/로그아웃 시 무효화됨.
-export function getStoredMe(): Me | null {
-  const raw = localStorage.getItem(ME_KEY)
-  if (!raw) return null
-  try {
-    return JSON.parse(raw) as Me
-  } catch {
-    return null
-  }
-}
-
-export function setStoredMe(me: Me): void {
-  try {
-    localStorage.setItem(ME_KEY, JSON.stringify(me))
-  } catch {
-    /* localStorage 불가/용량초과 무시 */
-  }
-}
-
-// access token(JWT)의 sub 클레임에서 현재 사용자 id를 읽음 (검증 없이 payload만 디코드).
-export function getCurrentUserId(): number | null {
-  const token = getAccessToken()
+// UI/응답 일치 확인용 디코딩일 뿐 인증 검증이 아니다. 권한은 서버가 판정한다.
+export function getTokenIdentity(token = getAccessToken()) {
   if (!token) return null
   try {
     const payload = token.split('.')[1]
-    if (!payload) return null
-    const json = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
-    return json.sub != null ? Number(json.sub) : null
+    const claims = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
+    if (
+      claims.iss !== 'oc-api-go/board' ||
+      !Number.isSafeInteger(claims.user_id) ||
+      !Number.isSafeInteger(claims.company_id) ||
+      claims.sub !== String(claims.user_id)
+    )
+      return null
+    return { userId: claims.user_id as number, companyId: claims.company_id as number }
   } catch {
     return null
   }
+}
+
+export function getCurrentUserId(): number | null {
+  return getTokenIdentity()?.userId ?? null
 }

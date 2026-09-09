@@ -32,6 +32,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { useMe } from '@/hooks/useMe'
 import { useNotices, usePostBookmarkMutation, usePosts } from '@/hooks/usePosts'
 import type { Post } from '@/types/post'
+import { pastel } from '@/utils/avatar'
 import { fmtDate } from '@/utils/date'
 import {
   LIMIT_OPTIONS,
@@ -52,20 +53,14 @@ const RECENT_BOARD_ID = 'recent'
 const ROW =
   'w-full items-center border-b border-gray-100 flex flex-col gap-1 px-3.5 py-[11px] min-h-[62px] min-[631px]:grid min-[631px]:flex-row min-[631px]:gap-0 min-[631px]:px-[18px] min-[631px]:py-0 min-[631px]:min-h-12'
 const CELL_DESKTOP = 'hidden truncate text-s min-[631px]:block'
-const PASTELS = ['bg-l-blue', 'bg-l-green', 'bg-l-orange', 'bg-l-purple', 'bg-l-mint', 'bg-l-pink']
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-function pastel(seed: string) {
-  let h = 0
-  for (const c of seed) h = (h * 31 + c.charCodeAt(0)) >>> 0
-  return PASTELS[h % PASTELS.length]
-}
 // API Post → 목록 뷰모델(BoardRow). 읽음여부는 is_view($appends), 아바타색은 이름/id 파생.
 function toRow(p: Post): BoardRow {
   const author = p.user?.name ?? ''
   return {
     id: p.id,
-    title: p.title,
+    title: p.title ?? '',
     board: p.board?.title ?? '', // 전체 목록의 '위치' 컬럼 (홈 위젯 toHomePost 와 같은 매핑)
     author,
     authorInitial: author ? author[0] : '?',
@@ -74,7 +69,7 @@ function toRow(p: Post): BoardRow {
     views: p.view_count,
     likes: p.like_count,
     comments: p.comment_count,
-    notice: (p.badges ?? []).some((b) => b.type === 'NOTICE'),
+    notice: (p.badges ?? []).some((b) => b.type === 'NOTICE' && b.is_active === true),
     read: p.is_view ?? true, // 서버가 글마다 읽음여부 제공(없으면 읽음 취급)
     bookmarked: !!p.is_bookmark, // raw SQL alias 가능성 → truthy 판정
     hasFile: (p.files?.length ?? 0) > 0,

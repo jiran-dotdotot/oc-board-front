@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 
 import { useTranslation } from 'react-i18next'
 
-import { getDrivePresignedUrls, postDriveCallback, putFileToS3 } from '@/services/driveService'
+import { getDrivePresignedUrls, completeDriveUpload, putFileToS3 } from '@/services/driveService'
 import {
   type UploadErrorKey,
   convertHeicFiles,
@@ -120,10 +120,7 @@ export function useDriveUpload(boardId: string | undefined, folderId: string | u
               patch(row.key, { percent: pct })
             })
             // 확정은 HTTP 코드가 아니라 응답 state 로 본다.
-            const saved = await postDriveCallback({
-              file_id: result.file_id,
-              object_key: result.object_key,
-            })
+            const saved = await completeDriveUpload(result.file_id)
             if (saved?.state !== 'ACT') throw new Error('not-act')
             success += 1
             patch(row.key, { status: 'success', percent: 100 })

@@ -1,18 +1,23 @@
 import { useRef, useState } from 'react'
 
+import { getAttachmentDownloadUrl, getDriveFileDownloadUrl } from '@/services/driveService'
 import {
   DOWNLOAD_CONCURRENCY,
+  type S3Scope,
   mapLimit,
-  s3BaseUrl,
-  s3FileUrl,
   saveBlob,
   uniqueFileNames,
 } from '@/utils/driveDownload'
 import axios from 'axios'
 
 export interface DownloadTarget {
-  src: string // S3 오브젝트 키
+  id: string // 자료실은 drive_file id, 게시글은 «첨부» id (post id 가 아니다 — 05:495)
   name: string // origin_file_name
+}
+
+/** presign 발급기가 서버에 설정되지 않으면 503 이다(09:600). 그 경우만 'unavailable'. */
+function isUnavailable(err: unknown): boolean {
+  return axios.isAxiosError(err) && err.response?.status === 503
 }
 
 export interface DownloadState {
@@ -43,9 +48,9 @@ export function useDriveDownload() {
   const start = async (
     files: DownloadTarget[],
     zipName: string,
+    /** 엔드포인트 선택. 자료실은 기본값, 게시글 첨부는 'post' 다. */
+    scope: S3Scope = 'drive',
   ): Promise<'done' | 'canceled' | 'unavailable' | 'failed'> => {
-    const base = s3BaseUrl()
-    if (!base) return 'unavailable'
     if (files.length === 0) return 'done'
 
     const controller = new AbortController()
@@ -67,9 +72,11 @@ export function useDriveDownload() {
 
     try {
       const blobs = await mapLimit(files, DOWNLOAD_CONCURRENCY, async (f, i) => {
-        // 캐시된 응답이 Content-Length 를 안 주면 진행률이 죽으므로 캐시 버스터를 붙인다(레거시와 동일).
-        const url = `${s3FileUrl(base, f.src)}?t=${Date.now()}${i}`
-        const res = await axios.get<Blob>(url, {
+        // 파일마다 5분짜리 presigned URL 을 따로 받는다. SDK 가 조립한 쿼리를
+        // 파싱·재조합하지 않고 그대로 쓴다(09:620) — 캐시 버스터도 붙이지 않는다.
+        const issued =
+          scope === 'post' ? await getAttachmentDownloadUrl(f.id) : await getDriveFileDownloadUrl(f.id)
+        const res = await axios.get<Blob>(issued.url, {
           responseType: 'blob',
           signal: controller.signal,
           onDownloadProgress(e) {
@@ -111,8 +118,13 @@ export function useDriveDownload() {
       }
       setState(IDLE)
       return 'done'
-    } catch {
+    } catch (err) {
       const canceled = canceledRef.current
+      if (!canceled && isUnavailable(err)) {
+        controller.abort()
+        setState(IDLE)
+        return 'unavailable'
+      }
       // 실패해도 «남은 요청»을 끊어야 한다 — 안 끊으면 살아 있는 progress 콜백이
       // publish() 로 open:true 를 다시 켜서 닫힌 진행 모달이 되살아난다(스크롤 잠금째로).
       controller.abort()

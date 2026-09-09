@@ -8,29 +8,17 @@ import {
   deleteDriveFiles,
   deleteDriveFolders,
   renameDriveFolder,
-  selectDriveFilePage,
   selectDriveFiles,
   toggleDriveFileBookmark,
 } from '@/services/driveService'
 import type { DriveFileListParams } from '@/types/drive'
 
-// 자료실 파일 목록 조회. lang 헤더=현재 언어, 토큰 있을 때만 호출.
-export function useDriveFiles(params: DriveFileListParams, enabled = true) {
-  const { i18n } = useTranslation()
-  return useQuery({
-    queryKey: ['drive-files', params, i18n.language],
-    queryFn: () => selectDriveFiles(params, i18n.language),
-    placeholderData: keepPreviousData,
-    enabled: enabled && isAuthenticated(),
-  })
-}
-
-// 「최근 자료」 목록 — take/page 페이지네이션 응답(Paginated).
+// 자료실 파일 목록 조회 — 응답은 항상 페이지 봉투다. lang 헤더=현재 언어, 토큰 있을 때만 호출.
 export function useDriveFilePage(params: DriveFileListParams, enabled = true) {
   const { i18n } = useTranslation()
   return useQuery({
     queryKey: ['drive-file-page', params, i18n.language],
-    queryFn: () => selectDriveFilePage(params, i18n.language),
+    queryFn: () => selectDriveFiles(params, i18n.language),
     placeholderData: keepPreviousData,
     enabled: enabled && isAuthenticated(),
   })
@@ -43,7 +31,6 @@ export function useDriveBookmarkMutation() {
     mutationFn: (fileId: string) => toggleDriveFileBookmark(fileId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['drive-file-page'] })
-      qc.invalidateQueries({ queryKey: ['drive-files'] })
     },
   })
 }
@@ -54,17 +41,14 @@ export function useDriveDeleteMutation() {
   const qc = useQueryClient()
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['drive-file-page'] })
-    qc.invalidateQueries({ queryKey: ['drive-files'] })
     qc.invalidateQueries({ queryKey: ['drive'] })
   }
   const files = useMutation({
-    mutationFn: ({ boardId, ids }: { boardId: string; ids: string[] }) =>
-      deleteDriveFiles(boardId, ids),
+    mutationFn: ({ ids }: { ids: string[] }) => deleteDriveFiles(ids),
     onSuccess: invalidate,
   })
   const folders = useMutation({
-    mutationFn: ({ boardId, ids }: { boardId: string; ids: string[] }) =>
-      deleteDriveFolders(boardId, ids),
+    mutationFn: ({ ids }: { ids: string[] }) => deleteDriveFolders(ids),
     onSuccess: invalidate,
   })
   return { files, folders }

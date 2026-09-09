@@ -1,17 +1,13 @@
-// 자료실 다운로드. 서버에 다운로드 라우트가 없어(getTemporaryUrl 미등록 — docs/api/09-drive-file.md:317)
-// 레거시와 같이 공개 S3 오브젝트를 직접 GET 한다. 여러 건은 브라우저에서 zip 으로 묶는다.
+// 자료실·게시글 첨부 다운로드. Go 는 파일 DTO 에 src/object_key 를 주지 않고
+// `…/download-url`(5분 presign)을 따로 발급한다 — 클라이언트가 공개 S3 주소를
+// 조립하지 않는다(docs/api/go/09-drive-file.md:185, 05-post-read.md:45).
+// 여러 건은 브라우저에서 zip 으로 묶는다.
 
 // ponytail: 동시 6개 — 브라우저 커넥션 한계에 맞춘 값. 레거시는 무제한 병렬이라 50개 선택 시 50요청이었다.
 export const DOWNLOAD_CONCURRENCY = 6
 
-export function s3BaseUrl(): string | undefined {
-  const base = import.meta.env.VITE_S3_FILE_BASE_URL
-  return typeof base === 'string' && base ? base : undefined
-}
-
-export function s3FileUrl(base: string, src: string): string {
-  return `${base.replace(/\/$/, '')}/${src.replace(/^\//, '')}`
-}
+/** 어느 다운로드 엔드포인트를 쓸지. 자료실 파일과 게시글 첨부는 «다른» 경로다. */
+export type S3Scope = 'drive' | 'post'
 
 // zip 안에서 같은 이름이 겹치지 않게 `이름 (1).pdf` 로 번호를 붙인다(레거시 getUniqueFileNames).
 export function uniqueFileNames(names: string[]): string[] {
