@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
+import { Switch } from '@/components/common/Switch'
 import { BoardIcon, DriveIcon } from '@/components/common/icons'
 import { useMemberCategories } from '@/hooks/useCategories'
 import { useMe } from '@/hooks/useMe'
@@ -235,40 +236,6 @@ function InlineSwitch({
       <span className="text-s text-gray-600">{label}</span>
       <Switch on={on} onClick={onClick} label={label} disabled={disabled} />
     </span>
-  )
-}
-
-function Switch({
-  on,
-  onClick,
-  label,
-  disabled,
-}: {
-  on: boolean
-  onClick: () => void
-  label: string
-  disabled?: boolean
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label={label}
-      onClick={onClick}
-      disabled={disabled}
-      className={[
-        'relative h-[22px] w-[38px] flex-none rounded-full transition-colors disabled:opacity-40',
-        on ? 'bg-primary' : 'bg-gray-200',
-      ].join(' ')}
-    >
-      <span
-        className={[
-          'absolute top-[3px] size-4 rounded-full bg-white shadow-sm transition-all',
-          on ? 'left-[19px]' : 'left-[3px]',
-        ].join(' ')}
-      />
-    </button>
   )
 }
 

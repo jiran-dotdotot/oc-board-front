@@ -1,43 +1,6 @@
 // 관리자/콘텐츠 관리(화면 09) 데모 데이터 (백엔드 연동 전 — 추후 apiClient)
-
-export type Role = 'super' | 'board'
-export type NodeKind = 'cat' | 'folder' | 'board' | 'drive'
-export type Scope = 'all' | 'org'
-export type BType = 'BOARD' | 'PREVIEW' | 'ALBUM'
-
-export interface Cat {
-  id: string
-  name: string
-  fixed?: boolean
-  scope: Scope
-  scopeLabel?: string
-  admins?: string[]
-}
-export interface Folder {
-  id: string
-  name: string
-  cat: string
-  scope: Scope
-  scopeLabel?: string
-  admins?: string[]
-}
-export interface Item {
-  id: string
-  name: string
-  desc?: string
-  type: 'board' | 'drive'
-  active: boolean
-  cat: string
-  folder: string | null
-  scope: Scope
-  scopeLabel?: string
-  admins?: string[]
-  alarm: boolean
-  btype?: BType
-  fileMax?: string
-  totalMax?: string
-  exts?: string[]
-}
+// 타입은 ./types.ts, 옵션·라벨 상수는 ./constants.ts 로 이관했다.
+import type { Cat, Folder, Item } from './types'
 
 export const INITIAL_CATS: Cat[] = [{ id: 'shared', name: '공용', fixed: true, scope: 'all' }]
 
@@ -105,18 +68,6 @@ export const INITIAL_ITEMS: Item[] = [
     admins: ['이서연'],
   },
 ]
-
-export const FILE_MAX_OPTS = ['100MB', '500MB', '1GB']
-export const TOTAL_MAX_OPTS = ['5GB', '10GB', '50GB']
-
-export const BTYPE_KEY: Record<
-  BType,
-  'admin-btype-basic' | 'admin-btype-preview' | 'admin-btype-album'
-> = {
-  BOARD: 'admin-btype-basic',
-  PREVIEW: 'admin-btype-preview',
-  ALBUM: 'admin-btype-album',
-}
 
 // ── 조직도 (공개범위/관리자 지정 피커) ──
 export interface OrgNode {
