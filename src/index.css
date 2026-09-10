@@ -342,6 +342,19 @@
   [role='button']:not([aria-disabled='true']) {
     cursor: pointer;
   }
+  /* 브라우저 자동완성이 강제로 칠하는 밝은 배경을 지운다 — 다크에서 필드와 어긋나던 원인.
+     배경은 필드 자신의 것을 그대로 두고(background-clip:text 로 자동완성 칠을 글자 뒤로만 클립),
+     글자·커서색만 표면 토큰(card-foreground)으로 맞춘다. transition 은 잔여 배경 애니메이션을 지연한다. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-text-fill-color: var(--card-foreground);
+    -webkit-background-clip: text;
+    background-clip: text;
+    caret-color: var(--card-foreground);
+    transition: background-color 100000s ease-in-out 0s;
+  }
 }
 
 /* ── 스크롤바 ──────────────────────────────────────────────

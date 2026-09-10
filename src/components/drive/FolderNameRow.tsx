@@ -41,6 +41,9 @@ export function FolderNameRow({
           disabled={pending}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => {
+            // 한글 IME 조합 확정 Enter 는 keydown 을 두 번 쏜다(조합확정 + 실제 Enter) — 조합 중엔
+            //   무시해 «폴더 2개 생성»을 막는다. Escape 도 조합 취소 제스처가 행 취소로 새지 않게 가드.
+            if (e.nativeEvent.isComposing) return
             if (e.key === 'Enter') save()
             if (e.key === 'Escape') onCancel()
           }}

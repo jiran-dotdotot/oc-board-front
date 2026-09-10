@@ -285,7 +285,8 @@ export function SearchFilterPanel({
             value={current.writer ?? ''}
             onChange={(e) => patch({ writer: e.target.value || undefined })}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') onApply(current)
+              // IME 조합 확정 Enter 이중 발화 방지 — 조합 중엔 적용하지 않는다.
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) onApply(current)
             }}
             placeholder={t('search-author-ph')}
             className="h-9 w-full rounded-md border border-gray-200 bg-card px-3 text-s outline-none focus:border-primary"

@@ -285,7 +285,7 @@ export function NodeDetailPanel({
                     onChange={(e) =>
                       setExtInput(e.target.value.replace(/[^a-z0-9]/gi, '').toLowerCase())
                     }
-                    onKeyDown={(e) => e.key === 'Enter' && addExt()}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && addExt()}
                     placeholder="exe"
                     className="h-7 w-[70px] rounded-md border border-gray-300 bg-card px-2.5 text-xs focus:border-primary focus:outline-none"
                   />
