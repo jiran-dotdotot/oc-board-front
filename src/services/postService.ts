@@ -124,6 +124,54 @@ export async function updatePost(postId: string, body: PostUpdateBody): Promise<
   return data
 }
 
+// ─── 게시글 첨부 업로드 (POST /posts/{id}/attachments) ──────────────────────
+// 실소스 계약: oc-api-go internal/transport/httpapi/board/attachmentupload.go.
+// ⚠ 복사본 docs/api/go 엔 아직 문서가 없다(BR-037) — 계약은 실소스에서 직접 확인했다.
+// multipart 필드 `file` **단일·필수**. 서버 검증: 확장자 필수·0<size≤100MB·이미지면 W*H≤4천만px.
+// 응답 {id, state:"ACTIVE"}. 한 요청에 파일 하나뿐이라 N개는 N번 부른다.
+// ⚠ 글이 이미 있어야 한다(작성자 + 쓰기 권한이 아니면 404/403) — 저장으로 id 를 얻은 뒤 부른다.
+// ⚠ apiClient 기본 헤더가 application/json 이라 FormData 요청엔 multipart 를 명시해야
+//   axios 1.x 가 boundary 를 채워 넣는다(명시 없으면 json 헤더가 남아 서버가 못 읽는다).
+export interface AttachmentUploadResult {
+  id: string
+  state: string
+}
+
+export async function uploadPostAttachment(
+  postId: string,
+  file: File,
+): Promise<AttachmentUploadResult> {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await postBoardResource<AttachmentUploadResult>(
+    `/posts/${postId}/attachments`,
+    form,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
+  return data
+}
+
+/**
+ * 여러 첨부를 순차 업로드한다. 한 건이 실패해도 나머지는 계속 올리고, 성공/실패를 갈라 돌려준다.
+ * 순차인 이유: 부분 실패를 파일 단위로 정확히 보고하고 업로드 폭주를 피하기 위함이다.
+ */
+export async function uploadPostAttachments(
+  postId: string,
+  files: File[],
+): Promise<{ uploaded: { id: string; file: File }[]; failed: File[] }> {
+  const uploaded: { id: string; file: File }[] = []
+  const failed: File[] = []
+  for (const file of files) {
+    try {
+      const r = await uploadPostAttachment(postId, file)
+      uploaded.push({ id: r.id, file })
+    } catch {
+      failed.push(file)
+    }
+  }
+  return { uploaded, failed }
+}
+
 // 게시글 삭제 — 휴지통(복원 가능). Go 에 단건 DELETE 는 «등록되어 있지 않고»
 // DELETE .../posts?id={UUID} 로 재작성될 뿐이라(go/README.md:189) 처음부터 일괄 경로를 쓴다.
 // 부분 실패도 200 이므로 ignored_ids 로 판정한다.

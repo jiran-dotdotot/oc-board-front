@@ -10,6 +10,7 @@ import {
   ATTACHMENT_MAX_COUNT,
   ATTACHMENT_MAX_TOTAL_BYTES,
   POST_ATTACHMENT_UPLOAD_ENABLED,
+  POST_THUMBNAIL_UPLOAD_ENABLED,
   SCHEDULE_QUICK_TIMES,
   TITLE_MAX,
 } from './constants'
@@ -25,7 +26,6 @@ import {
   toLocalDate,
 } from './writePayload'
 import { Checkbox } from '@/components/common/Checkbox'
-import { fmtSize } from '@/components/drive/driveData'
 import { ConfirmModal } from '@/components/common/ConfirmModal'
 import { DatePicker } from '@/components/common/DatePicker'
 import { Dropdown } from '@/components/common/Dropdown'
@@ -35,9 +35,11 @@ import { Switch } from '@/components/common/Switch'
 import { Toast } from '@/components/common/Toast'
 import { AlertIcon, CalendarIcon, ImageIcon, PlusIcon, XIcon } from '@/components/common/icons'
 import { useToast } from '@/components/common/useToast'
+import { fmtSize } from '@/components/drive/driveData'
 import { useCategories } from '@/hooks/useCategories'
 import { usePostDetail, usePostWriteMutations } from '@/hooks/usePostDetail'
 import { Route } from '@/routes/write'
+import { uploadPostAttachments } from '@/services/postService'
 import type { PostFile, PostThumbnail } from '@/types/post'
 import { sanitizePostHtml } from '@/utils/postHtml'
 import { writableBoards } from '@/utils/writeBoards'
@@ -49,7 +51,8 @@ import { z } from 'zod'
  * 글쓰기 / 글 수정 (`/write?boardId=` · `/write?postId=`).
  * 정본: 개선안 통합 앱 web:624-815 · mobile:577-758 (모바일도 같은 인라인 구조, 하단 3버튼만 다르다).
  * 계약: docs/api/go/06-post-write.md — POST /boards/{id}/posts · PUT /posts/{id}. 본문은 서버가 살균하지
- * 않으므로(06:39) 저장 전 `sanitizePostHtml` 을 거친다. 첨부·대표이미지 «업로드»는 계약이 없어 게이트다(BR-037).
+ * 않으므로(06:39) 저장 전 `sanitizePostHtml` 을 거친다. 첨부 업로드는 저장 성공 후 글 id 로 순차
+ * 호출한다(POST /posts/{id}/attachments, BR-037). 대표이미지 «업로드»는 서버에 생성 경로가 없어 게이트다.
  */
 const schema = z.object({
   boardId: z.string().min(1, 'write-board-required'),
@@ -57,6 +60,12 @@ const schema = z.object({
 })
 
 type Picker = 'noticeFrom' | 'noticeTo' | 'scheduleAt' | null
+
+/** 파일명 확장자(점 뒤). 서버가 확장자 없는 첨부를 400 으로 막으므로 선택 단계에서 미리 거른다. */
+const extOf = (name: string): string | undefined => {
+  const i = name.lastIndexOf('.')
+  return i > 0 && i < name.length - 1 ? name.slice(i + 1) : undefined
+}
 
 export function WriteScreen() {
   const { t } = useTranslation()
@@ -85,9 +94,11 @@ export function WriteScreen() {
   //    사용자가 그 사이 고친 값을 덮지 않는다.
   const prefilled = useRef(false)
   const [existingFiles, setExistingFiles] = useState<PostFile[]>([])
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]) // 아직 업로드 전인 새 파일
   const [thumb, setThumb] = useState<PostThumbnail | null>(null)
   const [deleteFileIds, setDeleteFileIds] = useState<string[]>([])
   const [deleteThumbId, setDeleteThumbId] = useState<string | null>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
   useEffect(() => {
     if (!post || prefilled.current) return
     prefilled.current = true
@@ -177,6 +188,36 @@ export function WriteScreen() {
               boardId: values.boardId,
               body: buildCreateBody(values, html, intent, canManage),
             })
+      // 글이 저장됐다 — 이제 새 첨부를 올린다(글 id 필수). 한 건씩 순차, 실패분만 남긴다.
+      // 본문·제목은 이미 서버에 있으므로 첨부가 일부 실패해도 글 자체는 유실되지 않는다.
+      let failed: File[] = []
+      if (pendingFiles.length) {
+        const res = await uploadPostAttachments(r.id, pendingFiles)
+        failed = res.failed
+        // 응답은 id 뿐이라 File 메타로 행을 만들어 기존 첨부 목록에 즉시 반영한다.
+        if (res.uploaded.length)
+          setExistingFiles((fs) => [
+            ...fs,
+            ...res.uploaded.map(({ id, file }) => ({
+              id,
+              origin_file_name: file.name,
+              extension: extOf(file.name),
+              size: file.size,
+            })),
+          ])
+        setPendingFiles(failed)
+      }
+      if (failed.length) {
+        // 글은 저장됐는데 첨부 일부가 실패 — 화면에 남겨 재시도한다. 작성(create)이었다면 이제 글이
+        // 존재하므로 수정 모드로 전환해, 재등록이 «중복 글»이 아니라 PUT + 업로드가 되게 한다.
+        // ponytail: 부분 실패는 수동 재시도까지만 — 자동 재시도·롤백은 필요해지면 붙인다.
+        setFormError('write-attach-upload-failed')
+        if (!postId) {
+          prefilled.current = true // 방금 저장한 화면 상태를 서버 프리필로 덮지 않는다
+          navigate({ to: '/write', search: { postId: r.id }, replace: true })
+        }
+        return
+      }
       if (intent === 'draft') {
         form.reset(values) // 저장한 값이 새 기준 — dirty 해제
         editorTouched.current = false
@@ -225,6 +266,35 @@ export function WriteScreen() {
       values.boardId ? { to: '/board/$boardId', params: { boardId: values.boardId } } : { to: '/' },
     )
 
+  // ── 첨부 선택 — 서버 계약(확장자 필수)과 우리 UX 상한(총 10개·총 100MB)을 미리 검사한 뒤 대기열에 넣는다.
+  //    실제 업로드는 저장 성공 후 save() 가 글 id 로 순차 호출한다.
+  const addFiles = (list: FileList | null) => {
+    if (!POST_ATTACHMENT_UPLOAD_ENABLED || !list?.length) return
+    const picked = Array.from(list)
+    const withExt = picked.filter((f) => extOf(f.name))
+    if (withExt.length < picked.length) showToast(t('write-attach-bad'))
+    const room = ATTACHMENT_MAX_COUNT - existingFiles.length - pendingFiles.length
+    const capped = withExt.slice(0, Math.max(0, room))
+    if (withExt.length > capped.length)
+      showToast(t('write-attach-too-many', { n: ATTACHMENT_MAX_COUNT }))
+    let total =
+      existingFiles.reduce((s, f) => s + (f.size ?? 0), 0) +
+      pendingFiles.reduce((s, f) => s + f.size, 0)
+    const accepted: File[] = []
+    for (const f of capped) {
+      if (f.size <= 0 || total + f.size > ATTACHMENT_MAX_TOTAL_BYTES) {
+        showToast(t('write-attach-too-large'))
+        break
+      }
+      total += f.size
+      accepted.push(f)
+    }
+    if (accepted.length) {
+      setPendingFiles((p) => [...p, ...accepted])
+      editorTouched.current = true
+    }
+  }
+
   // ── 로드 실패(없는 글·권한 없음·타인 글)
   const blocked =
     editing && (loadStatus === 404 || loadStatus === 403 || (post && !post.is_mine))
@@ -236,7 +306,10 @@ export function WriteScreen() {
   const err = (name: keyof WriteFormValues) => formState.errors[name]?.message as string | undefined
   const titleLen = Array.from(values.title ?? '').length
   const today = toLocalDate(new Date())
-  const fileTotal = existingFiles.reduce((s, f) => s + (f.size ?? 0), 0)
+  const fileCount = existingFiles.length + pendingFiles.length
+  const fileTotal =
+    existingFiles.reduce((s, f) => s + (f.size ?? 0), 0) +
+    pendingFiles.reduce((s, f) => s + f.size, 0)
   const submitLabel = originalAct ? t('write-edit-submit') : t('write-submit')
 
   return (
@@ -313,20 +386,37 @@ export function WriteScreen() {
             {err('title') && <FieldError>{t(err('title') as never)}</FieldError>}
           </div>
 
-          {/* 첨부 — 업로드는 계약 없음(BR-037) → 게이트. 기존 첨부 삭제는 계약 있음(06:283). */}
+          {/* 첨부 — 업로드는 저장 성공 후 글 id 로 순차(POST /posts/{id}/attachments, BR-037).
+              기존 첨부 삭제는 delete_file_id 로(06:283). */}
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <FieldLabel>{t('write-attach')}</FieldLabel>
-              <button type="button" disabled={!POST_ATTACHMENT_UPLOAD_ENABLED} className={BTN_SM}>
+              <input
+                ref={fileInput}
+                type="file"
+                multiple
+                hidden
+                onChange={(e) => {
+                  addFiles(e.target.files)
+                  e.target.value = '' // 같은 파일 재선택도 onChange 가 다시 뜨도록
+                }}
+              />
+              <button
+                type="button"
+                disabled={!POST_ATTACHMENT_UPLOAD_ENABLED}
+                onClick={() => fileInput.current?.click()}
+                className={BTN_SM}
+              >
                 {t('write-attach-pc')}
               </button>
               <button
                 type="button"
-                disabled={existingFiles.length === 0}
+                disabled={fileCount === 0}
                 onClick={() => {
                   // 「전체 삭제」도 서버 반영 대상에 넣는다 — 레거시는 화면에서만 지웠다(:886).
                   setDeleteFileIds((ids) => [...ids, ...existingFiles.map((f) => f.id)])
                   setExistingFiles([])
+                  setPendingFiles([])
                   editorTouched.current = true
                 }}
                 className={BTN_SM}
@@ -334,13 +424,22 @@ export function WriteScreen() {
                 {t('write-attach-clear')}
               </button>
               <span className="ml-auto text-xs text-gray-500">
-                {t('write-attach-count', { n: existingFiles.length })} ({fmtSize(fileTotal)}/
+                {t('write-attach-count', { n: fileCount })} ({fmtSize(fileTotal)}/
                 {fmtSize(ATTACHMENT_MAX_TOTAL_BYTES)})
               </span>
             </div>
             <div
               aria-disabled={!POST_ATTACHMENT_UPLOAD_ENABLED}
-              className="flex items-center justify-center gap-2 rounded-md border border-dashed border-gray-300 bg-gray-50 px-5 py-[26px] text-s text-gray-500 aria-disabled:opacity-60"
+              onClick={() => POST_ATTACHMENT_UPLOAD_ENABLED && fileInput.current?.click()}
+              onDragOver={(e) => {
+                if (POST_ATTACHMENT_UPLOAD_ENABLED) e.preventDefault()
+              }}
+              onDrop={(e) => {
+                if (!POST_ATTACHMENT_UPLOAD_ENABLED) return
+                e.preventDefault()
+                addFiles(e.dataTransfer.files)
+              }}
+              className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-gray-300 bg-gray-50 px-5 py-[26px] text-s text-gray-500 hover:border-primary hover:text-primary aria-disabled:cursor-not-allowed aria-disabled:opacity-60 aria-disabled:hover:border-gray-300 aria-disabled:hover:text-gray-500"
             >
               {t('write-attach-dropzone')}
             </div>
@@ -348,9 +447,8 @@ export function WriteScreen() {
               {POST_ATTACHMENT_UPLOAD_ENABLED
                 ? t('write-attach-note')
                 : `${t('write-attach-gated')} (BR-037)`}
-              {POST_ATTACHMENT_UPLOAD_ENABLED && ` · ${ATTACHMENT_MAX_COUNT}`}
             </span>
-            {existingFiles.length > 0 && (
+            {fileCount > 0 && (
               <ul className="flex flex-col gap-1.5">
                 {existingFiles.map((f) => (
                   <li
@@ -372,6 +470,29 @@ export function WriteScreen() {
                         setExistingFiles((fs) => fs.filter((x) => x.id !== f.id))
                         editorTouched.current = true
                       }}
+                      className="inline-flex size-6 flex-none items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-destructive"
+                    >
+                      <XIcon />
+                    </button>
+                  </li>
+                ))}
+                {pendingFiles.map((f, i) => (
+                  <li
+                    key={`pending-${i}-${f.name}`}
+                    className="flex items-center gap-2.5 rounded-md border border-primary/30 bg-ov-blue-50 px-3 py-2"
+                  >
+                    <span className="inline-flex h-5 w-10 flex-none items-center justify-center rounded bg-l-blue text-2xs font-extrabold text-on-pastel uppercase">
+                      {extOf(f.name) ?? ''}
+                    </span>
+                    <span className="flex-1 truncate text-s text-gray-800">{f.name}</span>
+                    <span className="flex-none rounded bg-primary px-1.5 text-2xs font-bold text-white">
+                      {t('write-attach-new')}
+                    </span>
+                    <span className="flex-none text-xs text-gray-400">{fmtSize(f.size)}</span>
+                    <button
+                      type="button"
+                      aria-label={t('write-attach-remove')}
+                      onClick={() => setPendingFiles((fs) => fs.filter((_, x) => x !== i))}
                       className="inline-flex size-6 flex-none items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-destructive"
                     >
                       <XIcon />
@@ -422,7 +543,8 @@ export function WriteScreen() {
             </div>
           </div>
 
-          {/* 대표 이미지 — 업로드 게이트(BR-037), 기존 썸네일 표시·삭제만 */}
+          {/* 대표 이미지 — 서버에 «생성» 경로가 없어 업로드는 게이트(BR-037). 기존 썸네일 표시·삭제만
+              가능하다(delete_thumbnail_id, 06:284 — 삭제는 계약 있음). */}
           <div className="flex flex-col gap-1.5">
             <FieldLabel>{t('write-thumb')}</FieldLabel>
             <div className="flex items-end gap-3">
@@ -453,7 +575,7 @@ export function WriteScreen() {
               ) : (
                 <button
                   type="button"
-                  disabled={!POST_ATTACHMENT_UPLOAD_ENABLED}
+                  disabled={!POST_THUMBNAIL_UPLOAD_ENABLED}
                   aria-label={t('write-thumb-add')}
                   className="inline-flex size-24 flex-none items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50 text-gray-400 hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-gray-300 disabled:hover:text-gray-400"
                 >
@@ -461,7 +583,7 @@ export function WriteScreen() {
                 </button>
               )}
               <span className="pb-1 text-xs text-gray-400">
-                {POST_ATTACHMENT_UPLOAD_ENABLED
+                {POST_THUMBNAIL_UPLOAD_ENABLED
                   ? t('write-thumb-note')
                   : `${t('write-attach-gated')} (BR-037)`}
               </span>
@@ -590,11 +712,7 @@ export function WriteScreen() {
 
           {/* 버튼줄 — 데스크톱: 우측 정렬 h40 · 모바일: 3버튼 flex-1 h48(정본 46), 취소는 데스크톱만 */}
           <div className="-mx-[26px] -mb-6 flex gap-2 border-t border-gray-100 px-[26px] py-4 min-[631px]:justify-end min-[631px]:border-0 min-[631px]:p-0 min-[631px]:pt-0">
-            <button
-              type="button"
-              onClick={cancel}
-              className={`${BTN_WHITE} max-[630px]:hidden`}
-            >
+            <button type="button" onClick={cancel} className={`${BTN_WHITE} max-[630px]:hidden`}>
               {t('common-cancel')}
             </button>
             {!originalAct && (

@@ -59,12 +59,21 @@ export const SCHEDULE_STEP_MIN = 5
 export const SCHEDULE_QUICK_TIMES = ['09:00', '10:00', '14:00', '18:00'] as const
 
 /**
- * 게시글 첨부·대표이미지 «업로드» 게이트. Go 에 계약이 없다 — body 의 files 는 무시되고
- * (06-post-write.md:224) `drive-uploads` 는 DRIVE 전용 422 이며(10:177) `POST /posts/{id}/attachments`
- * 는 문서가 없다(BR-037). 계약이 오면 이 값만 true 로 바꾸고 업로드 호출을 붙인다.
- * 삭제(`delete_file_id`·`delete_thumbnail_id`, 06:283-284)는 계약이 있어 게이트 밖이다.
+ * 게시글 첨부 «업로드» 게이트. 실소스로 계약 확인됨(BR-037) — `POST /posts/{id}/attachments`,
+ * multipart `file` 단일, 확장자 필수·0<size≤100MB·이미지 W*H≤4천만px, 응답 {id,state:"ACTIVE"}
+ * (oc-api-go attachmentupload.go). 복사본 docs/api/go 엔 아직 문서가 없으니 backfill 대상이다.
+ * 글 id 가 있어야 부르므로 저장으로 id 를 얻은 뒤 파일마다 순차 업로드한다(uploadPostAttachments).
  */
-export const POST_ATTACHMENT_UPLOAD_ENABLED = false
+export const POST_ATTACHMENT_UPLOAD_ENABLED = true
+
+/**
+ * 대표이미지 «업로드» 게이트. **서버에 생성 경로가 없다** — 유일한 업로드는 항상 `type='FILE'` 로만
+ * 넣고(attachmentupload.go), 전용 썸네일 업로드 라우트가 없다. 수정 핸들러도 `file`·`thumbnail`
+ * multipart 키를 create 는 400·update 는 무시로 거부한다(postwrite.go B-10, "no upload path").
+ * 삭제(`delete_thumbnail_id`, 06:284)만 계약이 있어 기존 썸네일 제거는 게이트 밖이다.
+ * 서버가 업로드 시 `type` 을 받거나 전용 라우트를 열면 이 값만 true 로 바꾼다(BR-037).
+ */
+export const POST_THUMBNAIL_UPLOAD_ENABLED = false
 /** 첨부 한도 — 레거시 값(AddPostView.vue:126·140·107). Go 계약이 없어 안내 문구에만 쓴다(BR-037). */
 export const ATTACHMENT_MAX_COUNT = 10
 export const ATTACHMENT_MAX_TOTAL_BYTES = 100 * 1024 * 1024
