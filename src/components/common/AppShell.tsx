@@ -538,7 +538,7 @@ export function AppShell() {
       <nav className="fixed inset-x-0 bottom-0 z-[var(--z-shell)] flex h-[58px] border-t border-gray-200 bg-card min-[631px]:hidden">
         <BottomTab to="/" active={pathname === '/'} icon={<HomeIcon />} label={t('nav-home')} />
         <BottomTab
-          to="/board/notice"
+          to="/board/recent"
           active={pathname.startsWith('/board')}
           icon={<BoardIcon />}
           label={t('nav-board')}
