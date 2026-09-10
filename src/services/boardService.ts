@@ -7,7 +7,7 @@ import {
 } from '@/lib/boardApi'
 import { serializeParams } from '@/lib/queryParams'
 import type { BoardCreatePayload, BoardUpdatePayload } from '@/types/board'
-import type { BoardDetail, CategoryBoard } from '@/types/category'
+import type { BoardDetail, CategoryBoard, IgnoredGrants } from '@/types/category'
 import type { Paginated } from '@/types/post'
 
 // 사이드바 즐겨찾기는 한 페이지로 끝낸다 — 개인 북마크라 이 이상 쌓이는 화면이 아니다.
@@ -53,8 +53,10 @@ export async function selectBoardDetail(boardId: string, lang: string): Promise<
 }
 
 /** 게시판 생성 — 200(201 아님). `category_id: null` 은 공용이고 회사 관리자만 가능하다. */
-export async function createBoard(payload: BoardCreatePayload): Promise<void> {
-  await postBoardResource('/boards', payload)
+export async function createBoard(payload: BoardCreatePayload): Promise<IgnoredGrants> {
+  // 응답의 `ignored_*` 는 상위 허용 집합 밖이라 **조용히 무시된** 대상이다 → 성공으로 삼키지 않는다.
+  const { data } = await postBoardResource<IgnoredGrants>('/boards', payload)
+  return data
 }
 
 /**
@@ -62,8 +64,12 @@ export async function createBoard(payload: BoardCreatePayload): Promise<void> {
  * (`category_id`·`is_comment_alarm` 도 400). non-DRIVE 로 끝나는 요청에 `size_limit*` 키를
  * 이름만 실어도 422 다 → 호출 쪽에서 자료실일 때만 싣는다.
  */
-export async function updateBoard(boardId: string, payload: BoardUpdatePayload): Promise<void> {
-  await putBoardResource(`/boards/${boardId}`, payload)
+export async function updateBoard(
+  boardId: string,
+  payload: BoardUpdatePayload,
+): Promise<IgnoredGrants> {
+  const { data } = await putBoardResource<IgnoredGrants>(`/boards/${boardId}`, payload)
+  return data
 }
 
 /**

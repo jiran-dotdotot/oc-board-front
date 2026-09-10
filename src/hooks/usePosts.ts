@@ -7,13 +7,15 @@ import { selectNotices, selectPost, togglePostBookmark } from '@/services/postSe
 import type { PostListParams } from '@/types/post'
 
 // 게시글 목록 조회. lang 헤더는 현재 i18n 언어, 페이지 전환 시 이전 데이터 유지.
-export function usePosts(params: PostListParams) {
+// enabled=false 면 호출하지 않는다 — 검색 화면은 검색어가 2자 미만이면 요청 자체를 막는다
+// (Go 는 1자 search 를 «필터 없는 전체 목록»으로 돌려준다, 05:275).
+export function usePosts(params: PostListParams, enabled = true) {
   const { i18n } = useTranslation()
   return useQuery({
     queryKey: ['posts', params, i18n.language],
     queryFn: () => selectPost(params, i18n.language),
     placeholderData: keepPreviousData,
-    enabled: isAuthenticated(), // 토큰 없으면 호출 안 함(401 리다이렉트 루프 방지)
+    enabled: enabled && isAuthenticated(), // 토큰 없으면 호출 안 함(401 리다이렉트 루프 방지)
   })
 }
 

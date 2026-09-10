@@ -14,6 +14,7 @@ import type {
   CategoryTreeReorderPayload,
   CategoryTreeReorderResult,
   CategoryUpdatePayload,
+  IgnoredGrants,
 } from '@/types/category'
 
 // with_category_admin=1 → 내가 카테고리 관리자인 카테고리(+하위)까지 포함.
@@ -59,13 +60,18 @@ export async function selectCategoryDetail(id: string, lang: string): Promise<Ca
 }
 
 /** 카테고리 생성. root 는 회사 관리자만. 이미 자식인 부모를 지정하면 422. */
-export async function createCategory(payload: CategoryCreatePayload): Promise<void> {
-  await postBoardResource('/categories', payload)
+export async function createCategory(payload: CategoryCreatePayload): Promise<IgnoredGrants> {
+  const { data } = await postBoardResource<IgnoredGrants>('/categories', payload)
+  return data
 }
 
 /** 카테고리 수정. `{}` 는 아무것도 바꾸지 않는다. `parent_category_id` 는 무시된다. */
-export async function updateCategory(id: string, payload: CategoryUpdatePayload): Promise<void> {
-  await putBoardResource(`/categories/${id}`, payload)
+export async function updateCategory(
+  id: string,
+  payload: CategoryUpdatePayload,
+): Promise<IgnoredGrants> {
+  const { data } = await putBoardResource<IgnoredGrants>(`/categories/${id}`, payload)
+  return data
 }
 
 /**
