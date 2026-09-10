@@ -144,6 +144,8 @@ edit_company_main_board는 JSON 배열을 인코딩한 문자열이다. 같은 I
 
 작성201·수정200이며 제목/HTML의 개별 길이 상한이 없어도 Body1MiB는 적용된다. 서버가 HTML을 sanitize하지 않는다. 수정은 저자 전용이고 board_id를 보내면 원본 조회 전에 목적지 존재·Write를 검사한다. 실제 이동은 원래 SAVE 글에만 적용되므로 board_id를 일괄 전송하지 않는다. 알림·응답 보강은 저장 transaction과 구분한다. 근거: [06 쓰기](../api/go/06-post-write.md).
 
+**프론트 배선(2026-09-10, `/write`)**: `postService.createPost(boardId, body)` → `POST {S}/boards/{id}/posts`(201), `postService.updatePost(postId, body)` → `PUT {S}/posts/{id}`(200). 둘 다 `usePostWriteMutations()` 로 감싼다(성공 시 `['posts']`·`['notices']` invalidate 만). 요청 body 는 [`writePayload.ts`](../../src/components/board/writePayload.ts) 순수 함수가 만든다 — 상태 `SAVE|SCHEDULED|ACT`, 날짜는 RFC3339+로컬 오프셋, 공지는 `badges[≤1]`(항상 고정 = 종료 2999-12-31 로컬, `can_manage` 아닌 게시판엔 badges 자체를 보내지 않음), 예약 해제는 `state` + `delete_schedule_at` 동봉(단독 전송은 SCHEDULED 글에서 400), 공지 끄기는 `delete_badge_id`, `board_id` 는 원본 SAVE 이고 바뀐 경우만. 본문은 저장 전 `sanitizePostHtml` 을 거친다. 응답에 관계가 없으므로 발행 후에는 `['post', id]` 를 **removeQueries** 하고 상세로 이동한다(ACT 조회수 +1 — [BR-042](../api/backend-requests.md#br-042)). 첨부·대표 이미지 업로드는 계약이 없어 `POST_ATTACHMENT_UPLOAD_ENABLED=false` 로 막혀 있다([BR-037](../api/backend-requests.md#br-037)); 삭제(`delete_file_id`·`delete_thumbnail_id`)만 배선. 설계·대조표: [`docs/features/write/design.md`](../features/write/design.md).
+
 ### 댓글·공감·열람자
 
 [권한·상태 비교](../api/go/07-post-comment-like.md#권한상태-비교)에서 작성·수정·삭제·공감 토글·공감자 조회의 gate를 각각 확인한다. 작성은 live ACT·댓글허용·Read, 수정은 저자·글 상태·댓글허용, 삭제는 저자 또는 해당 관리자 조건이다. 수정·삭제에 Read를 공통 필수로 추가하지 않는다.

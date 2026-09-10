@@ -17,6 +17,9 @@ import type {
   PostDetail,
   PostListParams,
   PostSort,
+  PostUpdateBody,
+  PostWriteBody,
+  PostWriteResult,
   ViewLogUser,
 } from '@/types/post'
 
@@ -101,6 +104,23 @@ export async function togglePostBookmark(postId: string): Promise<boolean> {
 //   상세 = 조회 1회다. 따라서 화면에서 읽음 처리를 «추가로» 부르면 이중 집계가 된다.
 export async function getPost(postId: string, lang: string): Promise<PostDetail> {
   const { data } = await getBoardResource<PostDetail>(`/posts/${postId}`, { headers: { lang } })
+  return data
+}
+
+// ─── 게시글 작성·수정 (docs/api/go/06-post-write.md:192 · :252) ──────────────
+// JSON 만 받는다 — 이 경로엔 폼 변환 middleware 가 없어 multipart 는 415 다(06:52).
+// 서버는 HTML 을 살균하지 않는다(06:39) → 호출 전에 `sanitizePostHtml` 을 거친다.
+// 응답엔 관계가 없다(06:90) — 뱃지·첨부는 상세 재조회로만 확인된다(BR-042).
+
+/** 작성. 게시판 404 → Write 403 → 날짜 400 → 뱃지 CanManage 403 → POST_SCHEDULE_REQUIRED → BADGE_PERIOD_INVALID(06:228). */
+export async function createPost(boardId: string, body: PostWriteBody): Promise<PostWriteResult> {
+  const { data } = await postBoardResource<PostWriteResult>(`/boards/${boardId}/posts`, body)
+  return data
+}
+
+/** 수정 — 작성자 전용(관리자도 403, 06:40). 목적지 board_id 검사가 원본 조회보다 먼저다(06:292). */
+export async function updatePost(postId: string, body: PostUpdateBody): Promise<PostWriteResult> {
+  const { data } = await putBoardResource<PostWriteResult>(`/posts/${postId}`, body)
   return data
 }
 

@@ -154,8 +154,9 @@ export function MyActivityScreen() {
 
   const openRow = (r: MyRow) => {
     if (r.kind !== 'post' || isTrash) return
+    // 임시저장·예약 글은 상세가 아니라 «이어 쓰기»로 — 레거시 mypage.vue:427 과 같다.
     if (chip === 'draft' || chip === 'schedule') {
-      navigate({ to: '/write' })
+      navigate({ to: '/write', search: { postId: r.id } })
       return
     }
     // ⚠ 목록에 read gate 가 없어 상세가 403 일 수 있다(05:373·420) — 상세 화면이 안내를 띄운다.

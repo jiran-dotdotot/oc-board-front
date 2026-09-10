@@ -12,10 +12,15 @@ export interface PostUser {
 }
 
 export interface PostBadge {
+  /** 뱃지 PK — 수정 body 의 `delete_badge_id` 에 넣는 값(05:96·06:285). */
+  id?: string
   type: string // Go 저장값은 NOTICE(05:102).
   /** Go 목록에는 항상 포함된다(05:108). NOTICE이면서 true인 배지만 공지로 표시한다.
       아직 미전환인 상세 DTO도 공유하므로 여기서는 optional을 유지한다. */
   is_active?: boolean
+  /** UTC 타임스탬프(05:103-104). 무기한은 연도 2999 로 표현된다 — 요청 형식(공통 날짜 파서)과 다르다. */
+  start_date?: string
+  end_date?: string
 }
 
 // 첨부 한 칸. ⚠ Go 는 src/url 을 주지 않는다 — 다운로드는 첨부 id 로
@@ -132,6 +137,81 @@ export type PostQueryState = PostState
 /** POST/PUT body 의 state. `DEL` 은 **쓰기 enum 에 없다**(06-post-write.md:214). */
 export type PostWriteState = Exclude<PostState, 'DEL'>
 
+/** `badges[]` 항목(06-post-write.md:58-67). `type` 은 보내도 버려지고 NOTICE 로 고정된다. 둘 다 필수. */
+export interface PostBadgeBody {
+  start_date: string
+  end_date: string
+}
+
+/**
+ * `POST {S}/boards/{id}/posts` body(06-post-write.md:212-222). 전부 선택이고 `{}` 도 SAVE 빈 글이다.
+ * ⚠ 추가 키는 «허용 후 무시»다 — `files` 를 넣어도 첨부가 붙지 않는다(06:224).
+ * ⚠ 불리언은 legacy.Bool(true/false/0/1/"0"/"1"/null) — 우리는 JSON boolean 만 보낸다(06:54).
+ * ⚠ `not_send_alarm` 은 저장 필드가 아니라 이 요청의 알림 억제 플래그다(06:219).
+ */
+export interface PostWriteBody {
+  state?: PostWriteState
+  title?: string
+  content?: string
+  is_allow_comment?: boolean
+  is_comment_alarm?: boolean
+  not_send_alarm?: boolean
+  /** 공통 날짜 파서 — RFC3339 · `YYYY-MM-DD HH:mm:ss` · `YYYY-MM-DD`(06:15). */
+  schedule_at?: string
+  delete_schedule_at?: boolean
+  badges?: PostBadgeBody[]
+}
+
+/**
+ * `PUT {S}/posts/{id}` body(06-post-write.md:272-286). 생략 = null = 유지, 빈 문자열 = 지움.
+ * ⚠ `board_id` 이동은 원본이 SAVE 일 때만 실제 적용된다(06:274) — 그 밖엔 보내지 않는다.
+ * ⚠ SCHEDULED 글에 `delete_schedule_at:true` 만 보내면 400 `POST_SCHEDULE_REQUIRED` 다(06:46) —
+ *   `state` 를 함께 바꿔야 한다.
+ */
+export interface PostUpdateBody extends PostWriteBody {
+  board_id?: string
+  delete_file_id?: string[]
+  delete_thumbnail_id?: string[]
+  delete_badge_id?: string[]
+}
+
+/**
+ * 작성 201 / 수정 200 응답(06-post-write.md:91-121). **관계(user/board/badges/files/thumbnail)가
+ * 없다**(06:90) — 저장 뒤 화면을 완성하려면 상세를 다시 읽어야 한다(BR-042).
+ * 응답을 만들 때 상세 GET 을 부르지 않으므로 열람 행은 늘지 않는다(06:123).
+ */
+export interface PostWriteResult {
+  id: string
+  company_id: number
+  category_id: string | null
+  board_id: string
+  user_id: number | null
+  seq: number
+  state: PostWriteState
+  title: string | null
+  content: string
+  text_content: string
+  is_allow_comment: boolean
+  is_comment_alarm: boolean
+  is_send_alarm: boolean
+  is_notice_alarm: boolean
+  posted_at: string | null
+  schedule_at: string | null
+  schedule_at_tz: string | null
+  created_at: string
+  updated_at: string
+  delete_user_id: null
+  deleted_at: null
+  purged_at: null
+  is_writable: boolean
+  is_view: boolean
+  is_bookmark: boolean
+  is_like: boolean
+  comment_count: number
+  view_count: number
+  like_count: number
+}
+
 /**
  * GET .../posts/mine 쿼리(05:346-355). GET /posts 와 파라미터 집합이 «다르다» —
  * 선언된 건 6개뿐이고 검색·필터는 무시된다(05:373).
@@ -200,6 +280,7 @@ export interface PostDetail extends Omit<Post, 'files'> {
   files?: PostFile[]
   content: string // 본문 HTML 원문 — 렌더 전 반드시 살균한다
   schedule_at?: string | null
+  is_comment_alarm?: boolean
   is_mine?: boolean
   is_admin?: boolean // 회사 관리자 또는 «게시판» 관리자 — 삭제 권한 판정용
   is_allow_comment?: boolean

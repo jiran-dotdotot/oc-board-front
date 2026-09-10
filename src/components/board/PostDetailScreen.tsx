@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { Link, useNavigate, useParams } from '@tanstack/react-router'
+import { Link, useLocation, useNavigate, useParams } from '@tanstack/react-router'
 
 import { useTranslation } from 'react-i18next'
 
@@ -15,15 +15,7 @@ import { FilePreviewModal } from '@/components/common/FilePreviewModal'
 import { Modal } from '@/components/common/Modal'
 import { NoticeBadge } from '@/components/common/NoticeBadge'
 import { Toast } from '@/components/common/Toast'
-import {
-  BookmarkIcon,
-  ChevronIcon,
-  CloseIcon,
-  EyeIcon,
-  LinkIcon,
-  PrintIcon,
-  TrashIcon,
-} from '@/components/common/icons'
+import { BookmarkIcon, ChevronIcon, CloseIcon, EyeIcon, LinkIcon, PencilIcon, PrintIcon, TrashIcon } from '@/components/common/icons'
 import { useToast } from '@/components/common/useToast'
 import { useDownloadProgress, useDriveDownload } from '@/hooks/useDriveDownload'
 import { useMe } from '@/hooks/useMe'
@@ -49,6 +41,12 @@ export function PostDetailScreen() {
   const navigate = useNavigate()
   const { data: me } = useMe()
   const { toast, showToast, hideToast } = useToast()
+  // 글쓰기 화면이 저장 후 넘겨준 일회성 안내(history state) — 새로고침·공유 링크엔 남지 않는다.
+  const handoff = useLocation({ select: (l) => l.state.toast })
+  useEffect(() => {
+    if (handoff) showToast(t(handoff))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handoff])
 
   const { data: post, isLoading, isError, error, refetch } = usePostDetail(postId)
   const m = usePostDetailMutations(postId)
@@ -290,10 +288,18 @@ export function PostDetailScreen() {
               >
                 <PrintIcon className="size-[15px]" />
               </button>
-              {/* 수정 진입점은 «게시글 수정 기능이 구현될 때» 되살린다.
-                  /write 는 search 를 읽지 않는 새 글 폼이고 저장 mutation 자체가 없어,
-                  연필을 누르면 빈 종이가 뜨고 다시 쓴 내용도 저장되지 않는다.
-                  수정은 «작성자 본인만» — 관리자도 서버가 403 을 준다(docs/api/go/06-post-write.md:169). */}
+              {/* 수정은 «작성자 본인만» — 관리자도 서버가 403 을 준다(docs/api/go/06-post-write.md:40).
+                  레거시 연필도 is_mine 만 봤다(PostView.vue:383). 삭제(아래)와 조건이 다르다. */}
+              {post.is_mine && (
+                <button
+                  type="button"
+                  onClick={() => navigate({ to: '/write', search: { postId: post.id } })}
+                  aria-label={t('common-edit')}
+                  className={ICON_BTN}
+                >
+                  <PencilIcon className="size-[15px]" />
+                </button>
+              )}
               {/* 삭제는 작성자 «또는» 관리자(06:204) */}
               {(post.is_mine || post.is_admin) && (
                 <button

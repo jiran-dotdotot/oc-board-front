@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import { isAuthenticated } from '@/lib/authStorage'
 import {
+  createPost,
   deleteComment,
   deletePost,
   getPost,
@@ -12,8 +13,9 @@ import {
   togglePostBookmark,
   togglePostLike,
   updateComment,
+  updatePost,
 } from '@/services/postService'
-import type { PostDetail } from '@/types/post'
+import type { PostDetail, PostUpdateBody, PostWriteBody } from '@/types/post'
 import { appendComment, applyToggle, mapCommentTree } from '@/utils/postCache'
 
 /** 서버가 삭제를 전건 거부(200 affected=0)했을 때의 표식 — 「실패」와 「권한 없음」을 구분한다. */
@@ -159,6 +161,32 @@ export function usePostDetailMutations(postId: string | undefined) {
         qc.invalidateQueries({ queryKey: ['posts'] })
         qc.invalidateQueries({ queryKey: ['notices'] })
       },
+    }),
+  }
+}
+
+/**
+ * 글 작성·수정. 성공 후 목록·공지만 invalidate 한다 — 상세 캐시는 «화면»이 정리한다:
+ *  - 발행/수정 후 상세로 이동: `qc.removeQueries(['post', id])` 뒤 이동 → 상세가 1회 읽는다
+ *    (ACT 글이면 조회수 +1 — 레거시도 같다). write 응답에 badges/files/thumbnail 관계가 없어
+ *    (06-post-write.md:90) 캐시 «패치»로는 화면을 완성할 수 없다(BR-042).
+ *  - 임시저장 뒤 머무름: `invalidateQueries(['post', id])` — SAVE/SCHEDULED 는 열람을 기록하지 않는다
+ *    (05-post-read.md:474) 라 뱃지 id 등을 안전하게 다시 받는다.
+ */
+export function usePostWriteMutations() {
+  const qc = useQueryClient()
+  const settle = () => {
+    qc.invalidateQueries({ queryKey: ['posts'] })
+    qc.invalidateQueries({ queryKey: ['notices'] })
+  }
+  return {
+    create: useMutation({
+      mutationFn: (v: { boardId: string; body: PostWriteBody }) => createPost(v.boardId, v.body),
+      onSuccess: settle,
+    }),
+    update: useMutation({
+      mutationFn: (v: { postId: string; body: PostUpdateBody }) => updatePost(v.postId, v.body),
+      onSuccess: settle,
     }),
   }
 }

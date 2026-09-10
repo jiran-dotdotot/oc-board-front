@@ -6,7 +6,6 @@ import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 
 import { NOTICE_TOP_CAP } from './constants'
-import { BOARDS, DEFAULT_BOARD } from './listData'
 import type { BoardListSearch, BoardRow, BoardView } from './listData'
 import { BlockedModal } from '@/components/common/BlockedModal'
 import { Dropdown } from '@/components/common/Dropdown'
@@ -158,7 +157,6 @@ export function BoardListScreen() {
   const hiddenNoticeCount = Math.max(0, notices.length - NOTICE_TOP_CAP)
 
   // 게시판 헤더: 이름은 GET /board/{board}, 즐겨찾기는 북마크 목록 + 공용 토글 mutation.
-  // 슬러그 데모 경로(/board/notice)는 UUID가 아니라 쿼리가 꺼지므로 mock 이름으로 폴백한다.
   const { data: boardDetail, error: boardError } = useBoard(boardIdParam)
   // 삭제된 게시판: 알리고 → 사이드바에서 지우고 → 홈으로. (레거시 onMounted .catch(404) 규약)
   // 자동 리다이렉트만 하면 왜 튕겼는지 알 수 없어, 확인 버튼이 있는 모달로 막고 이동한다.
@@ -171,9 +169,7 @@ export function BoardListScreen() {
       : boardErrStatus === 403
         ? t('list-board-forbidden')
         : null
-  const boardName = isRecent
-    ? t('home-recent-posts')
-    : (boardDetail?.title ?? (BOARDS[boardId] ?? DEFAULT_BOARD).name)
+  const boardName = isRecent ? t('home-recent-posts') : (boardDetail?.title ?? '')
   // 뷰타입: URL 지정이 없으면 게시판에 설정된 type 을 쓴다 — ALBUM 게시판은 앨범형으로 열린다.
   // (레거시 onMounted 의 `if (!route.query.viewType) viewType = board.type` 과 같은 규약)
   const boardType = boardDetail?.type
@@ -297,7 +293,7 @@ export function BoardListScreen() {
       ) : isLoading ? (
         <ListSkeleton />
       ) : isEmpty ? (
-        <EmptyState canWrite={!!boardDetail?.is_writable} />
+        <EmptyState canWrite={!!boardDetail?.is_writable} boardId={boardId} />
       ) : (
         <>
           {view === 'BOARD' && (
@@ -444,7 +440,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 /* ── 빈 목록 상태 ── */
 // canWrite: GET /board/{board} 의 is_writable — 「글쓰기」 CTA 는 쓸 수 있을 때만 뜬다
 // (디자인 B-7 확정. 검색·휴지통 빈 상태엔 CTA 자체가 없다)
-function EmptyState({ canWrite }: { canWrite: boolean }) {
+function EmptyState({ canWrite, boardId }: { canWrite: boolean; boardId: string }) {
   const { t } = useTranslation()
   return (
     <div className="flex flex-col items-center gap-3.5 rounded-lg border border-gray-200 bg-card px-5 py-16">
@@ -466,6 +462,7 @@ function EmptyState({ canWrite }: { canWrite: boolean }) {
       {canWrite && (
         <Link
           to="/write"
+          search={{ boardId }}
           className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-4 text-s font-semibold text-white hover:bg-ov-blue-700"
         >
           <PlusIcon />
