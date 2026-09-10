@@ -26,6 +26,14 @@ function boardScope(config: AxiosRequestConfig) {
  * 리터럴이다(backend-replies/staleness-ebff9af.md §3). 게시판 리소스와 경로 모양이 다르므로
  * `boardScope` 를 재사용하지 않는다.
  */
+export async function getCompanyResource<T>(
+  path: string,
+  config: AxiosRequestConfig = {},
+): Promise<AxiosResponse<T>> {
+  const { identity, config: scopedConfig } = sessionScope(config)
+  return apiClient.get<T>(`/board/companies/${identity.companyId}${path}`, scopedConfig)
+}
+
 export async function patchCompanyResource<T>(
   path: string,
   body?: unknown,

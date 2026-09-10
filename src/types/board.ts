@@ -10,6 +10,12 @@ export interface BoardCreatePayload {
   type: BoardType
   title: string
   category_id?: string | null
+  /** 생략하면 ALL. 「조직 지정」은 MEMBER 다 — 04-board.md:52 의 판정표 참조. */
+  read_permission?: 'ALL' | 'ADMIN' | 'MEMBER'
+  /** 공용 게시판(`category_id: null`)에서는 서버가 grant 3종을 무시한다. */
+  insert_board_department_id?: number[]
+  insert_board_member_user_id?: number[]
+  insert_board_admin_user_id?: number[]
   description?: string
   is_active?: boolean
   is_post_alarm?: boolean
@@ -38,6 +44,10 @@ export interface BoardUpdatePayload {
   size_limit?: number | null
   size_limit_per_file?: number | null
   except_extension?: string[]
+  read_permission?: 'ALL' | 'ADMIN' | 'MEMBER'
+  insert_board_department_id?: number[]
+  insert_board_member_user_id?: number[]
+  insert_board_admin_user_id?: number[]
   delete_board_admin_user_id?: number[]
   delete_board_member_user_id?: number[]
   delete_board_department_id?: number[]

@@ -40,14 +40,21 @@ export interface SettingsNode {
 
 export type DropPos = 'before' | 'after'
 
+/** 공개 범위. `all` = 전체 공개, `org` = 조직 지정(부서·구성원 grant). */
+export type ScopeMode = 'all' | 'org'
+
 /**
  * 추가 모달 초안.
- * 「공개 범위」·「관리자」는 조직도 API 가 member 토큰 전용이라 고를 수 없다(BR-012)
- * → 생성은 항상 「전체 공개」이고 초안에도 그 필드가 없다.
+ * 「공개 범위」는 정본에서 **필수**(`*`)다 — `org` 인데 대상이 비면 저장을 막는다.
  */
 export interface AddDraft {
   name: string
   desc: string
+  scope: ScopeMode
+  /** 조직 지정일 때 고른 부서·구성원. 게시판은 상위 카테고리 범위 안에서만 고를 수 있다. */
+  org: import('@/types/department').OrgSelection
+  /** 관리자로 지정할 사용자 id. 부서 grant 는 없다(사용자만). */
+  admins: number[]
   /** `cat:<id>` 또는 `fol:<id>`. 카테고리 추가에는 쓰지 않는다. */
   loc: string
   btype: Exclude<import('@/types/category').BoardType, 'DRIVE'>

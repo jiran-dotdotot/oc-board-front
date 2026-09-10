@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
+import { OrgPickerModal } from './OrgPickerModal'
 import {
   BTYPE_KEY,
   BTYPE_OPTIONS,
@@ -10,41 +11,53 @@ import {
   TOTAL_MAX_OPTS,
   TYPE_KEY,
 } from './constants'
-import type { NodeDraft, SettingsNode } from './types'
+import type { NodeDraft, ScopeMode, SettingsNode } from './types'
 import { CapChip, RadioRow, Section } from './ui'
 import { Switch } from '@/components/common/Switch'
-import { PlusMini, TrashIcon, XMini } from '@/components/common/icons'
+import { OrgIcon, PlusMini, TrashIcon, XMini } from '@/components/common/icons'
 import { fmtSize } from '@/components/drive/driveData'
 import type { BoardDetail, CategoryDetail } from '@/types/category'
+import type { OrgSelection } from '@/types/department'
 import { draftOf } from '@/utils/settingsPayload'
 import { bytesToLabel, capOptions, labelToBytes } from '@/utils/settingsTree'
 
 /**
  * 우측 상세 패널. 이름·공개범위·관리자는 4종 공통이고 게시판은 타입·알림·사용여부,
- * 자료실은 용량·확장자·알림이 붙는다(정본 web:1265-1339).
+ * 자료실은 용량·확장자·알림이 붙는다(정본 화면 09 L200-230).
  *
- * ⚠️ 공개 범위·관리자는 **표시와 제거만** 된다 — 조직도 API 가 member 토큰 전용이라
- *    새로 고를 방법이 없다(BR-012).
+ * 공개 범위·관리자는 조직도 피커로 고른다. 이름·설정과 달리 **저장 버튼을 거치지 않고**
+ * 피커의 「확인」에서 바로 반영된다 — 기존 제거 동작(즉시 PUT)과 같은 규칙이다.
  */
 export function NodeDetailPanel({
   node,
   detail,
   meName,
   saving,
+  scopeMode,
+  orgCategoryId,
   onSave,
   onDelete,
-  onRemoveGrant,
+  onScopeMode,
+  onScopeSelection,
+  onAdmins,
 }: {
   node: SettingsNode
   detail: BoardDetail | CategoryDetail | undefined
   meName: string
   saving: boolean
+  /** 전체 공개 / 조직 지정. 서버 값에 「지금 고른 값」을 얹어 호출부가 정한다. */
+  scopeMode: ScopeMode
+  /** 조직도를 가지치기할 상위 카테고리(없으면 전사). */
+  orgCategoryId: string | null
   onSave: (draft: NodeDraft) => void
   onDelete: () => void
-  onRemoveGrant: (kind: 'admin' | 'member' | 'department', id: number) => void
+  onScopeMode: (next: ScopeMode) => void
+  onScopeSelection: (next: OrgSelection) => void
+  onAdmins: (next: number[]) => void
 }) {
   const { t } = useTranslation()
   const [extInput, setExtInput] = useState('')
+  const [picker, setPicker] = useState<'scope' | 'admin' | null>(null)
 
   // 노드가 바뀌면 초안을 그 노드의 값으로 다시 시작한다.
   // effect 로 되돌리면 옛 초안이 한 프레임 그려진다 → 렌더 중 파생(React 공식 패턴).
@@ -62,6 +75,18 @@ export function NodeDetailPanel({
   const admins = grantsOf(detail, 'admin')
   const members = grantsOf(detail, 'member')
   const departments = departmentsOf(detail)
+  const selection: OrgSelection = {
+    departmentIds: departments.map((d) => d.id),
+    userIds: members.map((u) => u.id),
+  }
+  // 트리거 라벨. 총 인원수는 부서 인원을 모르는 상태라 피커 안(총 N명)에서만 보여 준다.
+  const first = departments[0]?.name ?? members[0]?.name ?? ''
+  const rest = departments.length + members.length - 1
+  const scopeLabel = !first
+    ? t('admin-org-pick')
+    : rest > 0
+      ? t('admin-org-pick-more', { name: first, n: rest })
+      : t('admin-org-pick-one', { name: first })
 
   const addExt = () => {
     const v = extInput.trim()
@@ -102,42 +127,49 @@ export function NodeDetailPanel({
         )}
       </div>
 
-      {/* 공개 범위 — 지정된 대상 표시 + 제거 */}
+      {/* 공개 범위 — 정본 라디오 + 조직 지정일 때만 피커 트리거 */}
       <Section title={t('admin-scope')}>
         {node.fixed ? (
           <span className="text-s text-gray-500">{t('admin-fixed-scope-note')}</span>
         ) : (
           <>
-            <div className="flex flex-wrap items-center gap-2">
-              {members.length === 0 && departments.length === 0 ? (
-                <span className="text-s text-gray-500">{t('admin-grant-empty')}</span>
-              ) : (
-                <>
-                  {departments.map((d) => (
-                    <GrantChip
-                      key={`d${d.id}`}
-                      name={d.name}
-                      tone="blue"
-                      onRemove={readOnly ? undefined : () => onRemoveGrant('department', d.id)}
-                    />
-                  ))}
-                  {members.map((u) => (
-                    <GrantChip
-                      key={`m${u.id}`}
-                      name={u.name}
-                      tone="gray"
-                      onRemove={readOnly ? undefined : () => onRemoveGrant('member', u.id)}
-                    />
-                  ))}
-                </>
+            <div className="flex flex-wrap items-center gap-[18px]">
+              <div
+                role="radiogroup"
+                aria-label={t('admin-scope')}
+                className="flex flex-wrap items-center gap-[18px]"
+              >
+                <RadioRow
+                  label={t('admin-scope-all')}
+                  on={scopeMode === 'all'}
+                  onClick={() => onScopeMode('all')}
+                  disabled={readOnly}
+                />
+                <RadioRow
+                  label={t('admin-scope-org')}
+                  on={scopeMode === 'org'}
+                  onClick={() => onScopeMode('org')}
+                  disabled={readOnly}
+                />
+              </div>
+              {scopeMode === 'org' && (
+                <button
+                  type="button"
+                  disabled={readOnly}
+                  onClick={() => setPicker('scope')}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-gray-200 bg-card px-3 text-s font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                >
+                  <OrgIcon className="size-3.5 text-primary" />
+                  {scopeLabel}
+                </button>
               )}
             </div>
-            <span className="text-xs text-gray-400">{t('admin-grant-remove-only')}</span>
+            <span className="text-xs text-gray-400">{t('admin-scope-sub-hint')}</span>
           </>
         )}
       </Section>
 
-      {/* 관리자 */}
+      {/* 관리자 — 본인 칩은 제거할 수 없다(정본). 추가는 피커 admin 모드. */}
       {!node.fixed && (
         <Section title={t('admin-managers')}>
           <div className="flex flex-wrap items-center gap-2">
@@ -147,19 +179,22 @@ export function NodeDetailPanel({
                 key={`a${u.id}`}
                 name={u.name}
                 tone="green"
-                onRemove={readOnly ? undefined : () => onRemoveGrant('admin', u.id)}
+                onRemove={
+                  readOnly
+                    ? undefined
+                    : () => onAdmins(admins.filter((a) => a.id !== u.id).map((a) => a.id))
+                }
               />
             ))}
-            {/* 조직도를 못 읽어 «고를» 수 없다 → 비활성 + 사유(BR-012) */}
             <button
               type="button"
-              disabled
-              className="inline-flex h-8 items-center gap-1.5 rounded-2xl border border-dashed border-gray-300 px-[13px] text-s font-semibold text-gray-400 opacity-60"
+              disabled={readOnly}
+              onClick={() => setPicker('admin')}
+              className="inline-flex h-8 items-center gap-1.5 rounded-2xl border border-dashed border-gray-300 px-[13px] text-s font-semibold text-gray-500 hover:bg-gray-50 disabled:opacity-40"
             >
               <PlusMini /> {t('admin-add-manager')}
             </button>
           </div>
-          <span className="text-xs text-gray-400">{t('admin-grant-add-blocked')}</span>
         </Section>
       )}
 
@@ -287,6 +322,22 @@ export function NodeDetailPanel({
             {t('common-save')}
           </button>
         </div>
+      )}
+
+      {picker && (
+        <OrgPickerModal
+          mode={picker === 'admin' ? 'admin' : 'scope'}
+          categoryId={orgCategoryId}
+          initial={
+            picker === 'admin' ? { departmentIds: [], userIds: admins.map((a) => a.id) } : selection
+          }
+          onClose={() => setPicker(null)}
+          onConfirm={(next) => {
+            setPicker(null)
+            if (picker === 'admin') onAdmins(next.userIds)
+            else onScopeSelection(next)
+          }}
+        />
       )}
     </div>
   )

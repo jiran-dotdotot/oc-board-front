@@ -108,6 +108,65 @@ const companySetting = () => ({
 })
 const apply = (b: ReturnType<typeof board>) => ({ ...b, ...(saved.get(b.id) ?? {}) })
 
+/** 조직도 — 루트 1개 + 부서 2개(정본 응답 모양: members=직속, total_members=자신+하위). */
+const orgMember = (userId: number, deptId: number, name: string) => ({
+  id: userId,
+  company_id: 7,
+  department_id: deptId,
+  user_id: userId,
+  rank_id: null,
+  role_id: null,
+  position: 0,
+  leader: false,
+  user: {
+    id: userId,
+    name,
+    profile_image_id: null,
+    disabled_at: null,
+    deleted_at: null,
+    profile_src: null,
+  },
+  rank: null,
+  role: null,
+  department: null,
+})
+const jiwoo = orgMember(21, 3, '김지우')
+const seojun = orgMember(9, 4, '박서준')
+const orgTree = {
+  id: 1,
+  parent_id: null,
+  name: '테스트 회사',
+  breadcrumbs: '{1}',
+  member_count: 2,
+  is_category_department: true,
+  members: [],
+  total_members: [jiwoo, seojun],
+  departments: [
+    {
+      id: 3,
+      parent_id: 1,
+      name: '경영지원팀',
+      breadcrumbs: '{1,3}',
+      member_count: 1,
+      is_category_department: true,
+      members: [jiwoo],
+      total_members: [jiwoo],
+      departments: [],
+    },
+    {
+      id: 4,
+      parent_id: 1,
+      name: '개발팀',
+      breadcrumbs: '{1,4}',
+      member_count: 1,
+      is_category_department: true,
+      members: [seojun],
+      total_members: [seojun],
+      departments: [],
+    },
+  ],
+}
+
 const treeOf = () => ({
   public_boards: [apply(board(PB, '전사 공지', 1))],
   categories: [
@@ -235,6 +294,8 @@ async function setup(page: Page, context: BrowserContext, admin: boolean) {
       // `/categories/management` 는 봉투가 아니라 **직접 배열**이고 공용 게시판이 없다.
       case scope + '/categories/management':
         return ok(treeOf().categories)
+      case '/api/v1/board/companies/7/departments':
+        return ok(orgTree)
       case scope + '/bookmarks':
         return ok({ data: [], current_page: 1, last_page: 1, per_page: 100, total: 0 })
       default:
@@ -252,7 +313,7 @@ async function setup(page: Page, context: BrowserContext, admin: boolean) {
             can_manage: true,
             category_admins: [],
             category_members: [],
-            category_departments: [],
+            category_departments: [{ department_id: 3, department: { id: 3, name: '경영지원팀' } }],
           })
         return ok({ data: [], current_page: 1, last_page: 1, per_page: 10, total: 0 })
     }
@@ -339,11 +400,40 @@ test('회사 관리자 — 탭이 URL 에 실리고, 트리·저장·정렬·삭
   await expect(page.getByRole('button', { name: '500MB' })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByText(/현재 사용량 2/)).toBeVisible()
 
-  // ⑧ 공개 범위·관리자는 표시·제거만 — 추가는 조직도 부재로 비활성 + 사유 텍스트(BR-012)
-  await expect(page.getByRole('button', { name: '관리자 추가' })).toBeDisabled()
-  await expect(
-    page.getByText(/공개 범위·관리자 지정은 현재 서버 계약상 선택할 수 없습니다/),
-  ).toBeVisible()
+  // ⑧ 공개 범위 — 조직 지정으로 바꾸고 피커에서 부서를 고르면 등급과 grant 가 함께 나간다
+  await treeEl.getByRole('treeitem', { name: '자유게시판' }).click()
+  await page.getByRole('radio', { name: '조직 지정' }).click()
+  await page.getByRole('button', { name: /조직도에서 선택/ }).click()
+  const picker = page.getByRole('dialog')
+  await expect(picker.getByText('공개 범위 선택')).toBeVisible()
+  // 루트는 펼쳐진 채로 뜬다 — 한 줄만 보이면 무엇을 고르는 화면인지 알 수 없다.
+  await picker.getByRole('treeitem', { name: /개발팀/ }).click()
+  // 기존 grant(경영지원팀 1명)에 개발팀 1명이 더해진다.
+  await expect(picker.getByText('총 2명')).toBeVisible()
+  await picker.getByRole('button', { name: '확인' }).click()
+  await pollWire(wires, 'PUT', '/boards/' + B1).toEqual({
+    insert_board_department_id: [4],
+    read_permission: 'MEMBER',
+  })
+
+  // ⑨ 관리자 추가 — 부서를 체크하면 소속 구성원이 사용자 id 로 실린다(부서 grant 가 없다)
+  await page.getByRole('button', { name: '관리자 추가' }).click()
+  const admPicker = page.getByRole('dialog')
+  await expect(admPicker.getByText('관리자 지정')).toBeVisible()
+  await admPicker.getByRole('treeitem', { name: /경영지원팀/ }).click()
+  await admPicker.getByRole('button', { name: '확인' }).click()
+  // 기존 관리자(9)는 그대로 두고 새로 고른 21 만 추가된다.
+  await pollWire(wires, 'PUT', '/boards/' + B1).toEqual({ insert_board_admin_user_id: [21] })
+
+  // ⑩ 카테고리를 전체 공개로 되돌리면 grant 삭제 전파를 먼저 알린다
+  await treeEl.getByRole('treeitem', { name: '경영지원' }).click()
+  await page.getByRole('radio', { name: '전체 공개' }).click()
+  const scopeDialog = page.getByRole('alertdialog')
+  await expect(scopeDialog).toContainText('하위 폴더와 그 안의 게시판에도 함께 적용됩니다')
+  await scopeDialog.getByRole('button', { name: '확인' }).click()
+  await pollWire(wires, 'PUT', '/categories/' + C1).toEqual({
+    delete_category_department_id: [3],
+  })
 
   expect(errors).toEqual([])
 })
@@ -405,5 +495,39 @@ test('메인화면 — 회사 관리자만 기간을 바꿀 수 있고, 저장�
   // 저장 뒤에는 서버 값과 같아져 다시 비활성이다(같은 값을 두 번 보내지 않는다).
   await expect(save).toBeDisabled()
   await expect(page.getByText('저장되었습니다.')).toBeVisible()
+  expect(errors).toEqual([])
+})
+
+test('추가 모달 — 조직 지정은 대상이 있어야 저장되고, 고른 대상이 생성 요청에 실린다', async ({
+  page,
+  context,
+}) => {
+  const { wires, errors } = await setup(page, context, true)
+  await page.goto('/settings?tab=content')
+
+  await page.getByRole('button', { name: '추가', exact: true }).click()
+  await page.getByRole('button', { name: '게시판', exact: true }).click()
+  const modal = page.getByRole('dialog')
+  await expect(modal).toBeVisible()
+  await modal.getByRole('textbox').first().fill('신규 게시판')
+
+  // 조직 지정인데 대상이 비면 저장을 막는다(정본은 공개 범위가 필수 `*`).
+  await modal.getByRole('radio', { name: '조직 지정' }).click()
+  await modal.getByRole('button', { name: '추가', exact: true }).click()
+  await expect(modal.getByText('공개 범위를 선택해주세요.')).toBeVisible()
+  expect(lastWire(wires, 'POST', '/boards')).toBeUndefined()
+
+  // 부서를 고르면 등급·grant 가 함께 실린다. 위치 기본값은 첫 카테고리(경영지원)다.
+  await modal.getByRole('treeitem', { name: /개발팀/ }).click()
+  await modal.getByRole('button', { name: '추가', exact: true }).click()
+  await pollWire(wires, 'POST', '/boards').toEqual({
+    type: 'BOARD',
+    title: '신규 게시판',
+    category_id: C1,
+    is_post_alarm: true,
+    is_active: true,
+    read_permission: 'MEMBER',
+    insert_board_department_id: [4],
+  })
   expect(errors).toEqual([])
 })

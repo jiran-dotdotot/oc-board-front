@@ -56,6 +56,9 @@ export function emptyDraft(loc: string): AddDraft {
   return {
     name: '',
     desc: '',
+    scope: 'all',
+    org: { departmentIds: [], userIds: [] },
+    admins: [],
     loc,
     btype: 'BOARD',
     alarm: true,

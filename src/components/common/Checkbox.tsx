@@ -2,6 +2,22 @@ import { CheckIcon, DashIcon } from '@/components/common/icons'
 
 /* 목록 선택 체크박스 (정본: 15px, radius 4, border 1.5px, 체크는 stroke 3.4).
    자료실·마이페이지가 함께 쓴다 — 개별 화면에 복사하지 말 것. */
+/** 체크박스 «모양»만. 행 전체가 버튼인 트리처럼 버튼 안에 넣어야 할 때 쓴다
+    (button 안에 button 은 잘못된 DOM 이다). 상태 전달은 감싼 컨트롤의 aria 가 맡는다. */
+export function CheckMark({ checked, mixed }: { checked: boolean; mixed?: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={[
+        'inline-flex size-[15px] flex-none items-center justify-center rounded border-[1.5px] text-white',
+        checked || mixed ? 'border-primary bg-primary' : 'border-gray-300 bg-card',
+      ].join(' ')}
+    >
+      {checked ? <CheckIcon strokeWidth={3.4} /> : mixed ? <DashIcon /> : null}
+    </span>
+  )
+}
+
 export function Checkbox({
   checked,
   mixed,

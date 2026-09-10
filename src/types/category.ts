@@ -69,9 +69,9 @@ export function isDriveBoard(b: CategoryBoard): boolean {
 }
 
 /* ── 권한 부여 대상 (grant) ──
-   조직도 API(`GET /companies/{cid}/departments`)는 member 토큰 전용이라 이 앱에서 401 이다
-   (BR-012) → **새로 «고를» 수는 없고**, 아래 목록으로 현재 지정된 대상을 보여주고
-   지우는 것만 가능하다. 근거: docs/api/go/04-board.md:116-155 · 03-category.md:86-110 */
+   조직도(`GET {company}/departments`)가 member 계약이라 이 앱에서 호출 가능해졌다
+   (실측 2026-09-10 200) → 목록 표시·제거뿐 아니라 **추가**도 피커로 한다.
+   근거: docs/api/go/04-board.md:116-155 · 03-category.md:86-110 */
 
 /** grant 에 실려 오는 사용자. `name` 에는 서버가 `(퇴직)`/`(중지)` 접미사를 붙인다. */
 export interface GrantUser {
@@ -133,6 +133,9 @@ export interface CategoryCreatePayload {
   parent_category_id?: string | null
   is_active?: boolean
   position?: number
+  insert_category_department_id?: number[]
+  insert_category_member_user_id?: number[]
+  insert_category_admin_user_id?: number[]
 }
 
 /** `PUT {S}/categories/{id}` — 생략은 유지. `parent_category_id` 는 보내도 무시된다. */
@@ -140,6 +143,10 @@ export interface CategoryUpdatePayload {
   name?: string
   is_active?: boolean
   position?: number
+  /** ⚠️ grant 추가·삭제는 **직속 자식 카테고리와 그 게시판까지 전파**된다(03-category.md:130). */
+  insert_category_department_id?: number[]
+  insert_category_member_user_id?: number[]
+  insert_category_admin_user_id?: number[]
   delete_category_admin_user_id?: number[]
   delete_category_member_user_id?: number[]
   delete_category_department_id?: number[]
@@ -153,6 +160,12 @@ export interface CategoryUpdatePayload {
 export interface CategoryTreeReorderPayload {
   update_category_position?: Record<string, number>
   update_board_position?: Record<string, number>
+}
+
+/** 생성·수정 응답 공통 — 상위 허용 집합 밖이거나 타 회사라 **조용히 무시된** 대상. */
+export interface IgnoredGrants {
+  ignored_user_ids?: number[]
+  ignored_department_ids?: number[]
 }
 
 export interface CategoryTreeReorderResult {
