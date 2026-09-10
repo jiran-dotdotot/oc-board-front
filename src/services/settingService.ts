@@ -1,18 +1,45 @@
 // 환경 설정 API 서비스.
-// ⚠ 개인 알림·회사 설정은 Go 에서 management 도메인(/api/v1/companies/{company_id}/settings…)으로
-//   옮겨졌고 **OfficeWave member 토큰 전용**이다 — "board 토큰을 이 경로에 재사용하지 않는다"
-//   (docs/api/go/02-management.md:11). 이 앱은 /board/login 으로 board 토큰만 받으므로
-//   호출 자체가 불가능하다(실측 2026-09-09: board 토큰으로 401 UNAUTHORIZED).
-//   → 화면에서 해당 컨트롤을 비활성으로 두고, 계약 요청은 BR-012 로 올렸다.
-//   여기에 임의 경로/토큰을 발명하지 않는다.
-import { putBoardResource } from '@/lib/boardApi'
-import type { BoardAlarmPayload, UserBoardSetting } from '@/types/setting'
+// 개인 알림·회사 설정은 관리 도메인(`{company}/settings…`)이고 **member 계약**이다.
+// `ebff9af` 이전에는 이 앱이 board 토큰만 받아 호출 자체가 불가능했으나(BR-012),
+// 로그인을 OfficeWave 로 전환하면서 그 토큰을 갖게 됐다 → 화면의 비활성 게이트를 걷었다.
+// 실측 2026-09-10: PATCH `{company}/settings/users/me` · PATCH `{company}/settings` 모두 200.
+import { patchCompanyResource, putBoardResource } from '@/lib/boardApi'
+import type {
+  BoardAlarmPayload,
+  CompanySettingPayload,
+  UserBoardSetting,
+  UserSettingPayload,
+} from '@/types/setting'
+import type { CompanySetting, CompanyUserSetting } from '@/types/user'
 
 /**
- * 개인 알림·회사 설정 저장이 이 앱의 토큰으로 «불가능»함을 화면에 알리는 상수.
- * member 자격 공급 계약이 생기면(BR-012) 이 상수를 지우고 mutation 을 붙인다.
+ * 본인 개인 알림 4종. 보낸 키만 바뀌고 생략한 키는 유지된다(legacy.Bool).
+ * 경로에 `user_id` 가 없다 — 본인은 `/users/me` 리터럴이다.
  */
-export const MEMBER_SETTINGS_UNSUPPORTED = true
+export async function updateUserSetting(
+  payload: UserSettingPayload,
+  lang: string,
+): Promise<CompanyUserSetting> {
+  const { data } = await patchCompanyResource<CompanyUserSetting>('/settings/users/me', payload, {
+    headers: { Lang: lang },
+  })
+  return data
+}
+
+/**
+ * 회사 설정(메인화면 최신글 기간). **회사 관리자만** 통과한다 — 권한은 서버가 판정한다.
+ * `latest_post_day` 는 HTTP 검증이 없어 DB CHECK 위반이 500 으로 나온다(BR-018) →
+ * 화면이 정해진 보기(DAY_OPTS) 밖의 값을 보내지 않는다.
+ */
+export async function updateCompanySetting(
+  payload: CompanySettingPayload,
+  lang: string,
+): Promise<CompanySetting> {
+  const { data } = await patchCompanyResource<CompanySetting>('/settings', payload, {
+    headers: { Lang: lang },
+  })
+  return data
+}
 
 // 게시판별 '내' 알림 설정. 최초 호출 시 레코드가 생성되며 미지정 플래그는 유지된다.
 // 게시판 전체의 is_post_alarm/is_notice_alarm 과는 «별개»인 본인 설정이다

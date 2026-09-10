@@ -401,7 +401,7 @@
   "detail-dl-cancel-keep": "ダウンロードを続ける",
   "detail-comment-multiline-hint": "Enterで投稿・Shift+Enterで改行",
   "detail-comment-menu": "{{name}}さんのコメントメニュー",
-  "env-member-token-only": "この設定は現在のサーバー契約では保存できません（別の認証が必要です）。",
+  "env-save-error": "設定を保存できませんでした。",
   "admin-grant-add-blocked": "公開範囲・管理者の指定は現在のサーバー契約では選択できません (別の認証が必要です)。全体公開で作成されます。",
   "admin-grant-remove-only": "現在指定されている対象の表示・削除のみ可能です。追加には別の認証が必要です。",
   "admin-grant-empty": "指定された対象がありません — 全体公開です。",

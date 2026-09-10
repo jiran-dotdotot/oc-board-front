@@ -6,8 +6,7 @@ import { Switch } from '@/components/common/Switch'
 import { BoardIcon, DriveIcon } from '@/components/common/icons'
 import { useMemberCategories } from '@/hooks/useCategories'
 import { useMe } from '@/hooks/useMe'
-import { useBoardAlarmMutation } from '@/hooks/useSettings'
-import { MEMBER_SETTINGS_UNSUPPORTED } from '@/services/settingService'
+import { useBoardAlarmMutation, useUserSettingMutation } from '@/hooks/useSettings'
 import { type CategoryBoard, isDriveBoard } from '@/types/category'
 import type { UserSettingPayload } from '@/types/setting'
 import { flattenCategories } from '@/utils/category'
@@ -15,22 +14,39 @@ import { flattenCategories } from '@/utils/category'
 type UserFlag = keyof UserSettingPayload
 type BoardFlag = 'is_post_alarm' | 'is_notice_alarm'
 
-// 환경 설정 › 일반. 개인 알림 4종(POST /management/user-setting/{companySetting})과
-// 게시판별 알림(POST /board/member/{board}) — 둘 다 토글 즉시 저장.
-export function GeneralTab({ onToast }: { onToast: (msg: string) => void }) {
+// 환경 설정 › 일반. 개인 알림 4종(PATCH {company}/settings/users/me)과
+// 게시판별 알림(PUT {S}/boards/{id}/my-notification) — 둘 다 토글 즉시 저장.
+export function GeneralTab({
+  onToast,
+}: {
+  onToast: (msg: string, tone?: 'success' | 'error') => void
+}) {
   const { t } = useTranslation()
   const { data: me } = useMe()
   const { data: tree, isError } = useMemberCategories()
 
   const us = me?.company_user_setting
   const boardMut = useBoardAlarmMutation()
+  const userMut = useUserSettingMutation()
 
   const [boardDraft, setBoardDraft] = useState<Record<string, boolean>>({})
+  const [userDraft, setUserDraft] = useState<Partial<Record<UserFlag, boolean>>>({})
 
-  // 개인 설정 기본값은 true (서버 기본값과 동일). 저장 경로가 없어 «읽기 전용»이다.
-  const userOn = (k: UserFlag) => us?.[k] !== false
-  // 저장은 member 토큰 전용 경로라 이 앱에서 불가능하다 — 스위치는 비활성 + 사유 문구다.
-  const noop = () => {}
+  // 개인 설정 기본값은 true (서버 기본값과 동일). 저장 실패는 draft 를 되돌린다.
+  const userOn = (k: UserFlag) => userDraft[k] ?? us?.[k] !== false
+  const setUser = (k: UserFlag, next: boolean) => {
+    setUserDraft((d) => ({ ...d, [k]: next }))
+    // 보낸 키만 바뀐다 — 4종을 한꺼번에 덮어쓰지 않는다.
+    userMut.mutate(
+      { [k]: next },
+      {
+        onError: () => {
+          setUserDraft((d) => ({ ...d, [k]: !next }))
+          onToast(t('env-save-error'), 'error')
+        },
+      },
+    )
+  }
 
   // 게시판별 값도 서버가 COALESCE(..., true) 로 내려준다 → falsy만 off
   const boardKey = (id: string, f: BoardFlag) => `${id}:${f}`
@@ -47,7 +63,7 @@ export function GeneralTab({ onToast }: { onToast: (msg: string) => void }) {
       {
         onError: () => {
           setBoardDraft((d) => ({ ...d, [key]: !next }))
-          onToast(t('env-error'))
+          onToast(t('env-save-error'), 'error')
         },
       },
     )
@@ -69,18 +85,14 @@ export function GeneralTab({ onToast }: { onToast: (msg: string) => void }) {
         title={t('env-gen-comment')}
         desc={t('env-gen-comment-desc')}
         on={userOn('is_comment_alarm')}
-        onClick={noop}
+        onClick={() => setUser('is_comment_alarm', !userOn('is_comment_alarm'))}
         divider
-        disabled={MEMBER_SETTINGS_UNSUPPORTED}
-        unsupportedDesc={t('env-member-token-only')}
       />
       <SwitchRow
         title={t('env-gen-like')}
         desc={t('env-gen-like-desc')}
         on={userOn('is_like_alarm')}
-        onClick={noop}
-        disabled={MEMBER_SETTINGS_UNSUPPORTED}
-        unsupportedDesc={t('env-member-token-only')}
+        onClick={() => setUser('is_like_alarm', !userOn('is_like_alarm'))}
       />
 
       <div className="flex flex-wrap items-start gap-3 pt-[18px]">
@@ -94,20 +106,14 @@ export function GeneralTab({ onToast }: { onToast: (msg: string) => void }) {
             <InlineSwitch
               label={t('env-gen-allow-notice')}
               on={userOn('is_notice_alarm')}
-              onClick={noop}
-              disabled={MEMBER_SETTINGS_UNSUPPORTED}
+              onClick={() => setUser('is_notice_alarm', !userOn('is_notice_alarm'))}
             />
             <InlineSwitch
               label={t('env-gen-allow-alarm')}
               on={userOn('is_post_alarm')}
-              onClick={noop}
-              disabled={MEMBER_SETTINGS_UNSUPPORTED}
+              onClick={() => setUser('is_post_alarm', !userOn('is_post_alarm'))}
             />
           </div>
-          {/* 비활성 이유를 색·opacity 밖으로 — 이 두 스위치에는 사유 문구가 없었다. */}
-          {MEMBER_SETTINGS_UNSUPPORTED && (
-            <span className="text-2xs text-gray-400">{t('env-member-token-only')}</span>
-          )}
         </div>
       </div>
 
@@ -202,7 +208,6 @@ function SwitchRow({
   onClick,
   divider,
   disabled,
-  unsupportedDesc,
 }: {
   title: string
   desc: string
@@ -210,7 +215,6 @@ function SwitchRow({
   onClick: () => void
   divider?: boolean
   disabled?: boolean
-  unsupportedDesc?: string
 }) {
   return (
     <div
@@ -220,12 +224,7 @@ function SwitchRow({
     >
       <span className="flex flex-col gap-0.5">
         <span className="text-sm font-semibold">{title}</span>
-        {/* 사유 문구가 설명을 «대체»하면 그 스위치가 무엇을 켜고 끄는지 읽을 수 없다 —
-            정본은 설명을 상시 노출한다. 사유는 아래 줄에 덧붙인다. */}
         <span className="text-xs text-gray-400">{desc}</span>
-        {disabled && unsupportedDesc && (
-          <span className="text-xs text-gray-500">{unsupportedDesc}</span>
-        )}
       </span>
       <span className="ml-auto flex-none">
         <Switch on={on} onClick={onClick} label={title} disabled={disabled} />

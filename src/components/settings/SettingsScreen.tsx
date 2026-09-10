@@ -143,7 +143,7 @@ export function SettingsScreen() {
           className="flex min-w-0 flex-1 flex-col"
         >
           {tab === 'general' && <GeneralTab onToast={showToast} />}
-          {tab === 'main' && <MainScreenTab />}
+          {tab === 'main' && <MainScreenTab onToast={showToast} />}
           {tab === 'content' && (
             <ContentTab addKind={addKind} onAddClose={() => setAddKind(null)} onToast={showToast} />
           )}

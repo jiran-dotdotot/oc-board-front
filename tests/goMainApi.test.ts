@@ -4,6 +4,7 @@ import { selectBookmarkedBoards } from '@/services/boardService'
 import { selectAdminCategory, selectCategory } from '@/services/categoryService'
 import { selectDriveFiles } from '@/services/driveService'
 import { selectNotices, selectPost } from '@/services/postService'
+import { updateCompanySetting, updateUserSetting } from '@/services/settingService'
 import { AxiosHeaders } from 'axios'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
@@ -125,4 +126,31 @@ it('cancels a scoped request if the login changes before the interceptor attache
   await expect(request).rejects.toMatchObject({ code: 'ERR_CANCELED' })
   expect(adapter).not.toHaveBeenCalled()
   expect(getAuthSession()?.access_token).toBe(pair(8, 99).access_token)
+})
+
+it('management settings use the company scope without a user segment', async () => {
+  const tokens = pair()
+  setTokens(tokens)
+  const calls: { method?: string; url?: string; body: unknown }[] = []
+  apiClient.defaults.adapter = async (config) => {
+    calls.push({ method: config.method, url: config.url, body: JSON.parse(config.data ?? 'null') })
+    expect(config.headers.get('Authorization')).toBe('Bearer ' + tokens.access_token)
+    return {
+      data: {},
+      status: 200,
+      statusText: 'OK',
+      headers: new AxiosHeaders(),
+      config,
+    }
+  }
+  await updateUserSetting({ is_like_alarm: false }, 'ko')
+  await updateCompanySetting({ latest_post_day: 7 }, 'ko')
+  expect(calls).toEqual([
+    {
+      method: 'patch',
+      url: '/board/companies/7/settings/users/me',
+      body: { is_like_alarm: false },
+    },
+    { method: 'patch', url: '/board/companies/7/settings', body: { latest_post_day: 7 } },
+  ])
 })

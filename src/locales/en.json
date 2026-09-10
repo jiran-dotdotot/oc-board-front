@@ -401,7 +401,7 @@
   "detail-dl-cancel-keep": "Keep downloading",
   "detail-comment-multiline-hint": "Enter to post · Shift+Enter for a new line",
   "detail-comment-menu": "Comment menu for {{name}}",
-  "env-member-token-only": "This setting cannot be saved with the current server contract (it requires a different sign-in).",
+  "env-save-error": "Could not save the setting.",
   "admin-grant-add-blocked": "Visibility and managers cannot be selected under the current server contract (different authentication required). Created as public to everyone.",
   "admin-grant-remove-only": "You can only view and remove existing assignments. Adding requires different authentication.",
   "admin-grant-empty": "No assignments — visible to everyone.",

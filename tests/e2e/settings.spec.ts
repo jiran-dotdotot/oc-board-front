@@ -83,6 +83,29 @@ const category = (
 
 /** 쓰기 결과를 실제로 반영한다 — 저장 후 재조회에서 값이 되돌아오면 «변경 없음» 판정이 깨진다. */
 const saved = new Map<string, Record<string, unknown>>()
+/** 개인 알림·회사 설정. PATCH 가 보낸 키만 덮어쓴다(생략 키는 유지 — legacy.Bool 계약). */
+const userSetting = () => ({
+  company_id: 7,
+  user_id: 42,
+  is_post_alarm: true,
+  is_notice_alarm: true,
+  is_public_post_alarm: true,
+  is_comment_alarm: true,
+  is_like_alarm: true,
+  recent_search_keyword: [],
+  created_at: '2026-09-01T00:00:00.000000Z',
+  updated_at: '2026-09-01T00:00:00.000000Z',
+  deleted_at: null,
+})
+const companySetting = () => ({
+  id: 'a1111111-1111-4111-8111-111111111111',
+  company_id: 7,
+  latest_post_day: 30,
+  latest_post_type: 'BOARD',
+  created_at: '2026-09-01T00:00:00.000000Z',
+  updated_at: '2026-09-01T00:00:00.000000Z',
+  deleted_at: null,
+})
 const apply = (b: ReturnType<typeof board>) => ({ ...b, ...(saved.get(b.id) ?? {}) })
 
 const treeOf = () => ({
@@ -119,6 +142,8 @@ interface Wire {
 /** 로그인 → 홈까지 태우고 트리 API 를 목킹한다. `admin` 이면 회사 관리자 응답. */
 async function setup(page: Page, context: BrowserContext, admin: boolean) {
   saved.clear()
+  let user = userSetting()
+  let company = companySetting()
   await context.addInitScript(() => localStorage.setItem('oc-board-lang', 'ko'))
   const wires: Wire[] = []
   const errors: string[] = []
@@ -126,7 +151,7 @@ async function setup(page: Page, context: BrowserContext, admin: boolean) {
   const cors = {
     'access-control-allow-origin': '*',
     'access-control-allow-headers': 'Authorization, Content-Type, Lang, Time_zone',
-    'access-control-allow-methods': 'GET, POST, PUT, DELETE',
+    'access-control-allow-methods': 'GET, POST, PUT, PATCH, DELETE',
   }
   const bodyOf = (request: Request) => {
     try {
@@ -159,6 +184,17 @@ async function setup(page: Page, context: BrowserContext, admin: boolean) {
       return
     }
     if (request.method() !== 'GET') {
+      // 관리 도메인은 company 스코프까지만이다 — `/users/{id}` 세그먼트가 없다.
+      if (path === '/api/v1/board/companies/7/settings/users/me') {
+        user = { ...user, ...bodyOf(request) }
+        await ok(user)
+        return
+      }
+      if (path === '/api/v1/board/companies/7/settings') {
+        company = { ...company, ...bodyOf(request) }
+        await ok(company)
+        return
+      }
       // 삭제는 204(본문 없음), 나머지 쓰기는 200 이다.
       if (request.method() === 'DELETE') {
         await route.fulfill({ status: 204, headers: cors })
@@ -189,8 +225,8 @@ async function setup(page: Page, context: BrowserContext, admin: boolean) {
           is_category_admin: false,
           is_board_admin: !admin,
           member: null,
-          company_setting: null,
-          company_user_setting: null,
+          company_setting: company,
+          company_user_setting: user,
           profile_src: null,
         })
       case scope + '/categories':
@@ -312,7 +348,7 @@ test('회사 관리자 — 탭이 URL 에 실리고, 트리·저장·정렬·삭
   expect(errors).toEqual([])
 })
 
-test('게시판 관리자 — 부분 트리에 공용이 없고 삭제 버튼도 없다. 일반 탭은 저장 불가 사유를 남긴다', async ({
+test('게시판 관리자 — 부분 트리에 공용이 없고 삭제 버튼도 없다. 개인 알림은 저장된다', async ({
   page,
   context,
 }) => {
@@ -334,10 +370,40 @@ test('게시판 관리자 — 부분 트리에 공용이 없고 삭제 버튼도
   // 메인화면 탭은 회사 관리자 전용이라 노출되지 않는다
   await expect(page.getByRole('tab', { name: '메인화면' })).toHaveCount(0)
 
-  // 일반 탭 — member 토큰 전용 설정은 비활성이고, 이유를 **텍스트로** 남긴다
+  // 일반 탭 — 개인 알림은 «본인» 설정이라 게시판 관리자가 아니어도 저장된다.
+  // 보낸 키 하나만 실려 나가고(나머지 4종은 유지) 스위치가 즉시 뒤집힌다.
   await page.getByRole('tab', { name: '일반' }).click()
-  await expect(page.getByRole('switch', { name: '댓글 알림' })).toBeDisabled()
-  await expect(page.getByText(/다른 인증이 필요합니다/).first()).toBeVisible()
+  const comment = page.getByRole('switch', { name: '댓글 알림' })
+  await expect(comment).toHaveAttribute('aria-checked', 'true')
+  await comment.click()
+  await expect(comment).toHaveAttribute('aria-checked', 'false')
+  await expect
+    .poll(() => lastWire(wires, 'PATCH', '/api/v1/board/companies/7/settings/users/me')?.body)
+    .toEqual({ is_comment_alarm: false })
 
+  expect(errors).toEqual([])
+})
+
+test('메인화면 — 회사 관리자만 기간을 바꿀 수 있고, 저장은 고른 값 하나만 보낸다', async ({
+  page,
+  context,
+}) => {
+  const { wires, errors } = await setup(page, context, true)
+  await page.goto('/settings?tab=main')
+
+  const save = page.getByRole('button', { name: '저장', exact: true })
+  // 고른 값이 저장값과 같으면 보낼 것이 없다.
+  await expect(save).toBeDisabled()
+  await page.getByRole('radio', { name: '7일' }).click()
+  await expect(page.getByRole('radio', { name: '7일' })).toHaveAttribute('aria-checked', 'true')
+  await expect(save).toBeEnabled()
+  await save.click()
+
+  await pollWire(wires, 'PATCH', '/api/v1/board/companies/7/settings').toEqual({
+    latest_post_day: 7,
+  })
+  // 저장 뒤에는 서버 값과 같아져 다시 비활성이다(같은 값을 두 번 보내지 않는다).
+  await expect(save).toBeDisabled()
+  await expect(page.getByText('저장되었습니다.')).toBeVisible()
   expect(errors).toEqual([])
 })

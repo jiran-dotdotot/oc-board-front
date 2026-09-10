@@ -1,18 +1,27 @@
+import { useState } from 'react'
+
 import { useTranslation } from 'react-i18next'
 
 import { DAY_OPTS, LATEST_POST_DAY_DEFAULT } from './constants'
 import { useMe } from '@/hooks/useMe'
-import { MEMBER_SETTINGS_UNSUPPORTED } from '@/services/settingService'
+import { useCompanySettingMutation } from '@/hooks/useSettings'
 
 // 환경 설정 › 메인화면. 최신글 노출 기간(company_settings.latest_post_day).
-// 저장 경로(PATCH /companies/{id}/settings)는 member 토큰 전용이라 이 앱에서는 «읽기 전용»이다
-// — 고를 수 있는데 저장은 안 되는 상태를 만들지 않으려고 라디오까지 비활성으로 둔다(BR-012).
-export function MainScreenTab() {
+// 저장은 PATCH {company}/settings 이고 **회사 관리자만** 통과한다 — 권한은 서버가 판정하고
+// 화면은 관리자가 아니면 고를 수 없게 둔다(고를 수 있는데 저장은 안 되는 상태를 만들지 않는다).
+export function MainScreenTab({
+  onToast,
+}: {
+  onToast: (msg: string, tone?: 'success' | 'error') => void
+}) {
   const { t } = useTranslation()
   const { data: me } = useMe()
   const companySetting = me?.company_setting
-  const days = companySetting?.latest_post_day ?? LATEST_POST_DAY_DEFAULT
+  const saved = companySetting?.latest_post_day ?? LATEST_POST_DAY_DEFAULT
   const isAdmin = !!me?.is_admin
+  const mutation = useCompanySettingMutation()
+  const [picked, setPicked] = useState<number | null>(null)
+  const days = picked ?? saved
 
   return (
     <div className="flex max-w-[860px] flex-col">
@@ -33,7 +42,8 @@ export function MainScreenTab() {
               type="button"
               role="radio"
               aria-checked={days === d}
-              disabled
+              disabled={!isAdmin}
+              onClick={() => setPicked(d)}
               className="inline-flex items-center gap-2 disabled:opacity-100"
             >
               <span
@@ -48,16 +58,25 @@ export function MainScreenTab() {
         </div>
       </div>
 
-      {/* 두 사유는 서로 다르다 — 관리자가 아니면 「관리자만」, 관리자여도 저장 경로가 없으면
-          「member 토큰 필요」다. 하나로 합치면 사용자에게 틀린 이유가 나간다. */}
-      <span className="pt-3 text-xs text-gray-400">
-        {isAdmin ? t('env-member-token-only') : t('env-main-admin-only')}
-      </span>
+      {/* 관리자가 아니면 왜 못 바꾸는지 남긴다 — 비활성은 색·opacity 로만 전달되면 안 된다. */}
+      {!isAdmin && <span className="pt-3 text-xs text-gray-400">{t('env-main-admin-only')}</span>}
 
       <div className="flex pt-3.5">
         <button
           type="button"
-          disabled={MEMBER_SETTINGS_UNSUPPORTED}
+          disabled={!isAdmin || mutation.isPending || days === saved}
+          onClick={() =>
+            mutation.mutate(
+              { latest_post_day: days },
+              {
+                onSuccess: () => {
+                  setPicked(null)
+                  onToast(t('admin-toast-saved'))
+                },
+                onError: () => onToast(t('env-save-error'), 'error'),
+              },
+            )
+          }
           className="ml-auto inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-semibold text-white hover:bg-ov-blue-700 disabled:opacity-40"
         >
           {t('common-save')}

@@ -218,6 +218,7 @@
 <a id="br-012"></a>
 
 - **`ebff9af` 재판정(2026-09-09)**: **해소됐지만 요청한 방식이 아니다.** 백엔드는 member 자격 공급 경로를 만든 것이 아니라 `board` 인증 계약 자체를 폐지하고 게시판 표면 64경로를 전부 `member` 로 통일했다([통지문](backend-replies/board-auth-contract-change.md) §1.1, 프론트 실측: `internal/**` 에 `BoardPrefixes`·`ContractBoard` 0건). 결과 ① 관리·개인 설정 API 는 **호출 가능한 계약**이 됐고 경로는 `/api/v1/board/companies/{c}/settings…` 로 이사했다(**`user_id` 세그먼트 없음**, 본인은 `/users/me`). ② 그러나 **이 앱의 독립 로그인 경로가 통째로 사라졌다** — Go 서비스에 로그인 엔드포인트가 하나도 없다. 즉 「설정을 저장할 수 없다」는 결손은 「무엇으로도 인증할 수 없다」로 **범위가 커졌다**. 이 항목의 원래 질문은 종결하고, 토큰 획득 방식 확정은 **BR-036** 으로 분리한다. 프론트 코드는 이번에 바꾸지 않았다(토큰 미정): `MEMBER_SETTINGS_UNSUPPORTED` 게이트는 그대로 두되 사유가 「board 토큰이라서」에서 「인증 토큰 공급 경로가 미정이라서」로 바뀌었다.
+- **후속 종결(2026-09-10)**: 로그인을 OfficeWave 로 전환해 member 토큰을 갖게 되면서 **게이트를 걷었다.** `MEMBER_SETTINGS_UNSUPPORTED` 상수와 「다른 인증이 필요합니다」 문구를 삭제하고 개인 알림 4종(PATCH `{company}/settings/users/me`)·회사 설정(PATCH `{company}/settings`)에 mutation 을 붙였다. **실서버 실계정 실측(2026-09-10)**: 두 경로 모두 **200** — 개인 `{"is_like_alarm":false}` 은 응답 본문에 반영됐고 회사는 `{"latest_post_day":7}` 로 저장됐다. 이 항목은 종결한다.
 
 ## BR-012 · 독립 로그인에서 설정 API용 member 자격 획득
 
@@ -592,6 +593,7 @@
   `/api/v1/board/companies/{c}/settings/users/me/recent-search-keywords` 로 이사했다. 남은 것은
   **토큰을 어떻게 얻는가**(BR-036)뿐이므로 이 항목은 그 확정 후 **해결 처리 후보**다. 그때
   localStorage 정본을 서버 정본으로 되돌릴지는 프론트 결정 사항이다([search/decision.md](../features/search/decision.md)).
+- **후속(2026-09-10)**: BR-036 의 토큰 문제가 해소돼 **이 경로를 실제로 호출할 수 있다**(같은 스코프의 형제 경로 두 개를 실계정으로 200 확인했다 — [BR-012](#br-012) 후속). 남은 것은 계약이 아니라 **프론트 결정**(로컬 정본 유지 vs 서버 정본 복귀)이므로, 그 결정이 서면 이 항목은 해결 처리한다.
 
 <a id="br-036"></a>
 
