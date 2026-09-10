@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 
 import { useTranslation } from 'react-i18next'
 
@@ -42,6 +42,8 @@ function fieldBorder(value: string, hasError: boolean) {
 export function LoginScreen() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  // 미인증 진입에서 넘어온 원래 주소(routes/login.tsx 가 같은 출처 경로만 통과시킨다)
+  const { redirect: backTo } = useSearch({ from: '/login' })
   const [showPw, setShowPw] = useState(false)
   const [remember, setRemember] = useState(true)
   const loginMutation = useLogin()
@@ -82,7 +84,7 @@ export function LoginScreen() {
       { username: values.email, password: values.password },
       {
         onSuccess: () => {
-          navigate({ to: '/' })
+          navigate({ href: backTo ?? '/', replace: true })
         },
       },
     )

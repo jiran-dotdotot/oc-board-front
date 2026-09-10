@@ -159,6 +159,32 @@ test('OfficeWave login → me → logout clears the session without changing the
   await expect.poll(() => calls.logout).toBe(1)
 })
 
+test('unauthenticated deep link → /login?redirect= → login returns to the original URL', async ({
+  page,
+  context,
+}) => {
+  await mockWire(context)
+  // 세션 없이 깊은 주소로 들어오면 원래 주소(경로+쿼리)를 redirect 에 싣고 로그인으로 간다
+  await page.goto('/my?chip=draft&page=2')
+  await expect(page).toHaveURL('/login?redirect=%2Fmy%3Fchip%3Ddraft%26page%3D2')
+  await expect(page.locator('#login-email')).toBeVisible()
+
+  await page.locator('#login-email').fill('go-user')
+  await page.locator('#login-password').fill('fixture-password')
+  await page.locator('button[type="submit"]').click()
+  await expect(page).toHaveURL('/my?chip=draft&page=2')
+  expect(await page.evaluate((k) => localStorage.getItem(k) !== null, sessionKey)).toBe(true)
+})
+
+test('/login?redirect= only accepts same-origin paths', async ({ page, context }) => {
+  await mockWire(context)
+  await page.goto('/login?redirect=https%3A%2F%2Fevil.test%2Fx')
+  await page.locator('#login-email').fill('go-user')
+  await page.locator('#login-password').fill('fixture-password')
+  await page.locator('button[type="submit"]').click()
+  await expect(page).toHaveURL(/\/$/)
+})
+
 test('login 403 stays on the form and does not trigger refresh', async ({ page, context }) => {
   const { calls } = await mockWire(context, { rejectLogin: true })
   await page.goto('/login')
