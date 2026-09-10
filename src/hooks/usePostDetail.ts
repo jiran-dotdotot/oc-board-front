@@ -41,18 +41,15 @@ export function usePostDetail(postId: string | undefined) {
   const { i18n } = useTranslation()
   return useQuery({
     // ⚠ 캐시 키에 언어를 «넣지 않는다». 넣으면 언어를 바꿀 때마다 데이터 없는 새 키가 되어
-    //   staleTime:Infinity 를 우회해 재요청이 나가고, 그 호출이 열람을 1건 더 기록한다
-    //   (ko→en→ko 로 조회수 +2 — docs/api/go/05-post-read.md:42).
-    //   알려진 한계: `Lang` 은 «에러 메시지»만 바꾸는 게 아니라 표시 이름 뒤의 퇴직/중지
-    //   접미사도 바꾼다(같은 문서 :13·:83·:90). 그래서 언어를 바꿔도 이전 언어의 「(퇴직)」이
-    //   남는다. 조회수 부수효과가 더 크다고 보고 키를 고정한다 — 새로고침하면 맞춰진다.
+    //   재요청이 나간다. 알려진 한계: 표시 이름 뒤의 퇴직/중지 접미사(05-post-read.md:13·83·90)가
+    //   언어 전환 즉시 안 바뀌고 다음 열람 때 맞춰진다.
     queryKey: ['post', postId],
     queryFn: () => getPost(postId!, i18n.language),
     enabled: !!postId && isAuthenticated(),
-    staleTime: Infinity,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
+    // 사용자 결정(2026-09-10): 상세도 다른 목록처럼 «열 때마다» 재조회한다 — 댓글 등 남의 변경을
+    //   바로 보기 위함. GET /posts/{id} 가 열람마다 조회수를 올리는 것은 «서버가 처리할 일»로 두고
+    //   프론트가 재조회를 억제하지 않는다. → 전역 기본값(staleTime 0 · 진입·포커스 재조회)을 그대로 받는다.
+    //   (포커스 복귀 때도 조회수 +1 이 싫으면 여기 refetchOnWindowFocus:false 한 줄만 두면 «열 때만» 이 된다.)
     retry: retryUnlessTerminal,
   })
 }
@@ -149,8 +146,9 @@ export function usePostDetailMutations(postId: string | undefined) {
     }),
 
     // ⚠ 전부 거절돼도 200 `{affected:0, ignored_ids:[id]}` 다(docs/api/go/06-post-write.md:41·:344).
-    //   삭제 허용은 «작성자»뿐이라 관리자가 남의 글을 지우면 이 경로로 온다 — 성공으로 흘리면
-    //   글이 남은 채 목록으로 이탈해 사용자는 지워졌다고 믿는다. onError 로 보낸다.
+    //   삭제는 «작성자 또는 회사·게시판 관리자»가 된다(실제 SQL: postwritequery.go:338-352 —
+    //   문서·소스 주석의 「작성자뿐」은 틀렸다). 권한 밖이면 affected:0 로 조용히 거절되므로,
+    //   성공으로 흘리면 글이 남은 채 이탈해 사용자는 지워졌다고 믿는다. onError 로 보낸다.
     removePost: useMutation({
       mutationFn: async () => {
         if (!(await deletePost(postId!))) throw new Error(DELETE_REJECTED)
