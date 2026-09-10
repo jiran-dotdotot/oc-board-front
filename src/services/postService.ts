@@ -9,8 +9,10 @@ import {
 import { serializeParams } from '@/lib/queryParams'
 import type {
   LikeUser,
+  MyPostListParams,
   Paginated,
   Post,
+  PostBulkResult,
   PostComment,
   PostDetail,
   PostListParams,
@@ -105,12 +107,72 @@ export async function getPost(postId: string, lang: string): Promise<PostDetail>
 // 게시글 삭제 — 휴지통(복원 가능). Go 에 단건 DELETE 는 «등록되어 있지 않고»
 // DELETE .../posts?id={UUID} 로 재작성될 뿐이라(go/README.md:189) 처음부터 일괄 경로를 쓴다.
 // 부분 실패도 200 이므로 ignored_ids 로 판정한다.
+export async function deletePosts(ids: string[]): Promise<PostBulkResult> {
+  const { data } = await deleteBoardResource<PostBulkResult>('/posts', { ids })
+  return { affected: data?.affected ?? 0, ignored_ids: data?.ignored_ids ?? [] }
+}
+
 export async function deletePost(postId: string): Promise<boolean> {
-  const { data } = await deleteBoardResource<{ affected: number; ignored_ids: string[] }>(
-    '/posts',
-    { ids: [postId] },
-  )
-  return (data?.affected ?? 0) > 0
+  const { affected } = await deletePosts([postId])
+  return affected > 0
+}
+
+// ─── 내 활동 목록 (docs/api/go/05-post-read.md:332 · :389) ──────────────────
+
+/**
+ * 내 글 목록. 칩(내 글·임시저장·예약·휴지통)이 전부 이 경로 하나에 `state` 로만 갈린다.
+ *
+ * ⚠ `state` 를 반드시 보낸다 — 생략하면 조회 없이 **200 빈 페이지**다(05:354).
+ * ⚠ `is_bookmark` 를 절대 보내지 않는다 — 문자열 truthiness 라 `"false"` 도 북마크 분기다(05:355).
+ * ⚠ `sort[by]` 를 보내지 않는다 — 생략해야 서버가 state 별 기본값을 고른다
+ *   (DEL→updated_at · SAVE→created_at · 그 외→posted_at, 05:357). 미지 이름은 created_at 으로 떨어진다.
+ * read gate 가 없어 목록에 보여도 상세는 403 일 수 있다(05:373).
+ */
+export async function selectMyPosts(
+  params: MyPostListParams,
+  lang: string,
+): Promise<Paginated<Post>> {
+  const { data } = await getBoardResource<Paginated<Post>>('/posts/mine', {
+    params: { state: params.state, take: params.take ?? 20, page: params.page ?? 1 },
+    paramsSerializer: { serialize: serializeParams },
+    headers: { lang },
+  })
+  return data
+}
+
+/**
+ * 북마크한 게시글. 전용 경로라 `state`·`is_bookmark` 자체가 «선언되지 않았다»(05:405-411).
+ * 대상은 같은 회사 + 미삭제 ACT + 내 live 북마크뿐이며, 여기도 read gate 가 없다(05:420).
+ */
+export async function selectBookmarkedPosts(
+  params: { take?: number; page?: number },
+  lang: string,
+): Promise<Paginated<Post>> {
+  const { data } = await getBoardResource<Paginated<Post>>('/posts/bookmarks', {
+    params: { take: params.take ?? 20, page: params.page ?? 1 },
+    paramsSerializer: { serialize: serializeParams },
+    headers: { lang },
+  })
+  return data
+}
+
+// ─── 내 활동 일괄 쓰기 (docs/api/go/06-post-write.md:316 · :362 · :408) ──────
+// ⚠ 게시글 일괄 body 는 **추가 키를 400 으로 거절**한다(06:336) — 자료실(허용·무시)과 다르므로
+//   공용 헬퍼로 묶지 않는다. body 자체가 없으면 400, `{"ids":[]}` 는 200 no-op 이다(06:71).
+
+/** 영구 삭제. **작성자**만, 이미 휴지통이며 아직 purge 안 된 것만(06:386). */
+export async function purgePosts(ids: string[]): Promise<PostBulkResult> {
+  const { data } = await deleteBoardResource<PostBulkResult>('/posts/purge', { ids })
+  return { affected: data?.affected ?? 0, ignored_ids: data?.ignored_ids ?? [] }
+}
+
+/**
+ * 복원. 자격은 **삭제자 == 요청자**다 — 작성자와 삭제자는 다른 개념이라,
+ * 내가 쓴 글이라도 남이 지운 것은 복원할 수 없다(06:432).
+ */
+export async function restorePosts(ids: string[]): Promise<PostBulkResult> {
+  const { data } = await postBoardResource<PostBulkResult>('/posts/restore', { ids })
+  return { affected: data?.affected ?? 0, ignored_ids: data?.ignored_ids ?? [] }
 }
 
 // ─── 댓글 (docs/api/go/07-post-comment-like.md:184~) ───────────────────────

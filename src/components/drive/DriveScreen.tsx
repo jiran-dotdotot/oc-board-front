@@ -9,6 +9,7 @@ import { BlockedModal } from '@/components/common/BlockedModal'
 import { Checkbox } from '@/components/common/Checkbox'
 import { Dropdown } from '@/components/common/Dropdown'
 import { FilePreviewModal } from '@/components/common/FilePreviewModal'
+import { ConfirmModal } from '@/components/common/ConfirmModal'
 import { Modal } from '@/components/common/Modal'
 import { Pagination } from '@/components/common/Pagination'
 import { Toast } from '@/components/common/Toast'
@@ -934,31 +935,14 @@ export function DriveScreen({ recent = false }: { recent?: boolean }) {
 
       {/* 삭제 확인 — 문구는 레거시 그대로(단건·다건 동일, 개수 보간 없음) */}
       {delOpen && (
-        <Modal onClose={() => setDelOpen(false)} label={delTitle}>
-          <div className="flex w-[330px] flex-col items-center gap-2 rounded-lg bg-card px-[22px] pt-[26px] pb-[18px] shadow-[var(--shadow-modal)]">
-            <span className="inline-flex size-[42px] items-center justify-center rounded-full bg-destructive-bg text-destructive">
-              <TrashIcon size={20} />
-            </span>
-            <span className="mt-1 text-center text-sm font-semibold">{delTitle}</span>
-            <span className="text-center text-s text-gray-500">{delDesc}</span>
-            <div className="mt-2.5 flex w-full gap-2">
-              <button
-                type="button"
-                onClick={() => setDelOpen(false)}
-                className="inline-flex h-10 flex-1 items-center justify-center rounded-md border border-gray-200 bg-card text-sm font-semibold text-gray-800 hover:bg-gray-100"
-              >
-                {t('common-cancel')}
-              </button>
-              <button
-                type="button"
-                onClick={doDelete}
-                className="inline-flex h-10 flex-1 items-center justify-center rounded-md bg-destructive text-sm font-semibold text-white hover:bg-destructive-hover"
-              >
-                {t('common-delete')}
-              </button>
-            </div>
-          </div>
-        </Modal>
+        <ConfirmModal
+          title={delTitle}
+          sub={delDesc}
+          confirmLabel={t('common-delete')}
+          icon={<TrashIcon size={20} />}
+          onCancel={() => setDelOpen(false)}
+          onConfirm={doDelete}
+        />
       )}
 
       {/* 다운로드 진행 — X 를 누르면 바로 끊지 않고 취소 확인을 먼저 띄운다(정본) */}

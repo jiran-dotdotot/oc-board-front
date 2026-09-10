@@ -61,6 +61,8 @@ export interface Post {
   deleted_at: string | null
   posted_at: string | null
   delete_user_id: number | null
+  /** 삭제자 이름만 오는 projection(05:157). 휴지통 「삭제자」 컬럼용. */
+  delete_user?: { name: string | null } | null
   board?: PostBoard
   badges?: PostBadge[]
   files?: Pick<PostFile, 'id' | 'origin_file_name' | 'extension' | 'size'>[]
@@ -117,6 +119,45 @@ export interface PostListParams {
 
 /** 게시글 상태. state != 'ACT' 이면 prev/next/row_num 이 전부 null 이고 조회 로그도 안 남는다. */
 export type PostState = 'ACT' | 'DEL' | 'SAVE' | 'HIDE' | 'SCHEDULED'
+
+/**
+ * 조회 쿼리(`?state=`)에 넣을 수 있는 값. `DEL` 은 **조회 전용 선택자**다 —
+ * 저장되는 값이 아니라 `deleted_at IS NOT NULL AND purged_at IS NULL` 을 고르는 키워드다
+ * (docs/api/go/05-post-read.md:354·365).
+ * ⚠ 서버에 enum 검증이 «없다». 오타는 400 이 아니라 **200 빈 페이지**로 온다(05:354, BR-041)
+ *   → 화면에서 문자열을 조립하지 말고 반드시 이 타입의 상수만 쓴다.
+ */
+export type PostQueryState = PostState
+
+/** POST/PUT body 의 state. `DEL` 은 **쓰기 enum 에 없다**(06-post-write.md:214). */
+export type PostWriteState = Exclude<PostState, 'DEL'>
+
+/**
+ * GET .../posts/mine 쿼리(05:346-355). GET /posts 와 파라미터 집합이 «다르다» —
+ * 선언된 건 6개뿐이고 검색·필터는 무시된다(05:373).
+ *
+ * ⚠ `is_bookmark` 를 일부러 넣지 않았다. Go 의 문자열 파라미터라 `"false"`·`"00"`·`"no"` 가
+ *   전부 «참»(북마크 분기)이고 `""`/`"0"` 만 거짓이다(05:355). 북마크는 전용 엔드포인트
+ *   `/posts/bookmarks` 로만 간다 — 이 파라미터는 우리 코드에서 아예 만들지 않는다.
+ * ⚠ `sort` 도 넣지 않는다. 생략하면 서버가 state 별 기본값을 고르지만
+ *   (DEL→updated_at · SAVE→created_at · 그 외→posted_at, 05:357),
+ *   «미지 이름»은 생략과 달리 created_at 으로 떨어져 오히려 틀린다.
+ */
+export interface MyPostListParams {
+  state: PostQueryState
+  take?: number
+  page?: number
+}
+
+/**
+ * 일괄 쓰기(삭제·영구삭제·복원) 공통 응답. 전건 거절도 200 affected=0 이다(06:344).
+ * ⚠ `ignored_ids` 는 UUID **바이트순 정렬**이라 요청 순서를 보존하지 않는다(06:73)
+ *   — 인덱스로 요청 배열과 짝지으면 안 된다. 거절 사유(권한·없음·상태)는 구분되지 않는다.
+ */
+export interface PostBulkResult {
+  affected: number
+  ignored_ids: string[]
+}
 
 /** 이모지별 공감 집계. ⚠ `is_reacted` 는 boolean 이 아니라 1/0 «숫자»다(05:243, 07:288). */
 export interface PostLikeStat {

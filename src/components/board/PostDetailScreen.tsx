@@ -10,6 +10,7 @@ import { type HistoryTarget, PostHistoryModal } from './PostHistoryModal'
 import { PostReactions } from './PostReactions'
 import { Avatar } from '@/components/common/Avatar'
 import { BlockedModal } from '@/components/common/BlockedModal'
+import { ConfirmModal } from '@/components/common/ConfirmModal'
 import { FilePreviewModal } from '@/components/common/FilePreviewModal'
 import { Modal } from '@/components/common/Modal'
 import { NoticeBadge } from '@/components/common/NoticeBadge'
@@ -533,57 +534,6 @@ function NavBtn({
     >
       <ChevronIcon className="size-[15px]" dir={dir} />
     </Link>
-  )
-}
-
-function ConfirmModal({
-  title,
-  sub,
-  confirmLabel,
-  cancelLabel,
-  compact,
-  busy,
-  onCancel,
-  onConfirm,
-}: {
-  title: string
-  sub: React.ReactNode
-  confirmLabel: string
-  /** 「취소」가 아닌 문구가 필요할 때 — 다운로드 취소 확인은 「계속 받기」다. */
-  cancelLabel?: string
-  /** 정본 dl* 취소 확인은 버튼이 h38 · 13/600 이다(cf* 는 h40 · 14/600). */
-  compact?: boolean
-  busy: boolean
-  onCancel: () => void
-  onConfirm: () => void
-}) {
-  const { t } = useTranslation()
-  const btn = compact ? 'h-[38px] text-s' : 'h-10 text-sm'
-  return (
-    <Modal onClose={onCancel} label={title} role="alertdialog">
-      {/* 정본 cf* 확인 모달: 320 · r8 · padding 26/22/18 (개선안 통합 앱) */}
-      <div className="flex w-80 max-w-full flex-col items-center gap-2 rounded-md bg-card px-[22px] pt-[26px] pb-[18px] shadow-[var(--shadow-modal)]">
-        <span className="text-center text-sm font-semibold text-gray-900">{title}</span>
-        <span className="text-center text-s text-gray-500">{sub}</span>
-        <div className="mt-2.5 flex w-full gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className={`inline-flex flex-1 items-center justify-center rounded-md border border-gray-200 bg-card font-semibold text-gray-800 hover:bg-gray-100 ${btn}`}
-          >
-            {cancelLabel ?? t('common-cancel')}
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={busy}
-            className={`inline-flex flex-1 items-center justify-center rounded-md bg-destructive font-semibold text-white hover:bg-destructive-hover disabled:opacity-60 ${btn}`}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </Modal>
   )
 }
 

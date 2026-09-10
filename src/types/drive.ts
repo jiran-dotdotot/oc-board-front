@@ -19,6 +19,8 @@ export interface ApiDriveFile {
   updated_at: string
   deleted_at: string | null
   user?: PostUser | null
+  /** 삭제자(09:77). PostUser 와 달리 account 가 없는 SignalUserView 지만 이름만 쓴다. */
+  delete_user?: PostUser | null
   board?: PostBoard | null
   // 현재 유저의 live 북마크 여부.
   is_bookmark?: boolean
@@ -118,6 +120,40 @@ export interface DrivePresignItem {
 export interface DriveBulkResult {
   affected: number
   ignored_ids: string[]
+}
+
+/**
+ * 파일 조회 쿼리의 `state` — 하드 enum 이다. 그 외 값은 **400**(09:129).
+ * 게시글과 달리 응답의 `state` 에는 `DEL` 이 «오지 않는다» — 삭제 여부는 `deleted_at` 으로 본다(09:180).
+ */
+export type DriveQueryState = 'UPLOADING' | 'FAIL' | 'ACT' | 'DEL'
+
+/**
+ * GET .../drive-files/mine 쿼리(09:233-257) 중 우리가 쓰는 것만.
+ *
+ * ⚠ `state` 는 **필수**다. 없으면 조회조차 하지 않고 200 빈 봉투가 온다(09:253).
+ * ⚠ `is_bookmark` 를 넣지 않는다. `is_bookmark=0` «만» 보내면 400 이고(09:178),
+ *   `"false"`·`"00"` 는 북마크 분기다(09:251). 북마크는 `/drive-files/bookmarks` 전용 경로로만 간다.
+ */
+export interface MyDriveFileListParams {
+  state: DriveQueryState
+  take?: number
+  page?: number
+}
+
+/**
+ * 파일 복원 응답(09:499-506). 삭제·영구삭제(2필드)와 **모양이 다르다**.
+ * ⚠ `success_drive`/`fail_drive` 는 파일 ID 가 아니라 **게시판 ID** 이고,
+ *   count 는 그 게시판 안의 «파일 수»다(09:182). 행 하이라이트에 쓰면 엉뚱한 걸 칠한다.
+ * 용량 초과는 422 가 아니라 200 + fail_drive 로 온다(09:497).
+ */
+export interface DriveRestoreResult extends DriveBulkResult {
+  /** 용량 판정을 통과한 «게시판» ID */
+  success_drive: string[]
+  success_count: number
+  /** 용량 초과로 거절된 «게시판» ID */
+  fail_drive: string[]
+  fail_count: number
 }
 
 // 다운로드 URL 발급 응답(TTL 5분). 자료실·게시글 첨부가 같은 모양이다(09:604 · 05:521).

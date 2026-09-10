@@ -15,6 +15,8 @@ import type {
   DriveFileListParams,
   DriveFilePage,
   DriveFolder,
+  DriveRestoreResult,
+  MyDriveFileListParams,
   DrivePresignFile,
   DrivePresignItem,
 } from '@/types/drive'
@@ -91,6 +93,70 @@ export async function toggleDriveFileBookmark(fileId: string): Promise<boolean> 
 export async function deleteDriveFiles(ids: string[]): Promise<DriveBulkResult> {
   const { data } = await deleteBoardResource<DriveBulkResult>('/drive-files', { ids })
   return { affected: data?.affected ?? 0, ignored_ids: data?.ignored_ids ?? [] }
+}
+
+// ─── 내 활동 목록 (docs/api/go/09-drive-file.md:233 · :289) ────────────────
+
+/**
+ * 내 자료 목록. 내 자료(ACT)와 휴지통(DEL)이 `state` 로만 갈린다.
+ *
+ * ⚠ `state` 는 **필수**다 — 없으면 조회조차 하지 않고 200 빈 봉투가 온다(09:253).
+ * ⚠ `is_bookmark` 를 절대 보내지 않는다 — `is_bookmark=0` «만» 보내면 **400** 이고(09:178),
+ *   `"false"`·`"00"` 는 북마크 분기다(09:251). 북마크는 전용 경로로만 간다.
+ * 본인 분기는 board Read·활성 여부를 검사하지 않는다 → 목록에 보여도 상세/다운로드는 403 일 수 있다(09:265·275).
+ */
+export async function selectMyDriveFiles(
+  params: MyDriveFileListParams,
+  lang: string,
+): Promise<DriveFilePage> {
+  const { data } = await getBoardResource<DriveFilePage>('/drive-files/mine', {
+    params: { state: params.state, take: params.take ?? 20, page: params.page ?? 1 },
+    paramsSerializer: { serialize: serializeParams },
+    headers: { lang },
+  })
+  return data
+}
+
+/**
+ * 북마크한 자료. 서버가 ACT·살아 있는 파일로 강제하고 is_bookmark 를 무시한다(09:303).
+ * 여기는 게시글 북마크와 달리 **Read·활성 게이트가 있다** — 권한을 잃으면 data 와 total 에서
+ * 조용히 빠진다(09:311). 북마크한 «시각» 순 정렬은 제공되지 않는다(09:323).
+ */
+export async function selectBookmarkedDriveFiles(
+  params: { take?: number; page?: number },
+  lang: string,
+): Promise<DriveFilePage> {
+  const { data } = await getBoardResource<DriveFilePage>('/drive-files/bookmarks', {
+    params: { take: params.take ?? 20, page: params.page ?? 1 },
+    paramsSerializer: { serialize: serializeParams },
+    headers: { lang },
+  })
+  return data
+}
+
+// ─── 내 활동 일괄 쓰기 (docs/api/go/09-drive-file.md:423 · :469) ────────────
+
+/** 영구 삭제. **업로더만** — 관리자 특례가 없다. 살아 있는 ACT 는 대상이 아니다(09:445). */
+export async function purgeDriveFiles(ids: string[]): Promise<DriveBulkResult> {
+  const { data } = await deleteBoardResource<DriveBulkResult>('/drive-files/purge', { ids })
+  return { affected: data?.affected ?? 0, ignored_ids: data?.ignored_ids ?? [] }
+}
+
+/**
+ * 복원. **업로더만**, 살아 있는 게시판의 휴지통 파일만(09:491).
+ * ⚠ 응답이 삭제·purge 와 모양이 다르다 — 용량 초과는 422 가 아니라 200 + fail_drive 로 온다(09:497).
+ *   그리고 그 배열은 **게시판 ID** 다(09:182).
+ */
+export async function restoreDriveFiles(ids: string[]): Promise<DriveRestoreResult> {
+  const { data } = await postBoardResource<DriveRestoreResult>('/drive-files/restore', { ids })
+  return {
+    affected: data?.affected ?? 0,
+    ignored_ids: data?.ignored_ids ?? [],
+    success_drive: data?.success_drive ?? [],
+    success_count: data?.success_count ?? 0,
+    fail_drive: data?.fail_drive ?? [],
+    fail_count: data?.fail_count ?? 0,
+  }
 }
 
 // 폴더 다건 삭제. 응답은 «실제로 지워진 id 배열» — 못 지운 건 조용히 빠진다(08:232).

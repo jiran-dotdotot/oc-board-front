@@ -25,6 +25,21 @@ export interface CompanyUserSetting {
   deleted_at: string | null
 }
 
+/**
+ * /me 의 소속 관계(01:104-140). `department` 는 **5필드**, `rank` 는 **2필드**만 온다 —
+ * role 관계는 없다(01:170).
+ * ⚠ `position` 은 직급이 아니라 **정렬용 정수**다. 직급명은 `rank.name` 이다(01:114·139).
+ */
+export interface MeMember {
+  id: number
+  department_id: number
+  rank_id?: number | null
+  /** 부서 내 정렬 순서(정수). 직급명이 아니다. */
+  position?: number
+  department: { id: number; parent_id?: number | null; name: string; path?: string | null; position?: number } | null
+  rank: { id: number; name: string } | null
+}
+
 export interface Me {
   id: number
   company_id: number
@@ -49,7 +64,7 @@ export interface Me {
   is_admin: boolean // 회사 관리자
   is_category_admin: boolean // 카테고리 관리자
   is_board_admin: boolean // 게시판 관리자
-  member: { id: number } | null
+  member: MeMember | null
   company_setting: CompanySetting | null
   company_user_setting: CompanyUserSetting | null
 }
