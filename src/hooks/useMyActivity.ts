@@ -119,6 +119,43 @@ export function useMyCounts(): Record<ChipKey, number> {
 }
 
 /**
+ * 하위탭(게시글·자료) 각각의 카운트. 두 도메인이 다 있는 칩(중요·내 글·휴지통)에서만 뜻이 있다.
+ * `useMyCounts` 와 **같은 queryKey** 를 써 캐시를 공유하므로 추가 요청은 `files-act` 하나뿐이다
+ * (내 글 자료 탭용). 이걸로 활성/비활성 두 탭 «둘 다» 숫자를 보여 준다 — 정본은 탭에도 카운트를 붙인다.
+ */
+export function useMyTabCounts(chip: ChipKey): { post: number; file: number } | null {
+  const { i18n } = useTranslation()
+  const lang = i18n.language
+  const enabled = isAuthenticated()
+  const one = { take: 1, page: 1 } as const
+  const bmP = useCountQuery('posts-bm', lang, enabled, () => selectBookmarkedPosts(one, lang))
+  const bmF = useCountQuery('files-bm', lang, enabled, () => selectBookmarkedDriveFiles(one, lang))
+  const trashP = useCountQuery('posts-del', lang, enabled, () =>
+    selectMyPosts({ state: 'DEL', ...one }, lang),
+  )
+  const trashF = useCountQuery('files-del', lang, enabled, () =>
+    selectMyDriveFiles({ state: 'DEL', ...one }, lang),
+  )
+  const mineP = useCountQuery('posts-act', lang, enabled, () =>
+    selectMyPosts({ state: 'ACT', ...one }, lang),
+  )
+  const mineF = useCountQuery('files-act', lang, enabled, () =>
+    selectMyDriveFiles({ state: 'ACT', ...one }, lang),
+  )
+  const n = (r: { data?: { total: number } }) => r.data?.total ?? 0
+  switch (chip) {
+    case 'important':
+      return { post: n(bmP), file: n(bmF) }
+    case 'trash':
+      return { post: n(trashP), file: n(trashF) }
+    case 'my':
+      return { post: n(mineP), file: n(mineF) }
+    default:
+      return null // 임시저장·예약은 게시글 전용 — 하위탭이 없다
+  }
+}
+
+/**
  * 휴지통 이동 · 복원 · 영구삭제.
  *
  * 배치는 항상 «동종»이다 — 탭이 게시글/자료를 갈라 놓으므로 한 요청에 두 도메인이 섞이지 않는다.

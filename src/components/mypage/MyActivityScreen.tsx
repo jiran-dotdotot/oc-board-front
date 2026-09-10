@@ -24,7 +24,7 @@ import { useDriveBookmarkMutation } from '@/hooks/useDriveFiles'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useMe } from '@/hooks/useMe'
-import { useMyCounts, useMyList, useMyMutations } from '@/hooks/useMyActivity'
+import { useMyCounts, useMyList, useMyMutations, useMyTabCounts } from '@/hooks/useMyActivity'
 import { usePostBookmarkMutation } from '@/hooks/usePosts'
 import { type MySearch, Route } from '@/routes/my'
 import type { ApiDriveFile } from '@/types/drive'
@@ -70,6 +70,8 @@ export function MyActivityScreen() {
     isMobile ? perPage * loadedPages : perPage,
   )
   const counts = useMyCounts()
+  // 하위탭 카운트 — 활성/비활성 둘 다 숫자를 보여 준다(클릭해야 뜨지 않도록)
+  const tabCounts = useMyTabCounts(chip)
   const { data: me } = useMe()
 
   const isTrash = chip === 'trash'
@@ -231,6 +233,8 @@ export function MyActivityScreen() {
         <div className="-mt-1 flex gap-5 border-b border-gray-200">
           {MY_TABS.map((tb) => {
             const on = tab === tb
+            // 활성 탭은 방금 읽은 목록 total 을, 비활성 탭은 카운트 쿼리 값을 쓴다(둘 다 표시).
+            const count = on ? total : ((tb === 'file' ? tabCounts?.file : tabCounts?.post) ?? 0)
             return (
               <button
                 key={tb}
@@ -242,7 +246,7 @@ export function MyActivityScreen() {
                 ].join(' ')}
               >
                 {t(TAB_LABEL_KEY[tb])}
-                {on && <span className="ml-1 text-primary">{total}</span>}
+                <span className={`ml-1 ${on ? 'text-primary' : 'text-gray-400'}`}>{count}</span>
               </button>
             )
           })}
