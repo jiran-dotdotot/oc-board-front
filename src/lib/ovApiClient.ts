@@ -29,7 +29,8 @@ ovApiClient.interceptors.request.use((config) => {
     config.headers.delete('Authorization')
   } else {
     // 로그아웃은 Bearer 로 대상을 정한다(`AccountController:1319` 가 bearerToken 을 읽는다).
-    // 재발급은 본문의 refresh_token 으로 동작하지만 헤더가 있어도 무해하다.
+    // 재발급도 서버가 «옛 access 토큰을 헤더에서 필수로» 읽어 스코프를 되살린다
+    // (`AccountController:1111` — 헤더가 없으면 403). body 의 authority 는 무시된다.
     const token = getAccessToken()
     if (token && !config.headers.has('Authorization'))
       config.headers.set('Authorization', `Bearer ${token}`)

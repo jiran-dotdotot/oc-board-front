@@ -15,10 +15,10 @@ import type {
   DriveFileListParams,
   DriveFilePage,
   DriveFolder,
-  DriveRestoreResult,
-  MyDriveFileListParams,
   DrivePresignFile,
   DrivePresignItem,
+  DriveRestoreResult,
+  MyDriveFileListParams,
 } from '@/types/drive'
 import axios from 'axios'
 
@@ -160,7 +160,8 @@ export async function restoreDriveFiles(ids: string[]): Promise<DriveRestoreResu
 }
 
 // 폴더 다건 삭제. 응답은 «실제로 지워진 id 배열» — 못 지운 건 조용히 빠진다(08:232).
-// 폴더는 휴지통이 없다(하드 삭제).
+// 폴더도 soft-delete 다(deleted_at 기록, folderquery.go:384). 다만 복원 API·UI 가 없어
+// 사용자에겐 영구 삭제처럼 보인다 — 「하드 삭제」가 아니다.
 export async function deleteDriveFolders(ids: string[]): Promise<string[]> {
   const { data } = await deleteBoardResource<string[]>('/folders', { ids })
   return data ?? []

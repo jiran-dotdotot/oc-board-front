@@ -35,7 +35,8 @@ export function useDriveBookmarkMutation() {
   })
 }
 
-// 자료실 삭제 — 파일(휴지통)과 폴더(하드)는 엔드포인트가 갈라져 있다.
+// 자료실 삭제 — 파일·폴더 둘 다 서버에선 soft-delete(deleted_at) 지만 엔드포인트가 갈라져 있다.
+// 파일은 휴지통·복원이 있고(내 활동 화면), 폴더는 복원 API 가 없어 사실상 영구 삭제로 보인다.
 // 폴더 삭제는 «지워진 id 배열»을 돌려주므로 호출 쪽에서 남은 선택을 처리해야 한다.
 export function useDriveDeleteMutation() {
   const qc = useQueryClient()
