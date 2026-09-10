@@ -205,6 +205,13 @@ for (const isAdmin of [true, false]) {
           case scope + '/posts':
             json = pageEnvelope(posts, 8)
             break
+          case scope + '/posts/mine':
+            // 홈 「해야 할 일」 칩 카운트 — take=1 의 total 만 쓴다(SAVE 3건 · SCHEDULED 1건)
+            json = {
+              ...pageEnvelope([], 1),
+              total: url.searchParams.get('state') === 'SAVE' ? 3 : 1,
+            }
+            break
           case scope + '/drive-files':
             json = pageEnvelope([file], 8)
             break
@@ -276,11 +283,15 @@ for (const isAdmin of [true, false]) {
         page.locator('a[href="/board/' + boardId + '"]').filter({ visible: true }),
       ).toHaveCount(2)
 
+      await expect(page.getByRole('button', { name: /임시저장\s*3/ })).toBeVisible()
+      await expect(page.getByRole('button', { name: /예약 발행\s*1/ })).toBeVisible()
+
       const mainRequests = requests.filter((request) => request.path.startsWith(scope))
       expect(new Set(mainRequests.map((request) => request.path))).toEqual(
         new Set([
           scope + '/bookmarks',
           scope + '/posts',
+          scope + '/posts/mine',
           scope + '/drive-files',
           scope + (isAdmin ? '/categories/admin' : '/categories'),
         ]),
@@ -292,6 +303,9 @@ for (const isAdmin of [true, false]) {
         if (request.path.endsWith('/bookmarks')) {
           expect(request.query.get('take')).toBe('100')
           expect(request.query.has('is_bookmark')).toBe(false)
+        } else if (request.path.endsWith('/posts/mine')) {
+          expect(['SAVE', 'SCHEDULED']).toContain(request.query.get('state'))
+          expect(request.query.get('take')).toBe('1')
         } else if (request.path.endsWith('/posts')) {
           expect(request.query.get('is_not_paging')).not.toBe('1')
           expect(request.query.get('sort[by]')).toBe('posted_at')

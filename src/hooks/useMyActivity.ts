@@ -63,6 +63,24 @@ function useCountQuery(
 }
 
 /**
+ * 홈 「해야 할 일」·/my 임시저장·예약 칩이 공유하는 2건. 쿼리키가 같아 두 화면이 한 캐시를 본다.
+ * 서버 집계가 없어 `take=1` 목록의 `total` 로 센다(BR-038).
+ */
+export function useMyTodoCounts(): { draft: number; schedule: number } {
+  const { i18n } = useTranslation()
+  const lang = i18n.language
+  const enabled = isAuthenticated()
+  const one = { take: 1, page: 1 } as const
+  const drafts = useCountQuery('posts-save', lang, enabled, () =>
+    selectMyPosts({ state: 'SAVE', ...one }, lang),
+  )
+  const sched = useCountQuery('posts-scheduled', lang, enabled, () =>
+    selectMyPosts({ state: 'SCHEDULED', ...one }, lang),
+  )
+  return { draft: drafts.data?.total ?? 0, schedule: sched.data?.total ?? 0 }
+}
+
+/**
  * 칩 5종의 카운트 + 프로필 통계. 정본은 **모든 칩에 숫자**를 붙인다(개선안 통합 앱.dc.html:1086).
  * 봉투의 `total` 만 필요하므로 전부 `take=1` 이다.
  *
@@ -79,12 +97,7 @@ export function useMyCounts(): Record<ChipKey, number> {
   const mine = useCountQuery('posts-act', lang, enabled, () =>
     selectMyPosts({ state: 'ACT', ...one }, lang),
   )
-  const drafts = useCountQuery('posts-save', lang, enabled, () =>
-    selectMyPosts({ state: 'SAVE', ...one }, lang),
-  )
-  const sched = useCountQuery('posts-scheduled', lang, enabled, () =>
-    selectMyPosts({ state: 'SCHEDULED', ...one }, lang),
-  )
+  const todo = useMyTodoCounts()
   const trashP = useCountQuery('posts-del', lang, enabled, () =>
     selectMyPosts({ state: 'DEL', ...one }, lang),
   )
@@ -92,17 +105,15 @@ export function useMyCounts(): Record<ChipKey, number> {
     selectMyDriveFiles({ state: 'DEL', ...one }, lang),
   )
   const bmP = useCountQuery('posts-bm', lang, enabled, () => selectBookmarkedPosts(one, lang))
-  const bmF = useCountQuery('files-bm', lang, enabled, () =>
-    selectBookmarkedDriveFiles(one, lang),
-  )
+  const bmF = useCountQuery('files-bm', lang, enabled, () => selectBookmarkedDriveFiles(one, lang))
   const n = (r: { data?: { total: number } }) => r.data?.total ?? 0
 
   return {
     // 「중요」·「휴지통」은 두 도메인 합이다 — 서버가 주는 값이 아니라 우리 정의다(가정 원장).
     important: n(bmP) + n(bmF),
     my: n(mine),
-    draft: n(drafts),
-    schedule: n(sched),
+    draft: todo.draft,
+    schedule: todo.schedule,
     trash: n(trashP) + n(trashF),
   }
 }

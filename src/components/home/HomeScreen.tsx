@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router'
 
 import { useTranslation } from 'react-i18next'
 
-import { DRAFT_COUNT, EXT_BG, EXT_BG_DEFAULT, HOME_TAKE, SCHED_COUNT, TODO_PILL } from './constants'
+import { EXT_BG, EXT_BG_DEFAULT, HOME_TAKE, TODO_PILL } from './constants'
 import { NoticeBadge } from '@/components/common/NoticeBadge'
 import { NEW_BADGE } from '@/components/common/constants'
 import {
@@ -16,6 +16,7 @@ import {
 import { DEFAULT_LIMIT_DAY } from '@/constants/post'
 import { useDriveFilePage } from '@/hooks/useDriveFiles'
 import { useMe } from '@/hooks/useMe'
+import { useMyTodoCounts } from '@/hooks/useMyActivity'
 import { usePosts } from '@/hooks/usePosts'
 import type { ApiDriveFile } from '@/types/drive'
 import type { Post } from '@/types/post'
@@ -90,6 +91,8 @@ export function HomeScreen() {
   const navigate = useNavigate()
   // 홈 목록은 회사 설정 '최신글 노출 기간'으로 창을 좁힌다 — 하단 안내문이 주장하는 그 값.
   const { data: me } = useMe()
+  // 해야 할 일 칩 — /my 와 같은 카운트 쿼리(고정값 없음)
+  const todo = useMyTodoCounts()
   const limitDay = me?.company_setting?.latest_post_day ?? DEFAULT_LIMIT_DAY
   // 로그인 후 홈 진입/새로고침 시 최근 게시글 자동 호출 (인증 상태에서만)
   const { data, isLoading, isError } = usePosts({
@@ -124,13 +127,21 @@ export function HomeScreen() {
           <span className="text-xs text-gray-500">{t('home-todo-desc')}</span>
         </div>
         <div className="ml-auto flex flex-none flex-wrap gap-1.5">
-          <button type="button" onClick={() => navigate({ to: '/my' })} className={TODO_PILL}>
+          <button
+            type="button"
+            onClick={() => navigate({ to: '/my', search: { chip: 'draft' } })}
+            className={TODO_PILL}
+          >
             {t('home-draft')}
-            <span className="font-bold text-warning">{DRAFT_COUNT}</span>
+            <span className="font-bold text-warning">{todo.draft}</span>
           </button>
-          <button type="button" onClick={() => navigate({ to: '/my' })} className={TODO_PILL}>
+          <button
+            type="button"
+            onClick={() => navigate({ to: '/my', search: { chip: 'schedule' } })}
+            className={TODO_PILL}
+          >
             {t('home-sched')}
-            <span className="font-bold text-primary">{SCHED_COUNT}</span>
+            <span className="font-bold text-primary">{todo.schedule}</span>
           </button>
         </div>
       </div>

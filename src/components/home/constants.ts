@@ -7,8 +7,5 @@ export const HOME_TAKE = 8
 export const TODO_PILL =
   'inline-flex h-8 flex-none items-center gap-1.5 rounded-[20px] border border-gray-200 bg-card px-3 text-[12.5px] font-semibold whitespace-nowrap text-gray-700 hover:bg-gray-100'
 
-export const DRAFT_COUNT = 3
-export const SCHED_COUNT = 1
-
 // 확장자 파스텔 표는 단일 출처다 — 세 화면(자료실·홈·게시글 첨부)이 같은 색을 써야 한다.
 export { EXT_BG, EXT_BG_DEFAULT } from '@/constants/fileExt'
